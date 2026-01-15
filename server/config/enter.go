@@ -7,6 +7,9 @@ var Settings *Config
 type Config struct {
 	SYSTEM_IS_DEV                bool   `mapstructure:"SYSTEM_IS_DEV"`
 	SYSTEM_SERVER_PORT           int    `mapstructure:"SYSTEM_SERVER_PORT"`
+	SYSTEM_ADMIN_NAME            string `mapstructure:"SYSTEM_ADMIN_NAME"`
+	SYSTEM_ADMIN_PASSWORD        string `mapstructure:"SYSTEM_ADMIN_PASSWORD"`
+	SYSTEM_ADMIN_EMAIL           string `mapstructure:"SYSTEM_ADMIN_EMAIL"`
 	JWT_SIGNING_KEY              string `mapstructure:"JWT_SIGNING_KEY"`
 	JWT_EXPIRES_TIME             string `mapstructure:"JWT_EXPIRES_TIME"`
 	JWT_BUFFER_TIME              string `mapstructure:"JWT_BUFFER_TIME"`

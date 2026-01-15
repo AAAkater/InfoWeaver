@@ -3,8 +3,10 @@ package db
 import (
 	"os"
 	"server/config"
-	"server/service"
+	"server/models"
 	"server/utils"
+
+	"gorm.io/gorm"
 )
 
 type InitDBHandler struct{}
@@ -24,10 +26,32 @@ func (this *InitDBHandler) initPgSql() {
 	}
 	utils.Logger.Info("success to connect to PostgreSQL")
 
-	if err = service.InitializeDBTables(PgSqlDB); err != nil {
+	// Auto-migrate database schema
+	if err = PgSqlDB.AutoMigrate(&models.User{}, &models.File{}, &models.Document{}, &models.Memory{}); err != nil {
 		utils.Logger.Errorf("Failed to create PostgreSQL tables:%s", err)
 		os.Exit(0)
 	}
+
+	// Create initial admin account if not exists
+	var admin models.User
+	result := PgSqlDB.Where("role = ?", "admin").First(&admin)
+	if result.Error != gorm.ErrRecordNotFound {
+		return
+	}
+
+	// Create admin user with default credentials
+	res := PgSqlDB.Create(&models.User{
+		Username: config.Settings.SYSTEM_ADMIN_NAME,
+		Email:    config.Settings.SYSTEM_ADMIN_EMAIL,
+		Password: config.Settings.SYSTEM_ADMIN_PASSWORD,
+		Role:     "admin",
+	})
+
+	if res.Error != nil {
+		utils.Logger.Errorf("Failed to create admin account:%s", res.Error)
+		os.Exit(0)
+	}
+
 	utils.Logger.Info("success to create PostgreSQL tables")
 }
 func (this *InitDBHandler) initRedis() {

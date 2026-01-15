@@ -4,6 +4,7 @@ import (
 	"server/api"
 	"server/config"
 	"server/db"
+	"server/middleware"
 	"server/utils"
 
 	"github.com/labstack/echo/v4"
@@ -16,6 +17,7 @@ func main() {
 	db.InitAllDB()
 	e := echo.New()
 
+	middleware.InitMiddleWares(e)
 	api.InitRouter(e)
 
 	server_port := config.Settings.GetServerPort()

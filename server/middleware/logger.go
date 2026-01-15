@@ -9,17 +9,17 @@ import (
 
 func LoggerMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(ctx echo.Context) error {
 			start := time.Now()
 
-			err := next(c)
+			err := next(ctx)
 
 			duration := time.Since(start)
 			utils.Logger.Infof("HTTP Request: method=%s uri=%s ip=%s status=%d duration=%v error=%v",
-				c.Request().Method,
-				c.Request().RequestURI,
-				c.RealIP(),
-				c.Response().Status,
+				ctx.Request().Method,
+				ctx.Request().RequestURI,
+				ctx.RealIP(),
+				ctx.Response().Status,
 				duration,
 				err,
 			)

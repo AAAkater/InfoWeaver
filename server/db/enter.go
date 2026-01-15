@@ -18,7 +18,7 @@ func InitAllDB() {
 
 func (this *InitDBHandler) initPgSql() {
 	var err error
-	if PgSqlDB, err = initPgSqlDB(config.Settings); err != nil {
+	if PgSqlDB, err = connectPgSqlDB(config.Settings); err != nil {
 		utils.Logger.Errorf("Failed to connect to PostgreSQL:%s", err)
 		os.Exit(0)
 	}
@@ -32,7 +32,7 @@ func (this *InitDBHandler) initPgSql() {
 }
 func (this *InitDBHandler) initRedis() {
 	var err error
-	if RedisClient, err = initRedisDB(config.Settings); err != nil {
+	if RedisClient, err = connectRedisDB(config.Settings); err != nil {
 		utils.Logger.Errorf("Failed to connect to Redis:%s", err)
 		os.Exit(0)
 	}
@@ -41,7 +41,7 @@ func (this *InitDBHandler) initRedis() {
 }
 func (this *InitDBHandler) InitMilvus() {
 	var err error
-	if MilvusClient, err = initMilvusDB(config.Settings); err != nil {
+	if MilvusClient, err = connectMilvusDB(config.Settings); err != nil {
 		utils.Logger.Errorf("Failed to connect to Milvus:%s", err)
 		os.Exit(0)
 	}

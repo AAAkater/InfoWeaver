@@ -10,7 +10,7 @@ import (
 
 var MilvusClient *milvusclient.Client
 
-func initMilvusDB(cfg *config.Config) (*milvusclient.Client, error) {
+func connectMilvusDB(cfg *config.Config) (*milvusclient.Client, error) {
 
 	dsn := cfg.GetMilvusDSN()
 	utils.Logger.Infof("use Milvus DSN:%s", dsn)

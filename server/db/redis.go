@@ -10,7 +10,7 @@ import (
 
 var RedisClient *redis.Client
 
-func initRedisDB(cfg *config.Config) (*redis.Client, error) {
+func connectRedisDB(cfg *config.Config) (*redis.Client, error) {
 	dsn := cfg.GetRedisDSN()
 	utils.Logger.Infof("use Redis DSN:%s", dsn)
 

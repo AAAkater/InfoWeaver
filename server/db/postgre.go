@@ -10,7 +10,7 @@ import (
 
 var PgSqlDB *gorm.DB
 
-func initPgSqlDB(cfg *config.Config) (*gorm.DB, error) {
+func connectPgSqlDB(cfg *config.Config) (*gorm.DB, error) {
 	dsn := cfg.GetPostgreDSN()
 	utils.Logger.Infof("use PostgreSQL DSN:%s", dsn)
 

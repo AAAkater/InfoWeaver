@@ -3,6 +3,7 @@ package db
 import (
 	"os"
 	"server/config"
+	"server/service"
 	"server/utils"
 )
 
@@ -22,6 +23,12 @@ func (this *InitDBHandler) initPgSql() {
 		os.Exit(0)
 	}
 	utils.Logger.Info("success to connect to PostgreSQL")
+
+	if err = service.InitializeDBTables(PgSqlDB); err != nil {
+		utils.Logger.Errorf("Failed to create PostgreSQL tables:%s", err)
+		os.Exit(0)
+	}
+	utils.Logger.Info("success to create PostgreSQL tables")
 }
 func (this *InitDBHandler) initRedis() {
 	var err error

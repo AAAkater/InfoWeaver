@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	ERROR   = 7
-	SUCCESS = 0
+	SUCCESS = iota
+	ERROR
 )
 
 type ResponseBase[T any] struct {
@@ -18,11 +18,12 @@ type ResponseBase[T any] struct {
 }
 
 func Ok(ctx echo.Context) error {
-	return ctx.JSON(http.StatusOK, ResponseBase[any]{
-		SUCCESS,
-		"ok",
-		nil,
-	})
+	return ctx.JSON(http.StatusOK,
+		ResponseBase[any]{
+			SUCCESS,
+			"ok",
+			nil,
+		})
 }
 
 func OkWithData[T any](ctx echo.Context, data T) error {
@@ -32,5 +33,44 @@ func OkWithData[T any](ctx echo.Context, data T) error {
 			SUCCESS,
 			"ok",
 			data,
+		})
+}
+
+func Fail(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK,
+		ResponseBase[any]{
+			ERROR,
+			"ok",
+			nil,
+		})
+}
+
+func FailWithMsg(ctx echo.Context, msg string) error {
+	return ctx.JSON(
+		http.StatusOK,
+		ResponseBase[any]{
+			ERROR,
+			msg,
+			nil,
+		})
+}
+
+func NotFound(ctx echo.Context, msg string) error {
+	return ctx.JSON(
+		http.StatusNotFound,
+		ResponseBase[any]{
+			SUCCESS,
+			msg,
+			nil,
+		})
+}
+
+func NoAuth(ctx echo.Context, msg string) error {
+	return ctx.JSON(
+		http.StatusUnauthorized,
+		ResponseBase[any]{
+			SUCCESS,
+			msg,
+			nil,
 		})
 }

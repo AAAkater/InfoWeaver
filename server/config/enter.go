@@ -1,6 +1,11 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+)
 
 var Settings *Config
 
@@ -57,4 +62,36 @@ func (this *Config) GetRedisDSN() string {
 
 func (this *Config) GetMilvusDSN() string {
 	return fmt.Sprintf("%s:%d", this.MILVUS_HOST, this.MILVUS_PORT)
+}
+
+func (this *Config) GetJWTExpireTime() time.Duration {
+	ep, _ := parseDuration(this.JWT_EXPIRES_TIME)
+	return ep
+}
+
+func (this *Config) GetJWTBufferTime() time.Duration {
+	bf, _ := parseDuration(this.JWT_BUFFER_TIME)
+	return bf
+}
+
+func parseDuration(d string) (time.Duration, error) {
+	d = strings.TrimSpace(d)
+	dr, err := time.ParseDuration(d)
+	if err == nil {
+		return dr, nil
+	}
+	if strings.Contains(d, "d") {
+		index := strings.Index(d, "d")
+
+		hour, _ := strconv.Atoi(d[:index])
+		dr = time.Hour * 24 * time.Duration(hour)
+		ndr, err := time.ParseDuration(d[index+1:])
+		if err != nil {
+			return dr, nil
+		}
+		return dr + ndr, nil
+	}
+
+	dv, err := strconv.ParseInt(d, 10, 64)
+	return time.Duration(dv), err
 }

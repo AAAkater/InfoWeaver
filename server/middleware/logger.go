@@ -15,15 +15,16 @@ func LoggerMiddleware() echo.MiddlewareFunc {
 			err := next(ctx)
 
 			duration := time.Since(start)
-			utils.Logger.Infof("HTTP Request: method=%s uri=%s ip=%s status=%d duration=%v error=%v",
-				ctx.Request().Method,
-				ctx.Request().RequestURI,
+			req := ctx.Request()
+			resp := ctx.Response()
+			utils.Logger.Infof("%s uri=%s ip=%s status=%d duration=%v error=%v",
+				req.Method,
+				req.RequestURI,
 				ctx.RealIP(),
-				ctx.Response().Status,
+				resp.Status,
 				duration,
 				err,
 			)
-
 			return err
 		}
 	}

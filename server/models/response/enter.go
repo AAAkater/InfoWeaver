@@ -55,22 +55,14 @@ func FailWithMsg(ctx echo.Context, msg string) error {
 		})
 }
 
-func NotFound(ctx echo.Context, msg string) error {
-	return ctx.JSON(
-		http.StatusNotFound,
-		ResponseBase[any]{
-			SUCCESS,
-			msg,
-			nil,
-		})
+func NotFound(msg ...string) error {
+	return echo.NewHTTPError(http.StatusNotFound, msg)
 }
 
-func NoAuth(ctx echo.Context, msg string) error {
-	return ctx.JSON(
-		http.StatusUnauthorized,
-		ResponseBase[any]{
-			SUCCESS,
-			msg,
-			nil,
-		})
+func NoAuth(msg ...string) error {
+	return echo.NewHTTPError(http.StatusUnauthorized, msg)
+}
+
+func BadRequest(msg ...string) error {
+	return echo.NewHTTPError(http.StatusBadRequest, msg)
 }

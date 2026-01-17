@@ -4,6 +4,7 @@ import (
 	"errors"
 	"server/config"
 	"sync"
+
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +20,7 @@ var (
 
 var (
 	jwtToolInstance *JwtInfo
-	once            sync.Once
+	jwtOnce         sync.Once
 )
 
 func JwtTool() *JwtInfo {
@@ -30,7 +31,7 @@ func JwtTool() *JwtInfo {
 			[]byte(config.Settings.JWT_SIGNING_KEY),
 		}
 	}
-	once.Do(init)
+	jwtOnce.Do(init)
 	return jwtToolInstance
 }
 

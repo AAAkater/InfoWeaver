@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"server/db"
 	"server/models"
@@ -13,16 +14,64 @@ var UserServiceApp = new(UserService)
 
 type UserService struct{}
 
-func (this *UserService) Register(new_user models.User) error {
-	var user models.User
-	res := db.PgSqlDB.Where("username = ?", new_user.Username).First(&user)
+func (this *UserService) CreateNewUser(ctx context.Context, username string, password string, email string) error {
 
-	if res.Error != gorm.ErrRecordNotFound {
-		return errors.New("this username has been already used")
+	// 检查用户名或邮箱是否已存在
+	_, err := gorm.G[models.User](db.PgSqlDB).
+		Select("id").
+		Where("email = ?", email).
+		First(ctx)
+
+	switch err {
+	case nil:
+		return errors.New("this email has been already used")
+	case gorm.ErrRecordNotFound: // user not found
+		break
+	default:
+		utils.Logger.Error(err.Error())
+		return errors.New("Unknown error")
 	}
 
-	new_user.Password = utils.BcryptHash(new_user.Password)
-	err := db.PgSqlDB.Create(&new_user).Error
+	db_user := &models.User{
+		Username: username,
+		Password: utils.BcryptHash(password),
+		Email:    email,
+	}
+	if err := gorm.G[models.User](db.PgSqlDB).Create(ctx, db_user); err != nil {
+		utils.Logger.Error(err.Error())
+		return errors.New("Unknown error")
+	}
+	return nil
+}
 
-	return err
+func (this *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+
+	db_user, err := gorm.G[models.User](db.PgSqlDB).
+		Where("email = ?", email).
+		First(ctx)
+	switch err {
+	case nil:
+		return &db_user, nil
+	case gorm.ErrRecordNotFound:
+		return nil, errors.New("User not found")
+	default:
+		utils.Logger.Error(err.Error())
+		return nil, errors.New("Unknown error")
+	}
+
+}
+
+func (this *UserService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	db_user, err := gorm.G[models.User](db.PgSqlDB).
+		Where("id = ?", id).
+		First(ctx)
+	switch err {
+	case nil:
+		return &db_user, nil
+	case gorm.ErrRecordNotFound:
+		return nil, errors.New("User not found")
+	default:
+		utils.Logger.Error(err.Error())
+		return nil, errors.New("Unknown error")
+	}
 }

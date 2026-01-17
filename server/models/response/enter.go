@@ -56,13 +56,22 @@ func FailWithMsg(ctx echo.Context, msg string) error {
 }
 
 func NotFound(msg ...string) error {
-	return echo.NewHTTPError(http.StatusNotFound, msg)
+	if len(msg) > 0 {
+		return echo.NewHTTPError(http.StatusNotFound, msg[0])
+	}
+	return echo.NewHTTPError(http.StatusNotFound)
 }
 
 func NoAuth(msg ...string) error {
-	return echo.NewHTTPError(http.StatusUnauthorized, msg)
+	if len(msg) > 0 {
+		return echo.NewHTTPError(http.StatusUnauthorized, msg[0])
+	}
+	return echo.NewHTTPError(http.StatusUnauthorized)
 }
 
 func BadRequest(msg ...string) error {
-	return echo.NewHTTPError(http.StatusBadRequest, msg)
+	if len(msg) > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, msg[0])
+	}
+	return echo.NewHTTPError(http.StatusBadRequest)
 }

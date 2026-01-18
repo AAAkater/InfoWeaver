@@ -20,10 +20,10 @@ type userApi struct{}
 
 func (this *userApi) register(ctx echo.Context) error {
 
-	var req request.RegisterBody
-	if err := ctx.Bind(&req); err != nil {
+	req, err := utils.BindAndValidate[request.RegisterBody](ctx)
+	if err != nil {
 		utils.Logger.Error(err.Error())
-		return response.BadRequest()
+		return response.BadRequest(err.Error())
 	}
 
 	if err := userService.CreateNewUser(ctx.Request().Context(), req.Username, req.Password, req.Email); err != nil {
@@ -32,3 +32,7 @@ func (this *userApi) register(ctx echo.Context) error {
 	}
 	return response.Ok(ctx)
 }
+
+// func (this *userApi) login(ctx echo.Context) error {
+
+// }

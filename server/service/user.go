@@ -75,3 +75,18 @@ func (this *UserService) GetUserByID(ctx context.Context, id string) (*models.Us
 		return nil, errors.New("Unknown error")
 	}
 }
+
+func (this *UserService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	db_user, err := gorm.G[models.User](db.PgSqlDB).
+		Where("username = ?", username).
+		First(ctx)
+	switch err {
+	case nil:
+		return &db_user, nil
+	case gorm.ErrRecordNotFound:
+		return nil, errors.New("User not found")
+	default:
+		utils.Logger.Error(err.Error())
+		return nil, errors.New("Unknown error")
+	}
+}

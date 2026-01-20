@@ -17,8 +17,6 @@ type Config struct {
 	SYSTEM_ADMIN_EMAIL           string `mapstructure:"SYSTEM_ADMIN_EMAIL"`
 	JWT_SIGNING_KEY              string `mapstructure:"JWT_SIGNING_KEY"`
 	JWT_EXPIRES_TIME             string `mapstructure:"JWT_EXPIRES_TIME"`
-	JWT_BUFFER_TIME              string `mapstructure:"JWT_BUFFER_TIME"`
-	JWT_ISSUER                   string `mapstructure:"JWT_ISSUER"`
 	REDIS_HOST                   string `mapstructure:"REDIS_HOST"`
 	REDIS_PORT                   int    `mapstructure:"REDIS_PORT"`
 	REDIS_PASSWORD               string `mapstructure:"REDIS_PASSWORD"`
@@ -65,33 +63,32 @@ func (this *Config) GetMilvusDSN() string {
 }
 
 func (this *Config) GetJWTExpireTime() time.Duration {
+	parseDuration := func(d string) (time.Duration, error) {
+		d = strings.TrimSpace(d)
+		dr, err := time.ParseDuration(d)
+		if err == nil {
+			return dr, nil
+		}
+		if strings.Contains(d, "d") {
+			index := strings.Index(d, "d")
+
+			hour, _ := strconv.Atoi(d[:index])
+			dr = time.Hour * 24 * time.Duration(hour)
+			ndr, err := time.ParseDuration(d[index+1:])
+			if err != nil {
+				return dr, nil
+			}
+			return dr + ndr, nil
+		}
+
+		dv, err := strconv.ParseInt(d, 10, 64)
+		return time.Duration(dv), err
+	}
+
 	ep, _ := parseDuration(this.JWT_EXPIRES_TIME)
 	return ep
 }
 
-func (this *Config) GetJWTBufferTime() time.Duration {
-	bf, _ := parseDuration(this.JWT_BUFFER_TIME)
-	return bf
-}
-
-func parseDuration(d string) (time.Duration, error) {
-	d = strings.TrimSpace(d)
-	dr, err := time.ParseDuration(d)
-	if err == nil {
-		return dr, nil
-	}
-	if strings.Contains(d, "d") {
-		index := strings.Index(d, "d")
-
-		hour, _ := strconv.Atoi(d[:index])
-		dr = time.Hour * 24 * time.Duration(hour)
-		ndr, err := time.ParseDuration(d[index+1:])
-		if err != nil {
-			return dr, nil
-		}
-		return dr + ndr, nil
-	}
-
-	dv, err := strconv.ParseInt(d, 10, 64)
-	return time.Duration(dv), err
+func (this *Config) GetJWTSigningKey() []byte {
+	return []byte(this.JWT_SIGNING_KEY)
 }

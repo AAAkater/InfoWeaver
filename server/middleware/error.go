@@ -2,54 +2,66 @@ package middleware
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"server/models/response"
-	"server/utils"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
-func CustomHTTPErrorHandler(err error, ctx echo.Context) {
+func CustomHTTPErrorHandler(exposeError bool) echo.HTTPErrorHandler {
+	return func(c *echo.Context, err error) {
+		if r, _ := echo.UnwrapResponse(c.Response()); r != nil && r.Committed {
+			return
+		}
 
-	req := ctx.Request()
-	resp := ctx.Response()
-	if resp.Committed {
-		return
-	}
-
-	he, ok := err.(*echo.HTTPError)
-	if ok {
-		if he.Internal != nil {
-			if herr, ok := he.Internal.(*echo.HTTPError); ok {
-				he = herr
+		code := http.StatusInternalServerError
+		var sc echo.HTTPStatusCoder
+		if errors.As(err, &sc) {
+			if tmp := sc.StatusCode(); tmp != 0 {
+				code = tmp
 			}
 		}
-	} else {
-		he = &echo.HTTPError{
-			Code:    http.StatusInternalServerError,
-			Message: http.StatusText(http.StatusInternalServerError),
+
+		var result any
+		switch m := sc.(type) {
+		case json.Marshaler: // this type knows how to format itself to JSON
+			result = m
+		case *echo.HTTPError:
+			sText := m.Message
+			if sText == "" {
+				sText = http.StatusText(code)
+			}
+			msg := map[string]any{
+				"code": 1,
+				"msg":  sText,
+				"data": nil,
+			}
+			if exposeError {
+				if wrappedErr := m.Unwrap(); wrappedErr != nil {
+					msg["error"] = wrappedErr.Error()
+				}
+			}
+			result = msg
+		default:
+			msg := map[string]any{
+				"code": 1,
+				"msg":  http.StatusText(code),
+				"data": nil,
+			}
+			if exposeError {
+				msg["error"] = err.Error()
+			}
+			result = msg
 		}
-	}
 
-	code := he.Code
-	message := he.Message
-
-	switch m := he.Message.(type) {
-	case string:
-		message = echo.Map{"code": response.ERROR, "msg": m, "data": nil}
-	case json.Marshaler:
-		// do nothing - this type knows how to format itself to JSON
-	case error:
-		message = echo.Map{"code": response.ERROR, "msg": m.Error(), "data": nil}
-	}
-
-	// Send response
-	if req.Method == http.MethodHead {
-		err = ctx.NoContent(he.Code)
-	} else {
-		err = ctx.JSON(code, message)
-	}
-	if err != nil {
-		utils.Logger.Error(err)
+		var cErr error
+		if c.Request().Method == http.MethodHead { // Issue #608
+			cErr = c.NoContent(code)
+		} else {
+			cErr = c.JSON(code, result)
+		}
+		if cErr != nil {
+			c.Logger().Error("echo default error handler failed to send error to client", "error", cErr) // truly rare case. ala client already disconnected
+		}
 	}
 }

@@ -3,7 +3,7 @@ package response
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 const (
@@ -17,7 +17,7 @@ type ResponseBase[T any] struct {
 	Data T      `json:"data"`
 }
 
-func Ok(ctx echo.Context) error {
+func Ok(ctx *echo.Context) error {
 	return ctx.JSON(http.StatusOK,
 		ResponseBase[any]{
 			SUCCESS,
@@ -26,7 +26,7 @@ func Ok(ctx echo.Context) error {
 		})
 }
 
-func OkWithData[T any](ctx echo.Context, data T) error {
+func OkWithData[T any](ctx *echo.Context, data T) error {
 	return ctx.JSON(
 		http.StatusOK,
 		ResponseBase[T]{
@@ -36,7 +36,7 @@ func OkWithData[T any](ctx echo.Context, data T) error {
 		})
 }
 
-func Fail(ctx echo.Context) error {
+func Fail(ctx *echo.Context) error {
 	return ctx.JSON(http.StatusOK,
 		ResponseBase[any]{
 			ERROR,
@@ -45,7 +45,7 @@ func Fail(ctx echo.Context) error {
 		})
 }
 
-func FailWithMsg(ctx echo.Context, msg string) error {
+func FailWithMsg(ctx *echo.Context, msg string) error {
 	return ctx.JSON(
 		http.StatusOK,
 		ResponseBase[any]{
@@ -55,23 +55,44 @@ func FailWithMsg(ctx echo.Context, msg string) error {
 		})
 }
 
-func NotFound(msg ...string) error {
-	if len(msg) > 0 {
-		return echo.NewHTTPError(http.StatusNotFound, msg[0])
+func NotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: http.StatusText(http.StatusNotFound),
 	}
-	return echo.NewHTTPError(http.StatusNotFound)
 }
 
-func NoAuth(msg ...string) error {
-	if len(msg) > 0 {
-		return echo.NewHTTPError(http.StatusUnauthorized, msg[0])
+func NotFoundWithMsg(msg string) error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: msg,
 	}
-	return echo.NewHTTPError(http.StatusUnauthorized)
 }
 
-func BadRequest(msg ...string) error {
-	if len(msg) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, msg[0])
+func NoAuth() error {
+	return &echo.HTTPError{
+		Code:    http.StatusUnauthorized,
+		Message: http.StatusText(http.StatusUnauthorized),
 	}
-	return echo.NewHTTPError(http.StatusBadRequest)
+}
+
+func NoAuthWithMsg(msg string) error {
+	return &echo.HTTPError{
+		Code:    http.StatusUnauthorized,
+		Message: msg,
+	}
+}
+
+func BadRequest() error {
+	return &echo.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: http.StatusText(http.StatusBadRequest),
+	}
+}
+
+func BadRequestWithMsg(msg string) error {
+	return &echo.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: msg,
+	}
 }

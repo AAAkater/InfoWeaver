@@ -90,3 +90,22 @@ func (this *UserService) GetUserInfoByUsername(ctx context.Context, username str
 		return nil, errors.New("Unknown error")
 	}
 }
+
+func (this *UserService) ResetUserPassword(ctx context.Context, userID uint, newPassword string) error {
+
+	hashed_password := utils.BcryptHash(newPassword)
+
+	row, err := gorm.G[models.User](db.PgSqlDB).
+		Where("id = ?", userID).
+		Update(ctx, "password", hashed_password)
+	utils.Logger.Debugf("rowsAffected :%d", row)
+	switch err {
+	case nil:
+		return nil
+	case gorm.ErrRecordNotFound:
+		return errors.New("User not found")
+	default:
+		utils.Logger.Error(err.Error())
+		return errors.New("Unknown error")
+	}
+}

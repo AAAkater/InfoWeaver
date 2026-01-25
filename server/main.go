@@ -4,6 +4,7 @@ import (
 	"server/api"
 	"server/config"
 	"server/db"
+	_ "server/docs"
 	"server/middleware"
 	"server/utils"
 

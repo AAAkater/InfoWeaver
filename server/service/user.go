@@ -44,7 +44,7 @@ func (this *UserService) CreateNewUser(ctx context.Context, username string, pas
 	return nil
 }
 
-func (this *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func (this *UserService) GetUserInfoByEmail(ctx context.Context, email string) (*models.User, error) {
 
 	db_user, err := gorm.G[models.User](db.PgSqlDB).
 		Where("email = ?", email).
@@ -61,7 +61,7 @@ func (this *UserService) GetUserByEmail(ctx context.Context, email string) (*mod
 
 }
 
-func (this *UserService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+func (this *UserService) GetUserInfoByID(ctx context.Context, id uint) (*models.User, error) {
 	db_user, err := gorm.G[models.User](db.PgSqlDB).
 		Where("id = ?", id).
 		First(ctx)
@@ -76,7 +76,7 @@ func (this *UserService) GetUserByID(ctx context.Context, id string) (*models.Us
 	}
 }
 
-func (this *UserService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+func (this *UserService) GetUserInfoByUsername(ctx context.Context, username string) (*models.User, error) {
 	db_user, err := gorm.G[models.User](db.PgSqlDB).
 		Where("username = ?", username).
 		First(ctx)

@@ -18,6 +18,7 @@ func SetUserRouter(e *echo.Echo) {
 	userRouterGroup.POST("/login", userHandler.login)
 	userRouterGroup.GET("/info", userHandler.getUserInfo, middleware.TokenMiddleware())
 	userRouterGroup.POST("/restPassword", userHandler.resetUserPassword, middleware.TokenMiddleware())
+	userRouterGroup.POST("/updateInfo", userHandler.resetUserInfo, middleware.TokenMiddleware())
 }
 
 type userApi struct{}
@@ -146,10 +147,33 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	return response.Ok(ctx)
 }
 
+// resetUserInfo godoc
+// @Summary      Reset User Info
+// @Description  Update the current user's username and/or email
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        body body request.UpdateUserInfoReq true "Update User Info Request"
+// @Success      200 {object} map[string]interface{} "User info updated successfully"
+// @Failure      400 {object} map[string]interface{} "Bad Request"
+// @Failure      401 {object} map[string]interface{} "Unauthorized"
+// @Router       /user/updateInfo [post]
 func (this *userApi) resetUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg("token invalid or expired")
 	}
+
+	new_user_info, err := utils.BindAndValidate[request.UpdateUserInfoReq](ctx)
+	if err != nil {
+		return response.BadRequest()
+	}
+
+	if err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, new_user_info.Username, new_user_info.Email); err != nil {
+		return response.NoAuthWithMsg("Failed to update user info")
+	}
+
+	return response.Ok(ctx)
 
 }

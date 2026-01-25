@@ -14,3 +14,8 @@ type LoginReq struct {
 type ResetPasswordReq struct {
 	NewPassword string `json:"new_password" validate:"required,min=6"`
 }
+
+type UpdateUserInfoReq struct {
+	Username string `json:"username" validate:"omitempty,min=3,max=50"`
+	Email    string `json:"email" validate:"omitempty,email"`
+}

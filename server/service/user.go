@@ -109,3 +109,21 @@ func (this *UserService) ResetUserPassword(ctx context.Context, userID uint, new
 		return errors.New("Unknown error")
 	}
 }
+
+func (this *UserService) UpdateUserInfo(ctx context.Context, userID uint, newUsername string, newEmail string) error {
+
+	new_user_info := models.User{Username: newUsername, Email: newEmail}
+
+	_, err := gorm.G[models.User](db.PgSqlDB).
+		Where("id = ?", userID).
+		Updates(ctx, new_user_info)
+	switch err {
+	case nil:
+		return nil
+	case gorm.ErrRecordNotFound:
+		return errors.New("User not found")
+	default:
+		utils.Logger.Error(err)
+		return errors.New("Unknown error")
+	}
+}

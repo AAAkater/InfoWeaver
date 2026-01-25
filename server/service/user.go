@@ -16,7 +16,6 @@ type UserService struct{}
 
 func (this *UserService) CreateNewUser(ctx context.Context, username string, password string, email string) error {
 
-	// 检查用户名或邮箱是否已存在
 	_, err := gorm.G[models.User](db.PgSqlDB).
 		Select("id").
 		Where("email = ?", email).
@@ -28,7 +27,7 @@ func (this *UserService) CreateNewUser(ctx context.Context, username string, pas
 	case gorm.ErrRecordNotFound: // user not found
 		break
 	default:
-		utils.Logger.Error(err.Error())
+		utils.Logger.Error(err)
 		return errors.New("Unknown error")
 	}
 
@@ -38,7 +37,7 @@ func (this *UserService) CreateNewUser(ctx context.Context, username string, pas
 		Email:    email,
 	}
 	if err := gorm.G[models.User](db.PgSqlDB).Create(ctx, db_user); err != nil {
-		utils.Logger.Error(err.Error())
+		utils.Logger.Error(err)
 		return errors.New("Unknown error")
 	}
 	return nil
@@ -53,9 +52,10 @@ func (this *UserService) GetUserInfoByEmail(ctx context.Context, email string) (
 	case nil:
 		return &db_user, nil
 	case gorm.ErrRecordNotFound:
+		utils.Logger.Error(err)
 		return nil, errors.New("User not found")
 	default:
-		utils.Logger.Error(err.Error())
+		utils.Logger.Error(err)
 		return nil, errors.New("Unknown error")
 	}
 
@@ -69,9 +69,10 @@ func (this *UserService) GetUserInfoByID(ctx context.Context, id uint) (*models.
 	case nil:
 		return &db_user, nil
 	case gorm.ErrRecordNotFound:
+		utils.Logger.Error(err)
 		return nil, errors.New("User not found")
 	default:
-		utils.Logger.Error(err.Error())
+		utils.Logger.Error(err)
 		return nil, errors.New("Unknown error")
 	}
 }
@@ -84,9 +85,10 @@ func (this *UserService) GetUserInfoByUsername(ctx context.Context, username str
 	case nil:
 		return &db_user, nil
 	case gorm.ErrRecordNotFound:
+		utils.Logger.Error(err)
 		return nil, errors.New("User not found")
 	default:
-		utils.Logger.Error(err.Error())
+		utils.Logger.Error(err)
 		return nil, errors.New("Unknown error")
 	}
 }
@@ -105,7 +107,7 @@ func (this *UserService) ResetUserPassword(ctx context.Context, userID uint, new
 	case gorm.ErrRecordNotFound:
 		return errors.New("User not found")
 	default:
-		utils.Logger.Error(err.Error())
+		utils.Logger.Error(err)
 		return errors.New("Unknown error")
 	}
 }

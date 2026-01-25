@@ -64,22 +64,24 @@ func (this *userApi) login(ctx *echo.Context) error {
 
 	userInfo, err := utils.BindAndValidate[request.LoginReq](ctx)
 	if err != nil {
-		utils.Logger.Error(err.Error())
-		return response.BadRequest()
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	db_user, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
 
 	if err != nil && db_user == nil {
-		utils.Logger.Error(err.Error())
-		return response.NoAuthWithMsg("User not found")
+		return response.NotFoundWithMsg("User not found")
 	}
 
 	if !utils.BcryptCheck(userInfo.Password, db_user.Password) {
 		return response.NoAuthWithMsg("Invalid password")
 	}
 
-	token, _ := utils.CreateToken(db_user.ID, db_user.Role == "admin")
+	token, err := utils.CreateToken(db_user.ID, db_user.Role == "admin")
+	if err != nil {
+		utils.Logger.Error(err)
+		return response.NoAuthWithMsg("Failed to generate token")
+	}
 
 	return response.OkWithData(ctx, response.TokenResult{
 		Type:  "Bearer",

@@ -1,11 +1,11 @@
 package response
 
-type TokenItem struct {
+type TokenResult struct {
 	Type  string `json:"type"`
 	Token string `json:"token"`
 }
 
-type UserInfo struct {
+type UserInfoResult struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`

@@ -42,6 +42,12 @@ type Config struct {
 	POSTGRES_MAX_OPEN_CONNS      int    `mapstructure:"POSTGRES_MAX_OPEN_CONNS"`
 	MILVUS_HOST                  string `mapstructure:"MILVUS_HOST"`
 	MILVUS_PORT                  int    `mapstructure:"MILVUS_PORT"`
+	MINIO_HOST                   string `mapstructure:"MINIO_HOST"`
+	MINIO_PORT                   int    `mapstructure:"MINIO_PORT"`
+	MINIO_ACCESS_KEY             string `mapstructure:"MINIO_ACCESS_KEY"`
+	MINIO_SECRET_KEY             string `mapstructure:"MINIO_SECRET_KEY"`
+	MINIO_BUCKET_NAME            string `mapstructure:"MINIO_BUCKET_NAME"`
+	MINIO_USE_SSL                bool   `mapstructure:"MINIO_USE_SSL"`
 }
 
 func (this *Config) GetServerPort() string {
@@ -60,6 +66,10 @@ func (this *Config) GetRedisDSN() string {
 
 func (this *Config) GetMilvusDSN() string {
 	return fmt.Sprintf("%s:%d", this.MILVUS_HOST, this.MILVUS_PORT)
+}
+
+func (this *Config) GetMinioDSN() string {
+	return fmt.Sprintf("%s:%d", this.MINIO_HOST, this.MINIO_PORT)
 }
 
 func (this *Config) GetJWTExpireTime() time.Duration {

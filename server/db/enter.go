@@ -15,6 +15,7 @@ func InitAllDB() {
 	handler := &InitDBHandler{}
 	handler.initPgSql()
 	handler.initRedis()
+	handler.initMinio()
 	// handler.InitMilvus()
 }
 
@@ -62,6 +63,14 @@ func (this *InitDBHandler) initRedis() {
 	}
 	utils.Logger.Info("success to connect to Redis")
 
+}
+func (this *InitDBHandler) initMinio() {
+	var err error
+	if MinioClient, err = connectMinioClient(config.Settings); err != nil {
+		utils.Logger.Errorf("Failed to connect to Minio:%s", err)
+		os.Exit(0)
+	}
+	utils.Logger.Info("success to connect to Minio")
 }
 func (this *InitDBHandler) InitMilvus() {
 	var err error

@@ -43,7 +43,7 @@ func (this *InitDBHandler) initPgSql() {
 	res := PgSqlDB.Create(&models.User{
 		Username: config.Settings.SYSTEM_ADMIN_NAME,
 		Email:    config.Settings.SYSTEM_ADMIN_EMAIL,
-		Password: config.Settings.SYSTEM_ADMIN_PASSWORD,
+		Password: utils.BcryptHash(config.Settings.SYSTEM_ADMIN_PASSWORD),
 		Role:     "admin",
 	})
 

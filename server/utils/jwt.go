@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v5"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 )
 
 type JwtCustomClaims struct {
-	UserID  uint `json:"name_id"`
+	ID      uint `json:"name_id"`
 	IsAdmin bool `json:"is_admin"`
 	jwt.RegisteredClaims
 }
@@ -28,7 +29,7 @@ func CreateToken(UserID uint, IsAdmin bool) (string, error) {
 	expireTime := config.Settings.GetJWTExpireTime()
 	signingKey := config.Settings.GetJWTSigningKey()
 	claims := JwtCustomClaims{
-		UserID:  UserID,
+		ID:      UserID,
 		IsAdmin: IsAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience: jwt.ClaimStrings{"GVA"},
@@ -43,4 +44,13 @@ func CreateToken(UserID uint, IsAdmin bool) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
 	// Sign the token with signing key and return
 	return token.SignedString(signingKey)
+}
+
+func GetCurrentUser(ctx *echo.Context) (*JwtCustomClaims, error) {
+	token, err := echo.ContextGet[*jwt.Token](ctx, "user")
+	if err != nil {
+		return nil, err
+	}
+	claims := token.Claims.(JwtCustomClaims)
+	return &claims, nil
 }

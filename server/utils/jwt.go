@@ -40,8 +40,8 @@ func CreateToken(UserID uint, IsAdmin bool) (string, error) {
 		},
 	}
 
-	// Create new token with ES256 signing method and claims
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	// Create new token with HS256 signing method and claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// Sign the token with signing key and return
 	return token.SignedString(signingKey)
 }
@@ -51,6 +51,9 @@ func GetCurrentUser(ctx *echo.Context) (*JwtCustomClaims, error) {
 	if err != nil {
 		return nil, err
 	}
-	claims := token.Claims.(JwtCustomClaims)
-	return &claims, nil
+	claims, ok := token.Claims.(*JwtCustomClaims)
+	if !ok {
+		return nil, errors.New("invalid claims type")
+	}
+	return claims, nil
 }

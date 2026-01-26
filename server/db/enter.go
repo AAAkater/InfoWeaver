@@ -66,7 +66,7 @@ func (this *InitDBHandler) initRedis() {
 }
 func (this *InitDBHandler) initMinio() {
 	var err error
-	if MinioClient, err = connectMinioClient(config.Settings); err != nil {
+	if MinioClient, err = NewMinioService(config.Settings, config.Settings.MINIO_BUCKET_NAME); err != nil {
 		utils.Logger.Errorf("Failed to connect to Minio:%s", err)
 		os.Exit(0)
 	}

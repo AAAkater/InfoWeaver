@@ -7,6 +7,9 @@ import (
 	"server/db"
 	"server/models"
 	"server/utils"
+	"sync"
+
+	"gorm.io/gorm"
 )
 
 var FileServiceApp = new(FileService)
@@ -14,26 +17,49 @@ var FileServiceApp = new(FileService)
 type FileService struct{}
 
 // CreateFile uploads a file to Minio and creates a database record
-func (this *FileService) CreateFile(ctx context.Context, file *models.File, fileReader io.Reader, fileSize int64) error {
+func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) error {
 
-	// Upload file to Minio
-	objectName := fmt.Sprintf("%d/%s", file.UserID, file.Name)
-	if err := db.MinioClient.UploadFile(ctx, objectName, fileReader, fileSize); err != nil {
-		utils.Logger.Errorf("Failed to upload file to Minio: %v", err)
-		return err
+	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
+
+	// Prepare database record
+	db_file := models.File{
+		UserID:    ownerID,
+		Name:      filename,
+		MinIOPath: objectName,
+		Size:      fileSize,
+		Type:      fileType,
 	}
 
-	// Save file record to database
-	file.MinIOPath = objectName
-	file.Size = fileSize
-	if result := db.PgSqlDB.Create(file); result.Error != nil {
-		utils.Logger.Errorf("Failed to save file record: %v", result.Error)
-		// Delete uploaded file from Minio if database save fails
-		_ = db.MinioClient.DeleteFile(ctx, objectName)
-		return result.Error
+	var wg sync.WaitGroup
+	errChan := make(chan error, 2)
+
+	// Upload file to Minio in parallel
+	wg.Go(func() {
+		if err := db.MinioClient.UploadFile(ctx, objectName, fileReader, fileSize); err != nil {
+			utils.Logger.Errorf("Failed to upload file to Minio: %v", err)
+			errChan <- err
+		}
+	})
+
+	// Save file record to database in parallel
+	wg.Go(func() {
+		if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, &db_file); err != nil {
+			utils.Logger.Errorf("Failed to save file record to database: %v", err)
+			errChan <- err
+		}
+	})
+
+	wg.Wait()
+	close(errChan)
+
+	// Check for any errors
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
 	}
 
-	utils.Logger.Infof("File created successfully: %s (ID: %d)", file.Name, file.ID)
+	utils.Logger.Infof("File created successfully: %s (ID: %d)", db_file.Name, db_file.ID)
 	return nil
 }
 

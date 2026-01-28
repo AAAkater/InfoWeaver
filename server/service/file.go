@@ -63,13 +63,25 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 	return nil
 }
 
-// GetFileListByUserID retrieves all files for a specific user
-func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint) ([]models.File, error) {
-	var files []models.File
-	result := db.PgSqlDB.Where("user_id = ?", userID).Find(&files)
-	if result.Error != nil {
-		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, result.Error)
-		return nil, result.Error
+// GetFileListByUserID retrieves files for a specific user with pagination
+// page: page number (1-indexed), pageSize: number of items per page
+func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, page int, pageSize int) ([]models.FileInfo, error) {
+
+	page = max(page, 1)
+	pageSize = max(pageSize, 10)
+
+	offset := (page - 1) * pageSize
+
+	var files []models.FileInfo
+	res := db.PgSqlDB.Model(&models.User{}).
+		Where("ID = ?", userID).
+		Offset(offset).
+		Limit(pageSize).
+		Find(files)
+
+	if res.Error != nil {
+		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, res.Error)
+		return nil, res.Error
 	}
 	return files, nil
 }

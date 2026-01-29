@@ -18,7 +18,7 @@ type (
 	File struct {
 		gorm.Model
 		Name      string `gorm:"not null"`        // Original filename
-		MinIOPath string `gorm:"not null;unique"` // MinIO object path (bucket/key)
+		MinioPath string `gorm:"not null;unique"` // MinIO object path (bucket/key)
 		Size      int64  `gorm:"not null"`        // File size in bytes
 		Type      string `gorm:"not null"`        // MIME type
 		UserID    uint   `gorm:"not null"`        // Owner user ID
@@ -28,8 +28,8 @@ type (
 	// Document represents a knowledge document for RAG system
 	Document struct {
 		gorm.Model
-		Content  string                 `gorm:"type:text;not null"` // Document content
-		Metadata map[string]interface{} `gorm:"type:jsonb"`         // Additional metadata (source, type, etc.)
+		Content  string         `gorm:"type:text;not null"` // Document content
+		Metadata map[string]any `gorm:"type:jsonb"`         // Additional metadata (source, type, etc.)
 	}
 	// Embedding references vector representations in Milvus
 	Embedding struct {

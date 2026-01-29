@@ -8,6 +8,7 @@ import (
 	"server/models"
 	"server/utils"
 	"sync"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -25,7 +26,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 	db_file := models.File{
 		UserID:    ownerID,
 		Name:      filename,
-		MinIOPath: objectName,
+		MinioPath: objectName,
 		Size:      fileSize,
 		Type:      fileType,
 	}
@@ -86,100 +87,98 @@ func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, p
 	return files, nil
 }
 
-// GetFileByID retrieves a file by ID
-func (this *FileService) GetFileByID(ctx context.Context, fileID uint) (*models.File, error) {
-	var file models.File
-	result := db.PgSqlDB.First(&file, fileID)
+// GetFileInfoByFileID retrieves a file by fileID
+func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (*models.FileInfo, error) {
+	var file *models.FileInfo
+	result := db.PgSqlDB.Model(&models.File{}).
+		Where("ID = ?", fileID).
+		Find(file)
 	if result.Error != nil {
 		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, result.Error)
 		return nil, result.Error
 	}
-	return &file, nil
+	return file, nil
 }
 
-// DownloadFile downloads a file from Minio
-func (this *FileService) DownloadFile(ctx context.Context, fileID uint) (io.Reader, error) {
-	file, err := this.GetFileByID(ctx, fileID)
+// DownloadFileByFileID downloads a file from Minio
+func (this *FileService) DownloadFileByFileID(ctx context.Context, filePath string) (io.Reader, error) {
+	reader, err := db.MinioClient.DownloadFile(ctx, filePath)
 	if err != nil {
+		utils.Logger.Errorf("Failed to download file %s: %v", filePath, err)
 		return nil, err
 	}
 
-	reader, err := db.MinioClient.DownloadFile(ctx, file.MinIOPath)
-	if err != nil {
-		utils.Logger.Errorf("Failed to download file %s: %v", file.MinIOPath, err)
-		return nil, err
-	}
-
-	utils.Logger.Infof("File downloaded successfully: %s", file.Name)
+	utils.Logger.Infof("File downloaded successfully: %s", filePath)
 	return reader, nil
 }
 
-// DeleteFileByID deletes a file from both Minio and database
-func (this *FileService) DeleteFileByID(ctx context.Context, fileID uint, userID uint) error {
-	file, err := this.GetFileByID(ctx, fileID)
-	if err != nil {
-		return err
+// DeleteFileByFileID deletes a file from both Minio and database
+func (this *FileService) DeleteFileByFileID(ctx context.Context, fileID uint, filePath string) error {
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, 2)
+
+	// Delete from Minio in parallel
+	wg.Go(func() {
+		if err := db.MinioClient.DeleteFile(ctx, filePath); err != nil {
+			utils.Logger.Errorf("Failed to delete file from Minio: %v", err)
+			errChan <- err
+		}
+	})
+
+	// Delete from database in parallel
+	wg.Go(func() {
+		if _, err := gorm.G[models.File](db.PgSqlDB).
+			Where("ID = ?", fileID).
+			Update(ctx, "DeletedAt", time.Now()); err != nil {
+			utils.Logger.Errorf("Failed to delete file record from database: %v", err)
+			errChan <- err
+		}
+	})
+
+	wg.Wait()
+	close(errChan)
+
+	// Check for any errors
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
 	}
 
-	// Verify the file belongs to the user
-	if file.UserID != userID {
-		return fmt.Errorf("user %d is not authorized to delete file %d", userID, fileID)
-	}
-
-	// Delete from Minio
-	if err := db.MinioClient.DeleteFile(ctx, file.MinIOPath); err != nil {
-		utils.Logger.Errorf("Failed to delete file from Minio: %v", err)
-		return err
-	}
-
-	// Delete from database
-	if result := db.PgSqlDB.Delete(file); result.Error != nil {
-		utils.Logger.Errorf("Failed to delete file record from database: %v", result.Error)
-		return result.Error
-	}
-
-	utils.Logger.Infof("File deleted successfully: %s (ID: %d)", file.Name, file.ID)
+	utils.Logger.Infof("File deleted successfully: %s (ID: %d)", filePath, fileID)
 	return nil
 }
 
-// UpdateFileMetadata updates file metadata in the database
-func (this *FileService) UpdateFileMetadata(ctx context.Context, fileID uint, userID uint, updates *models.File) error {
-	file, err := this.GetFileByID(ctx, fileID)
+// UpdateFileInfo updates file info in the database
+func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID uint, newFileInfo models.UpdateFileInfo) error {
+
+	_, err := gorm.G[models.File](db.PgSqlDB).
+		Where("ID = ? AND UserID = ?", fileID, userID).
+		Updates(ctx, models.File{
+			Size:      newFileInfo.Size,
+			Name:      newFileInfo.Name,
+			Type:      newFileInfo.Type,
+			MinioPath: newFileInfo.MinioPath,
+			UserID:    newFileInfo.UserID,
+		})
+
 	if err != nil {
+		utils.Logger.Errorf("Failed to update file metadata: %v", err)
 		return err
 	}
-
-	// Verify the file belongs to the user
-	if file.UserID != userID {
-		return fmt.Errorf("user %d is not authorized to update file %d", userID, fileID)
-	}
-
-	// Update only specific fields
-	if updates.Name != "" {
-		file.Name = updates.Name
-	}
-	if updates.Type != "" {
-		file.Type = updates.Type
-	}
-
-	result := db.PgSqlDB.Save(file)
-	if result.Error != nil {
-		utils.Logger.Errorf("Failed to update file metadata: %v", result.Error)
-		return result.Error
-	}
-
-	utils.Logger.Infof("File metadata updated successfully: %s (ID: %d)", file.Name, file.ID)
+	utils.Logger.Infof("File metadata updated successfully: %s (ID: %d)", newFileInfo.Name, fileID)
 	return nil
 }
 
-// CheckFileExists checks if a file exists in Minio
-func (this *FileService) CheckFileExists(ctx context.Context, fileID uint) (bool, error) {
-	file, err := this.GetFileByID(ctx, fileID)
+// CheckFileExistsByFileID checks if a file exists in Minio
+func (this *FileService) CheckFileExistsByFileID(ctx context.Context, fileID uint) (bool, error) {
+	file, err := this.GetFileInfoByFileID(ctx, fileID)
 	if err != nil {
 		return false, err
 	}
 
-	exists, err := db.MinioClient.FileExists(ctx, file.MinIOPath)
+	exists, err := db.MinioClient.FileExists(ctx, file.MinioPath)
 	if err != nil {
 		utils.Logger.Errorf("Failed to check file existence: %v", err)
 		return false, err

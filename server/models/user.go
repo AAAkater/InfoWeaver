@@ -6,9 +6,13 @@ type RegisterReq struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
-type LoginReq struct {
+type UserLoginReq struct {
 	Username string `json:"username" validate:"required,min=3,max=50"`
 	Password string `json:"password" validate:"required,min=6"`
+}
+type UserLoginResp struct {
+	Type  string `json:"type"`
+	Token string `json:"token"`
 }
 
 type ResetPasswordReq struct {
@@ -20,12 +24,7 @@ type UpdateUserInfoReq struct {
 	Email    string `json:"email" validate:"omitempty,email"`
 }
 
-type TokenResult struct {
-	Type  string `json:"type"`
-	Token string `json:"token"`
-}
-
-type UserInfoResult struct {
+type UserInfoResp struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`

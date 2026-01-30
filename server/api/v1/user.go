@@ -30,9 +30,9 @@ type userApi struct{}
 // @Accept       json
 // @Produce      json
 // @Param        body body request.RegisterReq true "Register Request"
-// @Success      200 {object} map[string]interface{} "Register successful"
-// @Failure      400 {object} map[string]interface{} "Bad Request"
-// @Failure      401 {object} map[string]interface{} "Unauthorized"
+// @Success      200 {object} response.ResponseBase[any] "Register successful"
+// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
 // @Router       /user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
@@ -56,9 +56,10 @@ func (this *userApi) register(ctx *echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        body body request.LoginReq true "Login Request"
-// @Success      200 {object} map[string]interface{} "Login successful"
-// @Failure      400 {object} map[string]interface{} "Bad Request"
-// @Failure      401 {object} map[string]interface{} "Invalid credentials"
+// @Success      200 {object} response.ResponseBase[response.TokenResult] "Login successful"
+// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid credentials"
+// @Failure      404 {object} response.ResponseBase[any] "User not found"
 // @Router       /user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
@@ -67,17 +68,17 @@ func (this *userApi) login(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	db_user, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
+	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
 
-	if err != nil && db_user == nil {
+	if err != nil && dbUser == nil {
 		return response.NotFoundWithMsg("User not found")
 	}
 
-	if !utils.BcryptCheck(userInfo.Password, db_user.Password) {
+	if !utils.BcryptCheck(userInfo.Password, dbUser.Password) {
 		return response.NoAuthWithMsg("Invalid password")
 	}
 
-	token, err := utils.CreateToken(db_user.ID, db_user.Role == "admin")
+	token, err := utils.CreateToken(dbUser.ID, dbUser.Role == "admin")
 	if err != nil {
 		utils.Logger.Error(err)
 		return response.NoAuthWithMsg("Failed to generate token")
@@ -96,9 +97,9 @@ func (this *userApi) login(ctx *echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Success      200 {object} response.UserInfoResult "User info"
-// @Failure      401 {object} map[string]interface{} "Unauthorized"
-// @Failure      404 {object} map[string]interface{} "User not found"
+// @Success      200 {object} response.ResponseBase[response.UserInfoResult] "User info"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
+// @Failure      404 {object} response.ResponseBase[any] "User not found"
 // @Router       /user/info [get]
 func (this *userApi) getUserInfo(ctx *echo.Context) error {
 
@@ -107,15 +108,15 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("token invalid or expired")
 	}
 
-	db_user, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID)
-	if err != nil || db_user == nil {
+	dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID)
+	if err != nil || dbUser == nil {
 		return response.NoAuthWithMsg("user not found")
 	}
 	return response.OkWithData(ctx, response.UserInfoResult{
-		ID:       db_user.ID,
-		Username: db_user.Username,
-		Email:    db_user.Email,
-		Role:     db_user.Role,
+		ID:       dbUser.ID,
+		Username: dbUser.Username,
+		Email:    dbUser.Email,
+		Role:     dbUser.Role,
 	})
 }
 
@@ -127,9 +128,9 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 // @Produce      json
 // @Security     Bearer
 // @Param        body body request.ResetPasswordReq true "Reset Password Request"
-// @Success      200 {object} map[string]interface{} "Password reset successful"
-// @Failure      400 {object} map[string]interface{} "Bad Request"
-// @Failure      401 {object} map[string]interface{} "Unauthorized"
+// @Success      200 {object} response.ResponseBase[any] "Password reset successful"
+// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
 // @Router       /user/restPassword [post]
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -137,12 +138,12 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("token invalid or expired")
 	}
 
-	password_info, err := utils.BindAndValidate[request.ResetPasswordReq](ctx)
+	newPasswordInfo, err := utils.BindAndValidate[request.ResetPasswordReq](ctx)
 	if err != nil {
 		return response.BadRequest()
 	}
 
-	if err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, password_info.NewPassword); err != nil {
+	if err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, newPasswordInfo.NewPassword); err != nil {
 		return response.NoAuthWithMsg("Failed to reset password")
 	}
 
@@ -157,9 +158,9 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 // @Produce      json
 // @Security     Bearer
 // @Param        body body request.UpdateUserInfoReq true "Update User Info Request"
-// @Success      200 {object} map[string]interface{} "User info updated successfully"
-// @Failure      400 {object} map[string]interface{} "Bad Request"
-// @Failure      401 {object} map[string]interface{} "Unauthorized"
+// @Success      200 {object} response.ResponseBase[any] "User info updated successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
 // @Router       /user/updateInfo [post]
 func (this *userApi) resetUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -167,12 +168,12 @@ func (this *userApi) resetUserInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("token invalid or expired")
 	}
 
-	new_user_info, err := utils.BindAndValidate[request.UpdateUserInfoReq](ctx)
+	newUserInfo, err := utils.BindAndValidate[request.UpdateUserInfoReq](ctx)
 	if err != nil {
 		return response.BadRequest()
 	}
 
-	if err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, new_user_info.Username, new_user_info.Email); err != nil {
+	if err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); err != nil {
 		return response.NoAuthWithMsg("Failed to update user info")
 	}
 

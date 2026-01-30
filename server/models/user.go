@@ -1,4 +1,4 @@
-package request
+package models
 
 type RegisterReq struct {
 	Username string `json:"username" validate:"required,min=3,max=50"`
@@ -18,4 +18,16 @@ type ResetPasswordReq struct {
 type UpdateUserInfoReq struct {
 	Username string `json:"username" validate:"omitempty,min=3,max=50"`
 	Email    string `json:"email" validate:"omitempty,email"`
+}
+
+type TokenResult struct {
+	Type  string `json:"type"`
+	Token string `json:"token"`
+}
+
+type UserInfoResult struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }

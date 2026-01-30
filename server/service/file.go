@@ -153,7 +153,7 @@ func (this *FileService) DeleteFileByFileID(ctx context.Context, fileID uint, fi
 // UpdateFileInfo updates file info in the database
 func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID uint, newFileInfo models.UpdateFileInfo) error {
 
-	_, err := gorm.G[models.File](db.PgSqlDB).
+	if _, err := gorm.G[models.File](db.PgSqlDB).
 		Where("ID = ? AND UserID = ?", fileID, userID).
 		Updates(ctx, models.File{
 			Size:      newFileInfo.Size,
@@ -161,9 +161,7 @@ func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID
 			Type:      newFileInfo.Type,
 			MinioPath: newFileInfo.MinioPath,
 			UserID:    newFileInfo.UserID,
-		})
-
-	if err != nil {
+		}); err != nil {
 		utils.Logger.Errorf("Failed to update file metadata: %v", err)
 		return err
 	}

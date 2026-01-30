@@ -23,7 +23,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
 
 	// Prepare database record
-	db_file := models.File{
+	dbFile := models.File{
 		UserID:    ownerID,
 		Name:      filename,
 		MinioPath: objectName,
@@ -44,7 +44,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 
 	// Save file record to database in parallel
 	wg.Go(func() {
-		if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, &db_file); err != nil {
+		if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, &dbFile); err != nil {
 			utils.Logger.Errorf("Failed to save file record to database: %v", err)
 			errChan <- err
 		}
@@ -60,7 +60,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 		}
 	}
 
-	utils.Logger.Infof("File created successfully: %s (ID: %d)", db_file.Name, db_file.ID)
+	utils.Logger.Infof("File created successfully: %s (ID: %d)", dbFile.Name, dbFile.ID)
 	return nil
 }
 
@@ -151,7 +151,7 @@ func (this *FileService) DeleteFileByFileID(ctx context.Context, fileID uint, fi
 }
 
 // UpdateFileInfo updates file info in the database
-func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID uint, newFileInfo models.UpdateFileInfo) error {
+func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID uint, newFileInfo models.FileInfoUpdate) error {
 
 	if _, err := gorm.G[models.File](db.PgSqlDB).
 		Where("ID = ? AND UserID = ?", fileID, userID).

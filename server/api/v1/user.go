@@ -3,7 +3,7 @@ package v1
 import (
 	"server/config"
 	"server/middleware"
-	"server/models/request"
+	"server/models"
 	"server/models/response"
 	"server/utils"
 
@@ -36,7 +36,7 @@ type userApi struct{}
 // @Router       /user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
-	newUserInfo, err := utils.BindAndValidate[request.RegisterReq](ctx)
+	newUserInfo, err := utils.BindAndValidate[models.RegisterReq](ctx)
 	if err != nil {
 		utils.Logger.Error(err.Error())
 		return response.BadRequest()
@@ -63,7 +63,7 @@ func (this *userApi) register(ctx *echo.Context) error {
 // @Router       /user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
-	userInfo, err := utils.BindAndValidate[request.LoginReq](ctx)
+	userInfo, err := utils.BindAndValidate[models.LoginReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -84,7 +84,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("Failed to generate token")
 	}
 
-	return response.OkWithData(ctx, response.TokenResult{
+	return response.OkWithData(ctx, models.TokenResult{
 		Type:  "Bearer",
 		Token: token,
 	})
@@ -112,7 +112,7 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 	if err != nil || dbUser == nil {
 		return response.NoAuthWithMsg("user not found")
 	}
-	return response.OkWithData(ctx, response.UserInfoResult{
+	return response.OkWithData(ctx, models.UserInfoResult{
 		ID:       dbUser.ID,
 		Username: dbUser.Username,
 		Email:    dbUser.Email,
@@ -138,7 +138,7 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("token invalid or expired")
 	}
 
-	newPasswordInfo, err := utils.BindAndValidate[request.ResetPasswordReq](ctx)
+	newPasswordInfo, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
 	if err != nil {
 		return response.BadRequest()
 	}
@@ -168,7 +168,7 @@ func (this *userApi) resetUserInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("token invalid or expired")
 	}
 
-	newUserInfo, err := utils.BindAndValidate[request.UpdateUserInfoReq](ctx)
+	newUserInfo, err := utils.BindAndValidate[models.UpdateUserInfoReq](ctx)
 	if err != nil {
 		return response.BadRequest()
 	}

@@ -1,6 +1,25 @@
 package models
 
-import "time"
+import (
+	"mime/multipart"
+	"time"
+)
+
+type FileUploadReq struct {
+	File multipart.FileHeader `form:"file" binding:"required"`
+}
+
+type FileUploadResp struct {
+	OwnerID uint   `json:"owner_id"`
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	Size    int64  `json:"size"`
+}
+
+type FileInfoListReq struct {
+	Page     int `query:"page" binding:"required,min=1"`
+	PageSize int `query:"page_size" binding:"required,min=1,max=100"`
+}
 
 type FileInfo struct {
 	ID        uint
@@ -12,7 +31,7 @@ type FileInfo struct {
 	UserID    uint
 }
 
-type UpdateFileInfo struct {
+type FileInfoUpdate struct {
 	Size      int64
 	Name      string
 	Type      string

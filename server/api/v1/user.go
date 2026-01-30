@@ -17,53 +17,52 @@ func SetUserRouter(e *echo.Echo) {
 	userRouterGroup.POST("/register", userHandler.register)
 	userRouterGroup.POST("/login", userHandler.login)
 	userRouterGroup.GET("/info", userHandler.getUserInfo, middleware.TokenMiddleware())
-	userRouterGroup.POST("/restPassword", userHandler.resetUserPassword, middleware.TokenMiddleware())
-	userRouterGroup.POST("/updateInfo", userHandler.resetUserInfo, middleware.TokenMiddleware())
+	userRouterGroup.POST("/resetPassword", userHandler.resetUserPassword, middleware.TokenMiddleware())
+	userRouterGroup.POST("/updateInfo", userHandler.updateUserInfo, middleware.TokenMiddleware())
 }
 
 type userApi struct{}
 
 // register godoc
 // @Summary      User Register
-// @Description  Register a new user account;
+// @Description  Register a new user account with username, password and email
 // @Tags         User
 // @Accept       json
 // @Produce      json
-// @Param        body body request.RegisterReq true "Register Request"
+// @Param        body body models.RegisterReq true "Register Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Register successful"
-// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "User already exists or registration failed"
 // @Router       /user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
 	newUserInfo, err := utils.BindAndValidate[models.RegisterReq](ctx)
 	if err != nil {
-		utils.Logger.Error(err.Error())
-		return response.BadRequest()
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	if err := userService.CreateNewUser(ctx.Request().Context(), newUserInfo.Username, newUserInfo.Password, newUserInfo.Email); err != nil {
 		utils.Logger.Error(err)
-		return response.NoAuth()
+		return response.NoAuthWithMsg(err.Error())
 	}
 	return response.Ok(ctx)
 }
 
 // login godoc
 // @Summary      User Login
-// @Description  Login with username and password
+// @Description  Login with username and password to get authentication token
 // @Tags         User
 // @Accept       json
 // @Produce      json
-// @Param        body body request.LoginReq true "Login Request"
-// @Success      200 {object} response.ResponseBase[response.TokenResult] "Login successful"
-// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid credentials"
+// @Param        body body models.UserLoginReq true "Login Request Body"
+// @Success      200 {object} response.ResponseBase[models.UserLoginResp] "Login successful, returns Bearer token"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid password or credentials"
 // @Failure      404 {object} response.ResponseBase[any] "User not found"
 // @Router       /user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
-	userInfo, err := utils.BindAndValidate[models.LoginReq](ctx)
+	userInfo, err := utils.BindAndValidate[models.UserLoginReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -71,7 +70,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
 
 	if err != nil && dbUser == nil {
-		return response.NotFoundWithMsg("User not found")
+		return response.NotFoundWithMsg(err.Error())
 	}
 
 	if !utils.BcryptCheck(userInfo.Password, dbUser.Password) {
@@ -84,7 +83,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 		return response.NoAuthWithMsg("Failed to generate token")
 	}
 
-	return response.OkWithData(ctx, models.TokenResult{
+	return response.OkWithData(ctx, models.UserLoginResp{
 		Type:  "Bearer",
 		Token: token,
 	})
@@ -92,27 +91,27 @@ func (this *userApi) login(ctx *echo.Context) error {
 
 // getUserInfo godoc
 // @Summary      Get User Info
-// @Description  Get current user information
+// @Description  Get current authenticated user information including id, username, email and role
 // @Tags         User
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Success      200 {object} response.ResponseBase[response.UserInfoResult] "User info"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
+// @Success      200 {object} response.ResponseBase[models.UserInfoResp] "User information retrieved successfully"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
 // @Failure      404 {object} response.ResponseBase[any] "User not found"
 // @Router       /user/info [get]
 func (this *userApi) getUserInfo(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg("token invalid or expired")
+		return response.NoAuthWithMsg(err.Error())
 	}
 
 	dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID)
 	if err != nil || dbUser == nil {
-		return response.NoAuthWithMsg("user not found")
+		return response.NoAuthWithMsg(err.Error())
 	}
-	return response.OkWithData(ctx, models.UserInfoResult{
+	return response.OkWithData(ctx, models.UserInfoResp{
 		ID:       dbUser.ID,
 		Username: dbUser.Username,
 		Email:    dbUser.Email,
@@ -122,16 +121,16 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 
 // resetUserPassword godoc
 // @Summary      Reset User Password
-// @Description  Reset the current user's password
+// @Description  Reset the current authenticated user's password
 // @Tags         User
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Param        body body request.ResetPasswordReq true "Reset Password Request"
+// @Param        body body models.ResetPasswordReq true "Reset Password Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Password reset successful"
-// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
-// @Router       /user/restPassword [post]
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
+// @Router       /user/resetPassword [post]
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -150,31 +149,31 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	return response.Ok(ctx)
 }
 
-// resetUserInfo godoc
-// @Summary      Reset User Info
-// @Description  Update the current user's username and/or email
+// updateUserInfo godoc
+// @Summary      Update User Info
+// @Description  Update the current authenticated user's username and/or email
 // @Tags         User
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Param        body body request.UpdateUserInfoReq true "Update User Info Request"
-// @Success      200 {object} response.ResponseBase[any] "User info updated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Bad Request"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized"
+// @Param        body body models.UpdateUserInfoReq true "Update User Info Request Body"
+// @Success      200 {object} response.ResponseBase[any] "User information updated successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
 // @Router       /user/updateInfo [post]
-func (this *userApi) resetUserInfo(ctx *echo.Context) error {
+func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg("token invalid or expired")
+		return response.NoAuthWithMsg(err.Error())
 	}
 
 	newUserInfo, err := utils.BindAndValidate[models.UpdateUserInfoReq](ctx)
 	if err != nil {
-		return response.BadRequest()
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	if err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); err != nil {
-		return response.NoAuthWithMsg("Failed to update user info")
+		return response.NoAuthWithMsg(err.Error())
 	}
 
 	return response.Ok(ctx)

@@ -16,17 +16,22 @@ type FileUploadResp struct {
 	Size    int64  `json:"size"`
 }
 
-type FileInfoListReq struct {
+type SimpleFileInfoListReq struct {
 	Page     int `query:"page" binding:"required,min=1"`
 	PageSize int `query:"page_size" binding:"required,min=1,max=100"`
 }
 
-type FileInfoListResp struct {
-	Total int64      `json:"total"`
-	Files []FileInfo `json:"files"`
+type SimpleFileInfo struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
 }
 
-type FileInfoReq struct {
+type SimpleFileInfoListResp struct {
+	Total int64            `json:"total"`
+	Files []SimpleFileInfo `json:"files"`
+}
+
+type DetailedFileInfoReq struct {
 	ID uint `param:"file_id" binding:"required"`
 }
 
@@ -34,7 +39,7 @@ type FileDownloadResp struct {
 	URL string `json:"url"`
 }
 
-type FileInfo struct {
+type DetailedFileInfo struct {
 	ID        uint
 	CreatedAt time.Time
 	Size      int64

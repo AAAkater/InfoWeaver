@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"server/db"
@@ -66,38 +67,42 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 
 // GetFileListByUserID retrieves files for a specific user with pagination
 // page: page number (1-indexed), pageSize: number of items per page
-func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, page int, pageSize int) ([]models.FileInfo, error) {
+func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, page int, pageSize int) (total int64, files []models.SimpleFileInfo, e error) {
 
 	page = max(page, 1)
 	pageSize = max(pageSize, 10)
 
 	offset := (page - 1) * pageSize
 
-	var files []models.FileInfo
-	res := db.PgSqlDB.Model(&models.File{}).
+	result := db.PgSqlDB.Model(&models.File{}).
 		Where("user_id= ?", userID).
 		Offset(offset).
 		Limit(pageSize).
 		Find(&files)
 
-	if res.Error != nil {
-		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, res.Error)
-		return nil, res.Error
+	switch result.Error {
+	case nil:
+		break
+	case gorm.ErrRecordNotFound:
+		utils.Logger.Errorf("No files found for user %d: %v", userID, result.Error)
+		return 0, files, nil
+	default:
+		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, result.Error)
+		return 0, nil, errors.New("Unknown error occurred while retrieving file list")
 	}
-	return files, nil
+	return result.RowsAffected, files, nil
 }
 
 // GetFileInfoByFileID retrieves a file by fileID
-func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (*models.FileInfo, error) {
-	var file *models.FileInfo
+func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (fileInfo *models.DetailedFileInfo, e error) {
 	result := db.PgSqlDB.Model(&models.File{}).
 		Where("ID = ?", fileID).
-		Find(file)
+		Find(&fileInfo)
 	if result.Error != nil {
 		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, result.Error)
 		return nil, result.Error
 	}
-	return file, nil
+	return fileInfo, nil
 }
 
 // GetDownloadURLByFileID generates a presigned download URL for a file by file ID

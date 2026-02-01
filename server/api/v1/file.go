@@ -16,8 +16,8 @@ func SetFileRouter(e *echo.Echo) {
 
 	fileHandler := &fileApi{}
 	fileRouterGroup.POST("/upload", fileHandler.uploadFile)
-	fileRouterGroup.GET("/list", fileHandler.getFileList)
-	fileRouterGroup.GET("/info/:file_id", fileHandler.getFileInfo)
+	fileRouterGroup.GET("/list", fileHandler.getSimpleFileInfoList)
+	fileRouterGroup.GET("/info/:file_id", fileHandler.getSingleDetailedFileInfo)
 	fileRouterGroup.GET("/download/:file_id", fileHandler.getDownloadFileURL)
 
 }
@@ -82,7 +82,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	})
 }
 
-// getFileList godoc
+// getSimpleFileInfoList godoc
 // @Summary      Get File List
 // @Description  Retrieve a paginated list of files for the current user
 // @Tags         File
@@ -90,22 +90,22 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 // @Produce      json
 // @Param        page query int true "Page number" minimum(1)
 // @Param        page_size query int true "Number of files per page" minimum(1) maximum(100)
-// @Success      200 {object} response.ResponseBase[models.FileInfoListResp] "File list retrieved successfully"
+// @Success      200 {object} response.ResponseBase[models.SimpleFileInfoListResp] "File list retrieved successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Router       /file/list [get]
-func (this *fileApi) getFileList(ctx *echo.Context) error {
+func (this *fileApi) getSimpleFileInfoList(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoList, err := utils.BindAndValidate[models.FileInfoListReq](ctx)
+	fileInfoList, err := utils.BindAndValidate[models.SimpleFileInfoListReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	files, err := fileService.GetFileListByUserID(
+	total, files, err := fileService.GetFileListByUserID(
 		ctx.Request().Context(),
 		currentUser.ID,
 		fileInfoList.Page,
@@ -115,38 +115,37 @@ func (this *fileApi) getFileList(ctx *echo.Context) error {
 		return response.FailWithMsg(ctx, "Failed to get file list")
 	}
 
-	return response.OkWithData(ctx, models.FileInfoListResp{
-		Total: int64(len(files)),
+	return response.OkWithData(ctx, models.SimpleFileInfoListResp{
+		Total: total,
 		Files: files,
 	})
 }
 
-// getFileInfo godoc
+// getSingleDetailedFileInfo godoc
 // @Summary      Get File Info
 // @Description  Get detailed information about a specific file
 // @Tags         File
 // @Accept       json
 // @Produce      json
 // @Param        file_id path int true "File ID"
-// @Success      200 {object} response.ResponseBase[models.FileInfo] "File info retrieved successfully"
+// @Success      200 {object} response.ResponseBase[models.DetailedFileInfo] "File info retrieved successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Missing or invalid file_id parameter"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      404 {object} response.ResponseBase[any] "File not found"
 // @Router       /file/info/{file_id} [get]
-func (this *fileApi) getFileInfo(ctx *echo.Context) error {
+func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 	_, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoReq, err := utils.BindAndValidate[models.FileInfoReq](ctx)
+	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}
 
 	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), fileInfoReq.ID)
 	if err != nil {
-		utils.Logger.Errorf("Failed to get file info: %v", err)
 		return response.FailWithMsg(ctx, "Failed to get file info")
 	}
 
@@ -171,7 +170,7 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoReq, err := utils.BindAndValidate[models.FileInfoReq](ctx)
+	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}

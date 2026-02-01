@@ -100,16 +100,27 @@ func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (
 	return file, nil
 }
 
-// DownloadFileByFileID downloads a file from Minio
-func (this *FileService) DownloadFileByFileID(ctx context.Context, filePath string) (io.Reader, error) {
-	reader, err := db.MinioClient.DownloadFile(ctx, filePath)
+// GetDownloadURLByFileID generates a presigned download URL for a file by file ID
+func (this *FileService) GetDownloadURLByFileID(ctx context.Context, fileID uint) (string, error) {
+
+	dbFile, err := gorm.G[models.File](db.PgSqlDB).
+		Where("ID = ?", fileID).
+		First(ctx)
+
 	if err != nil {
-		utils.Logger.Errorf("Failed to download file %s: %v", filePath, err)
-		return nil, err
+		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, err)
+		return "", err
 	}
 
-	utils.Logger.Infof("File downloaded successfully: %s", filePath)
-	return reader, nil
+	// Generate presigned URL with 1 hour expiration (3600 seconds)
+	downloadURL, err := db.MinioClient.GetPresignedDownloadURL(ctx, dbFile.MinioPath, 3600)
+	if err != nil {
+		utils.Logger.Errorf("Failed to generate download URL for file %s: %v", dbFile.MinioPath, err)
+		return "", err
+	}
+
+	utils.Logger.Infof("Download URL generated successfully: %s (ID: %d)", dbFile.MinioPath, fileID)
+	return downloadURL, nil
 }
 
 // DeleteFileByFileID deletes a file from both Minio and database
@@ -171,12 +182,15 @@ func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID
 
 // CheckFileExistsByFileID checks if a file exists in Minio
 func (this *FileService) CheckFileExistsByFileID(ctx context.Context, fileID uint) (bool, error) {
-	file, err := this.GetFileInfoByFileID(ctx, fileID)
+	fileInfo, err := gorm.G[models.File](db.PgSqlDB).
+		Where("ID = ?", fileID).
+		First(ctx)
+
 	if err != nil {
+		utils.Logger.Errorf("Failed to get file path from database: %v", err)
 		return false, err
 	}
-
-	exists, err := db.MinioClient.FileExists(ctx, file.MinioPath)
+	exists, err := db.MinioClient.FileExists(ctx, fileInfo.MinioPath)
 	if err != nil {
 		utils.Logger.Errorf("Failed to check file existence: %v", err)
 		return false, err

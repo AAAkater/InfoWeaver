@@ -21,13 +21,25 @@ type FileInfoListReq struct {
 	PageSize int `query:"page_size" binding:"required,min=1,max=100"`
 }
 
+type FileInfoListResp struct {
+	Total int64      `json:"total"`
+	Files []FileInfo `json:"files"`
+}
+
+type FileInfoReq struct {
+	ID uint `param:"file_id" binding:"required"`
+}
+
+type FileDownloadResp struct {
+	URL string `json:"url"`
+}
+
 type FileInfo struct {
 	ID        uint
 	CreatedAt time.Time
 	Size      int64
 	Name      string
 	Type      string
-	MinioPath string
 	UserID    uint
 }
 

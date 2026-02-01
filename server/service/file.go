@@ -74,11 +74,11 @@ func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, p
 	offset := (page - 1) * pageSize
 
 	var files []models.FileInfo
-	res := db.PgSqlDB.Model(&models.User{}).
-		Where("ID = ?", userID).
+	res := db.PgSqlDB.Model(&models.File{}).
+		Where("user_id= ?", userID).
 		Offset(offset).
 		Limit(pageSize).
-		Find(files)
+		Find(&files)
 
 	if res.Error != nil {
 		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, res.Error)

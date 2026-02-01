@@ -41,13 +41,14 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	newFileInfo, err := utils.BindAndValidate[models.FileUploadReq](ctx)
+	fileHeader, err := ctx.FormFile("file")
 	if err != nil {
+		utils.Logger.Error(err)
 		return response.BadRequestWithMsg("Failed to get uploaded file")
 	}
 
 	// Open the uploaded file
-	src, err := newFileInfo.File.Open()
+	src, err := fileHeader.Open()
 	if err != nil {
 		utils.Logger.Errorf("Failed to open uploaded file: %v", err)
 		return response.BadRequestWithMsg("Failed to open uploaded file")
@@ -55,7 +56,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	defer src.Close()
 
 	// Get file type/MIME type
-	fileType := newFileInfo.File.Header.Get("Content-Type")
+	fileType := fileHeader.Header.Get("Content-Type")
 	if fileType == "" {
 		fileType = "application/octet-stream"
 	}
@@ -64,10 +65,10 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	if err := fileService.CreateFile(
 		ctx.Request().Context(),
 		currentUser.ID,
-		newFileInfo.File.Filename,
+		fileHeader.Filename,
 		fileType,
 		src,
-		newFileInfo.File.Size,
+		fileHeader.Size,
 	); err != nil {
 		utils.Logger.Errorf("Failed to create file: %v", err)
 		return response.FailWithMsg(ctx, "Failed to upload file")
@@ -75,9 +76,9 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 
 	return response.OkWithData(ctx, models.FileUploadResp{
 		OwnerID: currentUser.ID,
-		Name:    newFileInfo.File.Filename,
+		Name:    fileHeader.Filename,
 		Type:    fileType,
-		Size:    newFileInfo.File.Size,
+		Size:    fileHeader.Size,
 	})
 }
 
@@ -111,7 +112,6 @@ func (this *fileApi) getFileList(ctx *echo.Context) error {
 		fileInfoList.PageSize,
 	)
 	if err != nil {
-		utils.Logger.Errorf("Failed to get file list: %v", err)
 		return response.FailWithMsg(ctx, "Failed to get file list")
 	}
 

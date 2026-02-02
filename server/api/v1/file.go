@@ -165,7 +165,7 @@ func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "File not found"
 // @Router       /file/download/{file_id} [get]
 func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
-	_, err := utils.GetCurrentUser(ctx)
+	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
@@ -175,8 +175,14 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}
 
+	// Get file path from database
+	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
+	if err != nil {
+		return response.NotFoundWithMsg(err.Error())
+	}
+
 	// Get presigned download URL from MinIO
-	downloadURL, err := fileService.GetDownloadURLByFileID(ctx.Request().Context(), fileInfoReq.ID)
+	downloadURL, err := fileService.GetDownloadURLByFilePath(ctx.Request().Context(), filePath)
 	if err != nil {
 		utils.Logger.Errorf("Failed to get download URL for file: %v", err)
 		return response.FailWithMsg(ctx, "Failed to get download URL")

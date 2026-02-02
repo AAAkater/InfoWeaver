@@ -105,26 +105,34 @@ func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (
 	return fileInfo, nil
 }
 
-// GetDownloadURLByFileID generates a presigned download URL for a file by file ID
-func (this *FileService) GetDownloadURLByFileID(ctx context.Context, fileID uint) (string, error) {
-
+func (this *FileService) GetFilePathByFileID(ctx context.Context, fileID uint, ownerID uint) (string, error) {
 	dbFile, err := gorm.G[models.File](db.PgSqlDB).
-		Where("ID = ?", fileID).
+		Select("minio_path").
+		Where("id = ? AND user_id = ?", fileID, ownerID).
 		First(ctx)
-
-	if err != nil {
-		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, err)
+	switch err {
+	case nil:
+		break
+	case gorm.ErrRecordNotFound:
+		return "", errors.New("file not found")
+	default:
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileID, err)
 		return "", err
 	}
+	return dbFile.MinioPath, nil
+}
+
+// GetDownloadURLByFilePath generates a presigned download URL for a file by file path
+func (this *FileService) GetDownloadURLByFilePath(ctx context.Context, filePath string) (string, error) {
 
 	// Generate presigned URL with 1 hour expiration (3600 seconds)
-	downloadURL, err := db.MinioClient.GetPresignedDownloadURL(ctx, dbFile.MinioPath, 3600)
+	downloadURL, err := db.MinioClient.GetPresignedDownloadURL(ctx, filePath, 3600)
 	if err != nil {
-		utils.Logger.Errorf("Failed to generate download URL for file %s: %v", dbFile.MinioPath, err)
+		utils.Logger.Errorf("Failed to generate download URL for file %s: %v", filePath, err)
 		return "", err
 	}
 
-	utils.Logger.Infof("Download URL generated successfully: %s (ID: %d)", dbFile.MinioPath, fileID)
+	utils.Logger.Infof("Download URL generated successfully: %s", filePath)
 	return downloadURL, nil
 }
 

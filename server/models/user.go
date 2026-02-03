@@ -1,14 +1,14 @@
 package models
 
 type RegisterReq struct {
-	Username string `json:"username" validate:"required,min=3,max=50"`
+	Username string `json:"username" validate:"required,min=4,max=16"`
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
+	Password string `json:"password" validate:"required,min=6,max=18"`
 }
 
 type UserLoginReq struct {
-	Username string `json:"username" validate:"required,min=3,max=50"`
-	Password string `json:"password" validate:"required,min=6"`
+	Username string `json:"username" validate:"required,min=4,max=16"`
+	Password string `json:"password" validate:"required,min=6,max=18"`
 }
 type UserLoginResp struct {
 	Type  string `json:"type"`

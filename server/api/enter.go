@@ -9,4 +9,5 @@ import (
 func InitRouter(e *echo.Echo) {
 	v1.SetUserRouter(e)
 	v1.SetSwaggerRouter(e)
+	v1.SetFileRouter(e)
 }

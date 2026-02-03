@@ -8,4 +8,5 @@ import (
 func InitMiddleWares(e *echo.Echo) {
 	e.HTTPErrorHandler = CustomHTTPErrorHandler(false)
 	e.Use(middleware.RequestLogger())
+	e.Use(middleware.Recover())
 }

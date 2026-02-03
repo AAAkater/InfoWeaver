@@ -3,8 +3,10 @@ package db
 import (
 	"context"
 	"io"
+	"net/url"
 	"server/config"
 	"server/utils"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -63,16 +65,6 @@ func (ms *MinioService) UploadFile(ctx context.Context, objectName string, reade
 	}
 	utils.Logger.Infof("File %s uploaded successfully to bucket %s", objectName, ms.bucketName)
 	return nil
-}
-
-// DownloadFile downloads a file from Minio
-func (ms *MinioService) DownloadFile(ctx context.Context, objectName string) (io.Reader, error) {
-	object, err := ms.client.GetObject(ctx, ms.bucketName, objectName, minio.GetObjectOptions{})
-	if err != nil {
-		utils.Logger.Errorf("Failed to download file %s: %v", objectName, err)
-		return nil, err
-	}
-	return object, nil
 }
 
 // DeleteFile deletes a file from Minio
@@ -146,4 +138,15 @@ func (ms *MinioService) CopyFile(ctx context.Context, sourceObject string, destB
 	}
 	utils.Logger.Infof("File copied successfully from %s/%s to %s/%s", ms.bucketName, sourceObject, destBucket, destObject)
 	return nil
+}
+
+// GetPresignedDownloadURL generates a presigned download URL for a file
+func (ms *MinioService) GetPresignedDownloadURL(ctx context.Context, objectName string, expiration int64) (string, error) {
+	reqParams := make(url.Values)
+	presignedURL, err := ms.client.PresignedGetObject(ctx, ms.bucketName, objectName, time.Duration(expiration)*time.Second, reqParams)
+	if err != nil {
+		utils.Logger.Errorf("Failed to generate presigned URL for %s: %v", objectName, err)
+		return "", err
+	}
+	return presignedURL.String(), nil
 }

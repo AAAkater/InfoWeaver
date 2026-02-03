@@ -31,13 +31,11 @@
     "pnpm": ">=10.5.0"
   },
   "scripts": {
-    "build": "vite build --mode prod",
-    "build:test": "vite build --mode test",
+    "build": "vite build",
     "cleanup": "sa cleanup",
     "commit": "sa git-commit",
     "commit:zh": "sa git-commit -l=zh-cn",
-    "dev": "vite --mode test",
-    "dev:prod": "vite --mode prod",
+    "dev": "vite",
     "gen-route": "sa gen-route",
     "lint": "eslint . --fix",
     "prepare": "simple-git-hooks",

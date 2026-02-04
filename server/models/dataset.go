@@ -6,11 +6,12 @@ type DatasetCreateReq struct {
 }
 
 type DatasetUpdateReq struct {
+	ID          uint   `param:"id" validate:"required"`
 	Name        string `json:"name" validate:"omitempty,min=1,max=100"`
 	Description string `json:"description" validate:"omitempty,max=500"`
 }
 
-type DatasetResp struct {
+type DatasetInfo struct {
 	ID          uint   `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -20,17 +21,10 @@ type DatasetResp struct {
 }
 
 type DatasetListResp struct {
-	Datasets []DatasetResp `json:"datasets"`
+	Total    int64         `json:"total"`
+	Datasets []DatasetInfo `json:"datasets"`
 }
 
-type DatasetCreateResp struct {
-	ID uint `json:"id"`
-}
-
-type DatasetUpdateResp struct {
-	ID uint `json:"id"`
-}
-
-type DatasetDeleteResp struct {
-	ID uint `json:"id"`
+type DatasetInfoReq struct {
+	ID uint `param:"id" validate:"required"`
 }

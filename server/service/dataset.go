@@ -35,12 +35,13 @@ func (this *DatasetService) CreateNewDataset(ctx context.Context, datasetName st
 
 }
 
-func (this *DatasetService) GetDatasetByID(ctx context.Context, id uint, ownerID uint) (dbDataset *models.Dataset, err error) {
+func (this *DatasetService) GetDatasetInfoByID(ctx context.Context, id uint, ownerID uint) (dbDataset *models.DatasetInfo, err error) {
 
-	*dbDataset, err = gorm.G[models.Dataset](db.PgSqlDB).
+	result := db.PgSqlDB.Model(&models.Dataset{}).
 		Where("id = ? AND owner_id = ?", id, ownerID).
-		First(ctx)
-	switch err {
+		Find(&dbDataset)
+
+	switch result.Error {
 	case nil: // Dataset found successfully
 		return dbDataset, nil
 	case gorm.ErrRecordNotFound:
@@ -52,16 +53,24 @@ func (this *DatasetService) GetDatasetByID(ctx context.Context, id uint, ownerID
 	}
 }
 
-func (this *DatasetService) ListDatasetsByOwner(ctx context.Context, ownerID uint) (datasets []models.Dataset, err error) {
+// ListDatasetsByOwnerID retrieves datasets for a specific user with pagination
+// page: page number (1-indexed), pageSize: number of items per page
+func (this *DatasetService) ListDatasetsByOwnerID(ctx context.Context, ownerID uint) (total int64, datasets []models.DatasetInfo, e error) {
 
-	datasets, err = gorm.G[models.Dataset](db.PgSqlDB).
+	result := db.PgSqlDB.Model(&models.Dataset{}).
 		Where("owner_id = ?", ownerID).
-		Find(ctx)
-	if err != nil {
-		utils.Logger.Errorf("Failed to list datasets for owner ID %d: %v", ownerID, err)
-		return nil, err
+		Find(&datasets)
+
+	switch result.Error {
+	case nil:
+		return result.RowsAffected, datasets, nil
+	case gorm.ErrRecordNotFound:
+		utils.Logger.Errorf("No datasets found for user %d: %v", ownerID, result.Error)
+		return 0, datasets, nil
+	default:
+		utils.Logger.Errorf("Failed to get dataset list for user %d: %v", ownerID, result.Error)
+		return 0, nil, errors.New("Unknown error occurred while retrieving dataset list")
 	}
-	return datasets, nil
 }
 
 func (this *DatasetService) UpdateDataset(ctx context.Context, id uint, ownerID uint, name string, description string) error {

@@ -31,7 +31,7 @@ type datasetApi struct{}
 // @Accept       json
 // @Produce      json
 // @Param        dataset body models.DatasetCreateReq true "Dataset creation request"
-// @Success      200 {object} response.ResponseBase[models.DatasetCreateResp] "Dataset created successfully"
+// @Success      200 {object} response.ResponseBase[any] "Dataset created successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
@@ -122,7 +122,7 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        dataset body models.DatasetUpdateReq true "Dataset update request"
-// @Success      200 {object} response.ResponseBase[models.DatasetUpdateResp] "Dataset updated successfully"
+// @Success      200 {object} response.ResponseBase[any] "Dataset updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
@@ -153,7 +153,7 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        id path int true "Dataset ID"
-// @Success      200 {object} response.ResponseBase[models.DatasetDeleteResp] "Dataset deleted successfully"
+// @Success      200 {object} response.ResponseBase[any] "Dataset deleted successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"

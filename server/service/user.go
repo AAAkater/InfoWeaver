@@ -16,31 +16,21 @@ type UserService struct{}
 
 func (this *UserService) CreateNewUser(ctx context.Context, username string, password string, email string) error {
 
-	_, err := gorm.G[models.User](db.PgSqlDB).
-		Select("id").
-		Where("email = ?", email).
-		First(ctx)
-
-	switch err {
-	case nil:
-		return errors.New("this email has been already used")
-	case gorm.ErrRecordNotFound: // user not found
-		break
-	default:
-		utils.Logger.Error(err)
-		return errors.New("Unknown error")
-	}
-
-	db_user := &models.User{
+	dbUser := &models.User{
 		Username: username,
 		Password: utils.BcryptHash(password),
 		Email:    email,
 	}
-	if err := gorm.G[models.User](db.PgSqlDB).Create(ctx, db_user); err != nil {
+	err := gorm.G[models.User](db.PgSqlDB).Create(ctx, dbUser)
+	switch err {
+	case nil:
+		return nil
+	case gorm.ErrDuplicatedKey:
+		return errors.New("this email has been already used")
+	default:
 		utils.Logger.Error(err)
 		return errors.New("Unknown error")
 	}
-	return nil
 }
 
 func (this *UserService) GetUserInfoByEmail(ctx context.Context, email string) (*models.User, error) {

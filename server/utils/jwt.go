@@ -49,11 +49,12 @@ func CreateToken(UserID uint, IsAdmin bool) (string, error) {
 func GetCurrentUser(ctx *echo.Context) (*JwtCustomClaims, error) {
 	token, err := echo.ContextGet[*jwt.Token](ctx, "user")
 	if err != nil {
-		return nil, err
+		Logger.Errorf("Failed to get token from context: %v", err)
+		return nil, TokenExpired
 	}
 	claims, ok := token.Claims.(*JwtCustomClaims)
 	if !ok {
-		return nil, errors.New("invalid claims type")
+		return nil, TokenInvalid
 	}
 	return claims, nil
 }

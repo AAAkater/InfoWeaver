@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"server/db"
@@ -23,7 +24,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
 
 	// Prepare database record
-	db_file := models.File{
+	dbFile := models.File{
 		UserID:    ownerID,
 		Name:      filename,
 		MinioPath: objectName,
@@ -44,7 +45,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 
 	// Save file record to database in parallel
 	wg.Go(func() {
-		if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, &db_file); err != nil {
+		if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, &dbFile); err != nil {
 			utils.Logger.Errorf("Failed to save file record to database: %v", err)
 			errChan <- err
 		}
@@ -60,56 +61,79 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 		}
 	}
 
-	utils.Logger.Infof("File created successfully: %s (ID: %d)", db_file.Name, db_file.ID)
+	utils.Logger.Infof("File created successfully: %s (ID: %d)", dbFile.Name, dbFile.ID)
 	return nil
 }
 
 // GetFileListByUserID retrieves files for a specific user with pagination
 // page: page number (1-indexed), pageSize: number of items per page
-func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, page int, pageSize int) ([]models.FileInfo, error) {
+func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, page int, pageSize int) (total int64, files []models.SimpleFileInfo, e error) {
 
 	page = max(page, 1)
 	pageSize = max(pageSize, 10)
 
 	offset := (page - 1) * pageSize
 
-	var files []models.FileInfo
-	res := db.PgSqlDB.Model(&models.User{}).
-		Where("ID = ?", userID).
+	result := db.PgSqlDB.Model(&models.File{}).
+		Where("user_id= ?", userID).
 		Offset(offset).
 		Limit(pageSize).
-		Find(files)
+		Find(&files)
 
-	if res.Error != nil {
-		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, res.Error)
-		return nil, res.Error
+	switch result.Error {
+	case nil:
+		break
+	case gorm.ErrRecordNotFound:
+		utils.Logger.Errorf("No files found for user %d: %v", userID, result.Error)
+		return 0, files, nil
+	default:
+		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, result.Error)
+		return 0, nil, errors.New("Unknown error occurred while retrieving file list")
 	}
-	return files, nil
+	return result.RowsAffected, files, nil
 }
 
 // GetFileInfoByFileID retrieves a file by fileID
-func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (*models.FileInfo, error) {
-	var file *models.FileInfo
+func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (fileInfo *models.DetailedFileInfo, e error) {
 	result := db.PgSqlDB.Model(&models.File{}).
 		Where("ID = ?", fileID).
-		Find(file)
+		Find(&fileInfo)
 	if result.Error != nil {
 		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, result.Error)
 		return nil, result.Error
 	}
-	return file, nil
+	return fileInfo, nil
 }
 
-// DownloadFileByFileID downloads a file from Minio
-func (this *FileService) DownloadFileByFileID(ctx context.Context, filePath string) (io.Reader, error) {
-	reader, err := db.MinioClient.DownloadFile(ctx, filePath)
+func (this *FileService) GetFilePathByFileID(ctx context.Context, fileID uint, ownerID uint) (string, error) {
+	dbFile, err := gorm.G[models.File](db.PgSqlDB).
+		Select("minio_path").
+		Where("id = ? AND user_id = ?", fileID, ownerID).
+		First(ctx)
+	switch err {
+	case nil:
+		break
+	case gorm.ErrRecordNotFound:
+		return "", errors.New("file not found")
+	default:
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileID, err)
+		return "", err
+	}
+	return dbFile.MinioPath, nil
+}
+
+// GetDownloadURLByFilePath generates a presigned download URL for a file by file path
+func (this *FileService) GetDownloadURLByFilePath(ctx context.Context, filePath string) (string, error) {
+
+	// Generate presigned URL with 1 hour expiration (3600 seconds)
+	downloadURL, err := db.MinioClient.GetPresignedDownloadURL(ctx, filePath, 3600)
 	if err != nil {
-		utils.Logger.Errorf("Failed to download file %s: %v", filePath, err)
-		return nil, err
+		utils.Logger.Errorf("Failed to generate download URL for file %s: %v", filePath, err)
+		return "", err
 	}
 
-	utils.Logger.Infof("File downloaded successfully: %s", filePath)
-	return reader, nil
+	utils.Logger.Infof("Download URL generated successfully: %s", filePath)
+	return downloadURL, nil
 }
 
 // DeleteFileByFileID deletes a file from both Minio and database
@@ -151,7 +175,7 @@ func (this *FileService) DeleteFileByFileID(ctx context.Context, fileID uint, fi
 }
 
 // UpdateFileInfo updates file info in the database
-func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID uint, newFileInfo models.UpdateFileInfo) error {
+func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID uint, newFileInfo models.FileInfoUpdate) error {
 
 	if _, err := gorm.G[models.File](db.PgSqlDB).
 		Where("ID = ? AND UserID = ?", fileID, userID).
@@ -171,12 +195,15 @@ func (this *FileService) UpdateFileInfo(ctx context.Context, fileID uint, userID
 
 // CheckFileExistsByFileID checks if a file exists in Minio
 func (this *FileService) CheckFileExistsByFileID(ctx context.Context, fileID uint) (bool, error) {
-	file, err := this.GetFileInfoByFileID(ctx, fileID)
+	fileInfo, err := gorm.G[models.File](db.PgSqlDB).
+		Where("ID = ?", fileID).
+		First(ctx)
+
 	if err != nil {
+		utils.Logger.Errorf("Failed to get file path from database: %v", err)
 		return false, err
 	}
-
-	exists, err := db.MinioClient.FileExists(ctx, file.MinioPath)
+	exists, err := db.MinioClient.FileExists(ctx, fileInfo.MinioPath)
 	if err != nil {
 		utils.Logger.Errorf("Failed to check file existence: %v", err)
 		return false, err

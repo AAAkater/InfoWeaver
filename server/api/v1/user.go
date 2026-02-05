@@ -1,10 +1,12 @@
 package v1
 
 import (
+	"errors"
 	"server/config"
 	"server/middleware"
 	"server/models"
 	"server/models/response"
+	"server/service"
 	"server/utils"
 
 	"github.com/labstack/echo/v5"
@@ -41,11 +43,20 @@ func (this *userApi) register(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.CreateNewUser(ctx.Request().Context(), newUserInfo.Username, newUserInfo.Password, newUserInfo.Email); err != nil {
+	switch err := userService.CreateNewUser(
+		ctx.Request().Context(),
+		newUserInfo.Username,
+		newUserInfo.Password,
+		newUserInfo.Email); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrDuplicatedKey):
 		utils.Logger.Error(err)
-		return response.NoAuthWithMsg(err.Error())
+		return response.NoAuthWithMsg("this email has been already used")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-	return response.Ok(ctx)
 }
 
 // login godoc
@@ -66,13 +77,16 @@ func (this *userApi) login(ctx *echo.Context) error {
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-
 	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
-
-	if err != nil && dbUser == nil {
-		return response.NotFoundWithMsg(err.Error())
+	switch err {
+	case nil:
+	case service.ErrNotFound:
+		utils.Logger.Error(err)
+		return response.NotFoundWithMsg("User not found")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-
 	if !utils.BcryptCheck(userInfo.Password, dbUser.Password) {
 		return response.NoAuthWithMsg("Invalid password")
 	}
@@ -80,7 +94,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 	token, err := utils.CreateToken(dbUser.ID, dbUser.Role == "admin")
 	if err != nil {
 		utils.Logger.Error(err)
-		return response.NoAuthWithMsg("Failed to generate token")
+		return response.FailWithMsg(ctx, "Failed to generate token")
 	}
 
 	return response.OkWithData(ctx, models.UserLoginResp{
@@ -107,16 +121,21 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID)
-	if err != nil || dbUser == nil {
-		return response.NoAuthWithMsg(err.Error())
+	switch dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID); {
+	case err == nil:
+		return response.OkWithData(ctx, models.UserInfoResp{
+			ID:       dbUser.ID,
+			Username: dbUser.Username,
+			Email:    dbUser.Email,
+			Role:     dbUser.Role,
+		})
+	case errors.Is(err, service.ErrNotFound):
+		utils.Logger.Error(err)
+		return response.NotFoundWithMsg("User not found")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-	return response.OkWithData(ctx, models.UserInfoResp{
-		ID:       dbUser.ID,
-		Username: dbUser.Username,
-		Email:    dbUser.Email,
-		Role:     dbUser.Role,
-	})
 }
 
 // resetUserPassword godoc
@@ -142,11 +161,16 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, req.FirstPassword); err != nil {
-		return response.NoAuthWithMsg("Failed to reset password")
+	switch err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, req.FirstPassword); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return errors.New("User not found")
+	default:
+		utils.Logger.Error(err)
+		return errors.New("Unknown error")
 	}
 
-	return response.Ok(ctx)
 }
 
 // updateUserInfo godoc
@@ -172,10 +196,13 @@ func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); err != nil {
-		return response.NoAuthWithMsg(err.Error())
+	switch err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return errors.New("User not found")
+	default:
+		utils.Logger.Error(err)
+		return errors.New("Unknown error")
 	}
-
-	return response.Ok(ctx)
-
 }

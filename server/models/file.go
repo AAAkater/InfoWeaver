@@ -10,13 +10,14 @@ type FileUploadReq struct {
 }
 
 type FileUploadResp struct {
-	OwnerID uint   `json:"owner_id"`
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Size    int64  `json:"size"`
+	OwnerID   uint   `json:"owner_id"`
+	DatasetID uint   `json:"dataset_id"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Size      int64  `json:"size"`
 }
 
-type SimpleFileInfoListReq struct {
+type ListFilesReq struct {
 	Page     int `query:"page" binding:"required,min=1"`
 	PageSize int `query:"page_size" binding:"required,min=1,max=100"`
 }

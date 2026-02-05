@@ -19,7 +19,7 @@ var FileServiceApp = new(FileService)
 type FileService struct{}
 
 // CreateFile uploads a file to Minio and creates a database record
-func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) error {
+func (this *FileService) CreateFile(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) error {
 
 	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
 
@@ -30,6 +30,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 		MinioPath: objectName,
 		Size:      fileSize,
 		Type:      fileType,
+		DatasetID: datasetID,
 	}
 
 	var wg sync.WaitGroup
@@ -94,9 +95,9 @@ func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, p
 }
 
 // GetFileInfoByFileID retrieves a file by fileID
-func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (fileInfo *models.DetailedFileInfo, e error) {
+func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint, ownerID uint) (fileInfo *models.DetailedFileInfo, e error) {
 	result := db.PgSqlDB.Model(&models.File{}).
-		Where("ID = ?", fileID).
+		Where("ID = ? AND user_id = ?", fileID, ownerID).
 		Find(&fileInfo)
 	if result.Error != nil {
 		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, result.Error)

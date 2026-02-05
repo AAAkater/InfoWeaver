@@ -16,7 +16,8 @@ type UserLoginResp struct {
 }
 
 type ResetPasswordReq struct {
-	NewPassword string `json:"new_password" validate:"required,min=6"`
+	FirstPassword  string `json:"first_password" validate:"required,min=4,max=18,eqfield=SecondPassword"`
+	SecondPassword string `json:"second_password" validate:"required,min=4,max=18"`
 }
 
 type UpdateUserInfoReq struct {

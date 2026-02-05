@@ -87,10 +87,9 @@ func (this *UserService) ResetUserPassword(ctx context.Context, userID uint, new
 
 	hashed_password := utils.BcryptHash(newPassword)
 
-	row, err := gorm.G[models.User](db.PgSqlDB).
+	_, err := gorm.G[models.User](db.PgSqlDB).
 		Where("id = ?", userID).
 		Update(ctx, "password", hashed_password)
-	utils.Logger.Debugf("rowsAffected :%d", row)
 	switch err {
 	case nil:
 		return nil

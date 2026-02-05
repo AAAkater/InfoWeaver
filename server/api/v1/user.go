@@ -134,15 +134,15 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg("token invalid or expired")
+		return response.NoAuthWithMsg(err.Error())
 	}
 
-	newPasswordInfo, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
+	req, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
 	if err != nil {
-		return response.BadRequest()
+		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, newPasswordInfo.NewPassword); err != nil {
+	if err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, req.FirstPassword); err != nil {
 		return response.NoAuthWithMsg("Failed to reset password")
 	}
 

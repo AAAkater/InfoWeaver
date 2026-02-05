@@ -2,7 +2,7 @@ import { computed, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useLoading } from '@sa/hooks';
-import { fetchGetUserInfo, fetchLogin } from '@/service/api';
+import { UserRegister, fetchGetUserInfo, fetchLogin } from '@/service/api';
 import { useRouterPush } from '@/hooks/common/router';
 import { localStg } from '@/utils/storage';
 import { SetupStoreId } from '@/enum';
@@ -88,7 +88,21 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     localStg.remove('lastLoginUserId');
     return false;
   }
+  async function register(username: string, password: string, email: string) {
+    startLoading();
+    const { response: res } = await UserRegister(username, password, email);
 
+    if (res.data.code === 0) {
+      // 注册成功，重定向到登录页
+      window.$message?.success($t('page.login.common.registerSuccess'));
+      await toLogin();
+    } else {
+      // 注册失败，打印信息msg
+      const errorMsg = res.data.msg;
+      window.$message?.error(errorMsg);
+    }
+    endLoading();
+  }
   /**
    * Login
    *
@@ -177,6 +191,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     isLogin,
     loginLoading,
     resetStore,
+    register,
     login,
     initUserInfo
   };

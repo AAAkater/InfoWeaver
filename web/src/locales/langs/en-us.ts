@@ -309,6 +309,7 @@ const local: App.I18n.Schema = {
         loginOrRegister: 'Login / Register',
         userNamePlaceholder: 'Please enter user name',
         phonePlaceholder: 'Please enter phone number',
+        emailPlaceholder: 'Please enter email',
         codePlaceholder: 'Please enter verification code',
         passwordPlaceholder: 'Please enter password',
         confirmPasswordPlaceholder: 'Please enter password again',
@@ -316,6 +317,7 @@ const local: App.I18n.Schema = {
         confirm: 'Confirm',
         back: 'Back',
         validateSuccess: 'Verification passed',
+        registerSuccess: 'Register successfully',
         loginSuccess: 'Login successfully',
         welcomeBack: 'Welcome back, {userName} !'
       },

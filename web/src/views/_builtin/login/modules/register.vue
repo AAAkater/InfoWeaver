@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
+import { useAuthStore } from '@/store/modules/auth';
 import { useRouterPush } from '@/hooks/common/router';
 import { useFormRules, useNaiveForm } from '@/hooks/common/form';
-import { useCaptcha } from '@/hooks/business/captcha';
 import { $t } from '@/locales';
 
 defineOptions({
@@ -11,18 +11,18 @@ defineOptions({
 
 const { toggleLoginModule } = useRouterPush();
 const { formRef, validate } = useNaiveForm();
-const { label, isCounting, loading, getCaptcha } = useCaptcha();
+const authStore = useAuthStore();
 
 interface FormModel {
-  phone: string;
-  code: string;
+  email: string;
+  username: string;
   password: string;
   confirmPassword: string;
 }
 
 const model: FormModel = reactive({
-  phone: '',
-  code: '',
+  email: '',
+  username: '',
   password: '',
   confirmPassword: ''
 });
@@ -31,31 +31,26 @@ const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
   const { formRules, createConfirmPwdRule } = useFormRules();
 
   return {
-    phone: formRules.phone,
-    code: formRules.code,
+    email: formRules.email,
+    username: formRules.userName,
     password: formRules.pwd,
     confirmPassword: createConfirmPwdRule(model.password)
   };
 });
-
 async function handleSubmit() {
   await validate();
-  // request to register
-  window.$message?.success($t('page.login.common.validateSuccess'));
+  await authStore.register(model.username, model.password, model.email);
 }
 </script>
 
 <template>
   <NForm ref="formRef" :model="model" :rules="rules" size="large" :show-label="false" @keyup.enter="handleSubmit">
-    <NFormItem path="phone">
-      <NInput v-model:value="model.phone" :placeholder="$t('page.login.common.phonePlaceholder')" />
+    <NFormItem path="username">
+      <NInput v-model:value="model.username" :placeholder="$t('page.login.common.userNamePlaceholder')" />
     </NFormItem>
-    <NFormItem path="code">
+    <NFormItem path="email">
       <div class="w-full flex-y-center gap-16px">
-        <NInput v-model:value="model.code" :placeholder="$t('page.login.common.codePlaceholder')" />
-        <NButton size="large" :disabled="isCounting" :loading="loading" @click="getCaptcha(model.phone)">
-          {{ label }}
-        </NButton>
+        <NInput v-model:value="model.email" :placeholder="$t('page.login.common.emailPlaceholder')" />
       </div>
     </NFormItem>
     <NFormItem path="password">

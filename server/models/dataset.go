@@ -6,7 +6,7 @@ type DatasetCreateReq struct {
 }
 
 type DatasetUpdateReq struct {
-	ID          uint   `param:"id" validate:"required"`
+	ID          uint   `json:"id" validate:"required"`
 	Name        string `json:"name" validate:"omitempty,min=1,max=100"`
 	Description string `json:"description" validate:"omitempty,max=500"`
 }

@@ -27,7 +27,7 @@ func (this *DatasetService) GetDatasetInfoByID(ctx context.Context, id uint, own
 
 	result := db.PgSqlDB.Model(&models.Dataset{}).
 		Where("id = ? AND owner_id = ?", id, ownerID).
-		Find(&dbDataset)
+		First(&dbDataset)
 
 	return dbDataset, result.Error
 }

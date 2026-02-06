@@ -96,3 +96,17 @@ func BadRequestWithMsg(msg string) error {
 		Message: msg,
 	}
 }
+
+func Forbidden() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: http.StatusText(http.StatusForbidden),
+	}
+}
+
+func ForbiddenWithMsg(msg string) error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: msg,
+	}
+}

@@ -18,8 +18,9 @@ type FileUploadResp struct {
 }
 
 type ListFilesReq struct {
-	Page     int `query:"page" binding:"required,min=1"`
-	PageSize int `query:"page_size" binding:"required,min=1,max=100"`
+	DatasetID uint `query:"dataset_id" validate:"required"`
+	Page      int  `query:"page" binding:"required,min=1"`
+	PageSize  int  `query:"page_size" binding:"required,min=1,max=100"`
 }
 
 type SimpleFileInfo struct {

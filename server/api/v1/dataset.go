@@ -39,15 +39,13 @@ type datasetApi struct{}
 // @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
 // @Router       /dataset/create [post]
 func (this *datasetApi) createDataset(ctx *echo.Context) error {
-	req, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
-	if err != nil {
-		return response.BadRequestWithMsg(err.Error())
-	}
-
-	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
+	}
+	req, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), req.Name, req.Description, currentUser.ID); {
@@ -55,7 +53,7 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
 		utils.Logger.Error(err)
-		return response.NoAuthWithMsg("dataset with the same name already exists")
+		return response.ForbiddenWithMsg("dataset with the same name already exists")
 	default:
 		utils.Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
@@ -79,15 +77,12 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	switch total, datasets, err := datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID); {
-	case err == nil:
+	switch total, datasets, err := datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID); err {
+	case nil:
 		return response.OkWithData(ctx, models.DatasetListResp{
 			Total:    total,
 			Datasets: datasets,
 		})
-	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
-		return response.NotFoundWithMsg("No datasets found")
 	default:
 		utils.Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
@@ -143,15 +138,14 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
 // @Router       /dataset/update [post]
 func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
-	req, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
-	if err != nil {
-		return response.BadRequestWithMsg(err.Error())
-	}
-
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
+	}
+	req, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	switch err := datasetService.UpdateDataset(ctx.Request().Context(), req.ID, currentUser.ID, req.Name, req.Description); {

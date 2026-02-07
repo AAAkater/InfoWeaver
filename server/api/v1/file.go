@@ -22,6 +22,7 @@ func SetFileRouter(e *echo.Echo) {
 	fileRouterGroup.GET("/list", fileHandler.ListFiles)
 	fileRouterGroup.GET("/info/:file_id", fileHandler.getSingleDetailedFileInfo)
 	fileRouterGroup.GET("/download/:file_id", fileHandler.getDownloadFileURL)
+	fileRouterGroup.POST("/delete/:file_id", fileHandler.deleteFile)
 
 }
 
@@ -215,4 +216,49 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 	return response.OkWithData(ctx, models.FileDownloadResp{
 		URL: downloadURL,
 	})
+}
+
+// deleteFile godoc
+// @Summary      Delete File
+// @Description  Delete a file from both MinIO storage and database
+// @Tags         File
+// @Accept       json
+// @Produce      json
+// @Param        file_id path int true "File ID"
+// @Success      200 {object} response.ResponseBase[any] "File deleted successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Missing or invalid file_id parameter"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
+// @Failure      403 {object} response.ResponseBase[any] "Forbidden, user not authorized to access the file"
+// @Failure      404 {object} response.ResponseBase[any] "File not found"
+// @Router       /file/delete/{file_id} [post]
+func (this *fileApi) deleteFile(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg("Missing file_id parameter")
+	}
+
+	// Get file path from database (also validates ownership)
+	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
+	switch err {
+	case nil:
+		//ok
+	case service.ErrNotFound:
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", fileInfoReq.ID))
+	default:
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileInfoReq.ID, err)
+		return response.FailWithMsg(ctx, "Failed to delete file")
+	}
+
+	// Delete file from MinIO and database
+	if err := fileService.DeleteFileByFileID(ctx.Request().Context(), fileInfoReq.ID, filePath); err != nil {
+		utils.Logger.Errorf("Failed to delete file with ID %d: %v", fileInfoReq.ID, err)
+		return response.FailWithMsg(ctx, "Failed to delete file")
+	}
+
+	return response.Ok(ctx)
 }

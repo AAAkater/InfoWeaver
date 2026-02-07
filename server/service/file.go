@@ -32,7 +32,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, datasetID
 	}
 
 	if _, err := gorm.G[models.Dataset](db.PgSqlDB).
-		Select("id = ? AND owner_id = ?", datasetID, ownerID).
+		Where("id = ? AND owner_id = ?", datasetID, ownerID).
 		First(ctx); err != nil {
 		utils.Logger.Errorf("Failed to find dataset %d: %v", datasetID, err)
 		return gorm.ErrRecordNotFound

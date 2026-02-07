@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"errors"
+	"fmt"
 	"server/config"
 	"server/middleware"
 	"server/models"
 	"server/models/response"
+	"server/service"
 	"server/utils"
 
 	"github.com/labstack/echo/v5"
@@ -69,7 +72,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	}
 
 	// Call CreateFile service to upload and save
-	if err := fileService.CreateFile(
+	switch err := fileService.CreateFile(
 		ctx.Request().Context(),
 		currentUser.ID,
 		datasetID,
@@ -77,7 +80,12 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 		fileType,
 		src,
 		fileHeader.Size,
-	); err != nil {
+	); {
+	case err == nil:
+		// ok
+	case errors.Is(err, service.ErrNotFound) || errors.Is(err, service.ErrDuplicatedKey):
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+	default:
 		utils.Logger.Errorf("Failed to create file: %v", err)
 		return response.FailWithMsg(ctx, "Failed to upload file")
 	}
@@ -117,6 +125,7 @@ func (this *fileApi) ListFiles(ctx *echo.Context) error {
 	total, files, err := fileService.GetFileListByUserID(
 		ctx.Request().Context(),
 		currentUser.ID,
+		fileInfoList.DatasetID,
 		fileInfoList.Page,
 		fileInfoList.PageSize,
 	)
@@ -154,11 +163,16 @@ func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 	}
 
 	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
-	if err != nil {
-		return response.FailWithMsg(ctx, "Failed to get file info")
-	}
 
-	return response.OkWithData(ctx, fileInfo)
+	switch err {
+	case nil:
+		return response.OkWithData(ctx, fileInfo)
+	case service.ErrNotFound:
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", fileInfoReq.ID))
+	default:
+		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileInfoReq.ID, err)
+		return response.FailWithMsg(ctx, "Unknown error")
+	}
 }
 
 // getDownloadFileURL godoc
@@ -187,6 +201,7 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 	// Get file path from database
 	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
 	if err != nil {
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileInfoReq.ID, err)
 		return response.NotFoundWithMsg(err.Error())
 	}
 

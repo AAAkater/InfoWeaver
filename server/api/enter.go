@@ -11,4 +11,5 @@ func InitRouter(e *echo.Echo) {
 	v1.SetSwaggerRouter(e)
 	v1.SetFileRouter(e)
 	v1.SetDatasetRouter(e)
+	v1.SetProviderRouter(e)
 }

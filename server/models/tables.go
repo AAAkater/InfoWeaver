@@ -59,4 +59,14 @@ type (
 		OwnerID     uint `gorm:"not null"`
 		User        User `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
 	}
+	// Provider represents an AI model provider (OpenAI, Gemini, Anthropic, Ollama, etc.)
+	Provider struct {
+		gorm.Model
+		Name    string `gorm:"not null;unique"` // Provider Name: "openai","deepseek","qwen",  "gemini", "anthropic", "ollama"
+		Mode    string `gorm:"not null"`        // Provider mode: "openai","openai response", "gemini", "anthropic", "ollama"
+		BaseURL string `gorm:"not null"`        // Base URL for API requests
+		APIKey  string `gorm:"not null"`        // API key for authentication
+		OwnerID uint   `gorm:"not null"`
+		User    User   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
+	}
 )

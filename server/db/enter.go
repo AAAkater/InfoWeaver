@@ -33,7 +33,8 @@ func (this *InitDBHandler) initPgSql() {
 		&models.File{},
 		&models.Document{},
 		&models.Memory{},
-		&models.Dataset{}); err != nil {
+		&models.Dataset{},
+		&models.Provider{}); err != nil {
 		utils.Logger.Errorf("Failed to create PostgreSQL tables:%s", err)
 		os.Exit(0)
 	}

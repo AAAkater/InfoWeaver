@@ -1,0 +1,203 @@
+package v1
+
+import (
+	"errors"
+	"fmt"
+	"server/config"
+	"server/middleware"
+	"server/models"
+	"server/models/response"
+	"server/service"
+	"server/utils"
+
+	"github.com/labstack/echo/v5"
+)
+
+func SetProviderRouter(e *echo.Echo) {
+	providerRouterGroup := e.Group(config.API_V1+"/provider", middleware.TokenMiddleware())
+	providerHandler := &providerApi{}
+	providerRouterGroup.POST("", providerHandler.createProvider)
+	providerRouterGroup.GET("", providerHandler.getAllProviders)
+	providerRouterGroup.GET("/:id", providerHandler.getProviderByID)
+	providerRouterGroup.PUT("/:id", providerHandler.updateProvider)
+	providerRouterGroup.DELETE("/:id", providerHandler.deleteProvider)
+}
+
+type providerApi struct{}
+
+// createProvider godoc
+// @Summary      Create Provider
+// @Description  Create a new provider
+// @Tags         Provider
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        body body models.ProviderCreateRequest true "Create Provider Request Body"
+// @Success      200 {object} response.ResponseBase[any] "Provider created successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
+// @Router       /provider [post]
+func (this *providerApi) createProvider(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	req, err := utils.BindAndValidate[models.ProviderCreateRequest](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	switch err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, req.Name, req.BaseURL, req.BaseURL); err != nil {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrDuplicatedKey):
+		return response.ForbiddenWithMsg("Provider Name:" + req.Name + "already exists")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Failed to create provider")
+	}
+}
+
+// getAllProviders godoc
+// @Summary      Get All Providers
+// @Description  Get a list of all providers
+// @Tags         Provider
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Success      200 {object} response.ResponseBase[models.ProviderListResp] "Providers retrieved successfully"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
+// @Router       /provider [get]
+func (this *providerApi) getAllProviders(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	cows, providers, err := providerService.GetAllProviders(ctx.Request().Context(), currentUser.ID)
+	if err != nil {
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Failed to get providers")
+	}
+	return response.OkWithData(ctx, models.ProviderListResp{
+		Total:     cows,
+		Providers: providers,
+	})
+
+}
+
+// getProviderByID godoc
+// @Summary      Get Provider by ID
+// @Description  Get a provider by its ID
+// @Tags         Provider
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id path int true "Provider ID"
+// @Success      200 {object} response.ResponseBase[models.ProviderInfo] "Provider retrieved successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid provider ID"
+// @Failure      404 {object} response.ResponseBase[any] "Provider not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
+// @Router       /provider/{id} [get]
+func (this *providerApi) getProviderByID(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	req, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	provider, err := providerService.GetProviderByID(ctx.Request().Context(), req.ID, currentUser.ID)
+	switch err {
+	case nil:
+		return response.OkWithData(ctx, provider)
+	case service.ErrNotFound:
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the model provider: %d", req.ID))
+	default:
+		utils.Logger.Errorf("Failed to model provider with ID %d: %v", req.ID, err)
+		return response.FailWithMsg(ctx, "Unknown error")
+	}
+}
+
+// updateProvider godoc
+// @Summary      Update Provider
+// @Description  Update an existing provider
+// @Tags         Provider
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id path int true "Provider ID"
+// @Param        body body models.ProviderUpdateRequest true "Update Provider Request Body"
+// @Success      200 {object} response.ResponseBase[any] "Provider updated successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
+// @Router       /provider/{id} [put]
+func (this *providerApi) updateProvider(ctx *echo.Context) error {
+
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	req, err := utils.BindAndValidate[models.ProviderUpdateReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	switch err := service.ProviderServiceApp.UpdateProvider(
+		ctx.Request().Context(),
+		req.ID,
+		currentUser.ID,
+		req.Name,
+		req.BaseURL,
+		req.APIKey); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return response.ForbiddenWithMsg("Provider does not exist")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Failed to update provider")
+	}
+}
+
+// deleteProvider godoc
+// @Summary      Delete Provider
+// @Description  Delete a provider by ID
+// @Tags         Provider
+// @Accept       json
+// @Produce      json
+// @Security     Bearer
+// @Param        id path int true "Provider ID"
+// @Success      200 {object} response.ResponseBase[any] "Provider deleted successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid provider ID"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
+// @Router       /provider/{id} [delete]
+func (this *providerApi) deleteProvider(ctx *echo.Context) error {
+
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	req, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	if _, err := providerService.GetProviderByID(ctx.Request().Context(), req.ID, currentUser.ID); err != nil {
+		utils.Logger.Error(err)
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to delete provider:%d", req.ID))
+	}
+
+	if err := service.ProviderServiceApp.DeleteProvider(ctx.Request().Context(), req.ID); err != nil {
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Failed to delete provider")
+	}
+
+	return response.Ok(ctx)
+}

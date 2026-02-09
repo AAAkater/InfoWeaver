@@ -21,7 +21,7 @@ func SetDatasetRouter(e *echo.Echo) {
 	datasetRouterGroup.GET("", datasetHandler.listDatasets)
 	datasetRouterGroup.GET("/:dataset_id", datasetHandler.getDatasetInfo)
 	datasetRouterGroup.POST("/update", datasetHandler.updateDatasetInfo)
-	datasetRouterGroup.POST("/delete/:id", datasetHandler.deleteDataset)
+	datasetRouterGroup.POST("/delete/:dataset_id", datasetHandler.deleteDataset)
 }
 
 type datasetApi struct{}
@@ -95,7 +95,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 // @Tags         Dataset
 // @Accept       json
 // @Produce      json
-// @Param        id path int true "Dataset ID"
+// @Param        dataset_id path int true "Dataset ID"
 // @Success      200 {object} response.ResponseBase[models.DatasetInfo] "Dataset details"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
@@ -166,12 +166,12 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 // @Tags         Dataset
 // @Accept       json
 // @Produce      json
-// @Param        id path int true "Dataset ID"
+// @Param        dataset_id path int true "Dataset ID"
 // @Success      200 {object} response.ResponseBase[any] "Dataset deleted successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Router       /dataset/delete/{id} [post]
+// @Router       /dataset/delete/{dataset_id} [post]
 func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 	req, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
 	if err != nil {

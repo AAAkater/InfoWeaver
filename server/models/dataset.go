@@ -28,5 +28,5 @@ type DatasetListResp struct {
 }
 
 type DatasetInfoReq struct {
-	ID uint `param:"id" validate:"required"`
+	ID uint `param:"dataset_id" validate:"required"`
 }

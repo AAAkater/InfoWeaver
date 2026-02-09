@@ -38,7 +38,7 @@ func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint
 }
 func (this *ProviderService) GetProviderByID(ctx context.Context, providerID uint, ownerID uint) (*models.Provider, error) {
 	dbProvider, err := gorm.G[models.Provider](db.PgSqlDB).
-		Where("id = ?", providerID, ownerID).
+		Where("id = ? AND owner_id = ?", providerID, ownerID).
 		First(ctx)
 	return &dbProvider, err
 }

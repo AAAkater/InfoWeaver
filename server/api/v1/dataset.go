@@ -18,8 +18,8 @@ func SetDatasetRouter(e *echo.Echo) {
 
 	datasetHandler := &datasetApi{}
 	datasetRouterGroup.POST("/create", datasetHandler.createDataset)
-	datasetRouterGroup.GET("/list", datasetHandler.listDatasets)
-	datasetRouterGroup.GET("/:id", datasetHandler.getDatasetInfo)
+	datasetRouterGroup.GET("", datasetHandler.listDatasets)
+	datasetRouterGroup.GET("/:dataset_id", datasetHandler.getDatasetInfo)
 	datasetRouterGroup.POST("/update", datasetHandler.updateDatasetInfo)
 	datasetRouterGroup.POST("/delete/:id", datasetHandler.deleteDataset)
 }
@@ -69,7 +69,7 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 // @Success      200 {object} response.ResponseBase[models.DatasetListResp] "List of datasets"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
-// @Router       /dataset/list [get]
+// @Router       /dataset [get]
 func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -101,7 +101,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Router       /dataset/{id} [get]
+// @Router       /dataset/{dataset_id} [get]
 func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 	req, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
 	if err != nil {

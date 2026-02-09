@@ -28,7 +28,12 @@ func (this *InitDBHandler) initPgSql() {
 	utils.Logger.Info("success to connect to PostgreSQL")
 
 	// Auto-migrate database schema
-	if err = PgSqlDB.AutoMigrate(&models.User{}, &models.File{}, &models.Document{}, &models.Memory{}); err != nil {
+	if err = PgSqlDB.AutoMigrate(
+		&models.User{},
+		&models.File{},
+		&models.Document{},
+		&models.Memory{},
+		&models.Dataset{}); err != nil {
 		utils.Logger.Errorf("Failed to create PostgreSQL tables:%s", err)
 		os.Exit(0)
 	}

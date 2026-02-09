@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"errors"
+	"fmt"
 	"server/config"
 	"server/middleware"
 	"server/models"
 	"server/models/response"
+	"server/service"
 	"server/utils"
 
 	"github.com/labstack/echo/v5"
@@ -16,9 +19,10 @@ func SetFileRouter(e *echo.Echo) {
 
 	fileHandler := &fileApi{}
 	fileRouterGroup.POST("/upload", fileHandler.uploadFile)
-	fileRouterGroup.GET("/list", fileHandler.getSimpleFileInfoList)
+	fileRouterGroup.GET("/list", fileHandler.ListFiles)
 	fileRouterGroup.GET("/info/:file_id", fileHandler.getSingleDetailedFileInfo)
 	fileRouterGroup.GET("/download/:file_id", fileHandler.getDownloadFileURL)
+	fileRouterGroup.POST("/delete/:file_id", fileHandler.deleteFile)
 
 }
 
@@ -26,14 +30,16 @@ type fileApi struct{}
 
 // uploadFile godoc
 // @Summary      File Upload
-// @Description  Upload a file to the server
+// @Description  Upload a file to the server and associate it with a dataset. The file is stored in MinIO object storage.
 // @Tags         File
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file formData file true "File to upload"
+// @Param        id formData int true "Dataset ID to associate the uploaded file with"
 // @Success      200 {object} response.ResponseBase[models.FileUploadResp] "File uploaded successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid file or upload failed"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid file, missing parameters, or upload failed"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
+// @Failure      403 {object} response.ResponseBase[any] "Forbidden, user not authorized to access the specified dataset"
 // @Router       /file/upload [post]
 func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -45,6 +51,11 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	if err != nil {
 		utils.Logger.Error(err)
 		return response.BadRequestWithMsg("Failed to get uploaded file")
+	}
+	datasetID, err := echo.FormValue[uint](ctx, "id")
+	if err != nil {
+		utils.Logger.Error(err)
+		return response.BadRequestWithMsg("Failed to get dataset ID")
 	}
 
 	// Open the uploaded file
@@ -62,27 +73,34 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	}
 
 	// Call CreateFile service to upload and save
-	if err := fileService.CreateFile(
+	switch err := fileService.CreateFile(
 		ctx.Request().Context(),
 		currentUser.ID,
+		datasetID,
 		fileHeader.Filename,
 		fileType,
 		src,
 		fileHeader.Size,
-	); err != nil {
+	); {
+	case err == nil:
+		// ok
+	case errors.Is(err, service.ErrNotFound) || errors.Is(err, service.ErrDuplicatedKey):
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+	default:
 		utils.Logger.Errorf("Failed to create file: %v", err)
 		return response.FailWithMsg(ctx, "Failed to upload file")
 	}
 
 	return response.OkWithData(ctx, models.FileUploadResp{
-		OwnerID: currentUser.ID,
-		Name:    fileHeader.Filename,
-		Type:    fileType,
-		Size:    fileHeader.Size,
+		OwnerID:   currentUser.ID,
+		DatasetID: datasetID,
+		Name:      fileHeader.Filename,
+		Type:      fileType,
+		Size:      fileHeader.Size,
 	})
 }
 
-// getSimpleFileInfoList godoc
+// ListFiles godoc
 // @Summary      Get File List
 // @Description  Retrieve a paginated list of files for the current user
 // @Tags         File
@@ -94,13 +112,13 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Router       /file/list [get]
-func (this *fileApi) getSimpleFileInfoList(ctx *echo.Context) error {
+func (this *fileApi) ListFiles(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoList, err := utils.BindAndValidate[models.SimpleFileInfoListReq](ctx)
+	fileInfoList, err := utils.BindAndValidate[models.ListFilesReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -108,6 +126,7 @@ func (this *fileApi) getSimpleFileInfoList(ctx *echo.Context) error {
 	total, files, err := fileService.GetFileListByUserID(
 		ctx.Request().Context(),
 		currentUser.ID,
+		fileInfoList.DatasetID,
 		fileInfoList.Page,
 		fileInfoList.PageSize,
 	)
@@ -134,7 +153,7 @@ func (this *fileApi) getSimpleFileInfoList(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "File not found"
 // @Router       /file/info/{file_id} [get]
 func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
-	_, err := utils.GetCurrentUser(ctx)
+	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
@@ -144,12 +163,17 @@ func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}
 
-	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), fileInfoReq.ID)
-	if err != nil {
-		return response.FailWithMsg(ctx, "Failed to get file info")
-	}
+	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
 
-	return response.OkWithData(ctx, fileInfo)
+	switch err {
+	case nil:
+		return response.OkWithData(ctx, fileInfo)
+	case service.ErrNotFound:
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", fileInfoReq.ID))
+	default:
+		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileInfoReq.ID, err)
+		return response.FailWithMsg(ctx, "Unknown error")
+	}
 }
 
 // getDownloadFileURL godoc
@@ -178,6 +202,7 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 	// Get file path from database
 	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
 	if err != nil {
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileInfoReq.ID, err)
 		return response.NotFoundWithMsg(err.Error())
 	}
 
@@ -191,4 +216,49 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 	return response.OkWithData(ctx, models.FileDownloadResp{
 		URL: downloadURL,
 	})
+}
+
+// deleteFile godoc
+// @Summary      Delete File
+// @Description  Delete a file from both MinIO storage and database
+// @Tags         File
+// @Accept       json
+// @Produce      json
+// @Param        file_id path int true "File ID"
+// @Success      200 {object} response.ResponseBase[any] "File deleted successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Missing or invalid file_id parameter"
+// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
+// @Failure      403 {object} response.ResponseBase[any] "Forbidden, user not authorized to access the file"
+// @Failure      404 {object} response.ResponseBase[any] "File not found"
+// @Router       /file/delete/{file_id} [post]
+func (this *fileApi) deleteFile(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.NoAuthWithMsg(err.Error())
+	}
+
+	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg("Missing file_id parameter")
+	}
+
+	// Get file path from database (also validates ownership)
+	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
+	switch err {
+	case nil:
+		//ok
+	case service.ErrNotFound:
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", fileInfoReq.ID))
+	default:
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileInfoReq.ID, err)
+		return response.FailWithMsg(ctx, "Failed to delete file")
+	}
+
+	// Delete file from MinIO and database
+	if err := fileService.DeleteFileByFileID(ctx.Request().Context(), fileInfoReq.ID, filePath); err != nil {
+		utils.Logger.Errorf("Failed to delete file with ID %d: %v", fileInfoReq.ID, err)
+		return response.FailWithMsg(ctx, "Failed to delete file")
+	}
+
+	return response.Ok(ctx)
 }

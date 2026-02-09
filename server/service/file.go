@@ -2,14 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"server/db"
 	"server/models"
 	"server/utils"
 	"sync"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -19,7 +17,7 @@ var FileServiceApp = new(FileService)
 type FileService struct{}
 
 // CreateFile uploads a file to Minio and creates a database record
-func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) error {
+func (this *FileService) CreateFile(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) error {
 
 	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
 
@@ -30,6 +28,14 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 		MinioPath: objectName,
 		Size:      fileSize,
 		Type:      fileType,
+		DatasetID: datasetID,
+	}
+
+	if _, err := gorm.G[models.Dataset](db.PgSqlDB).
+		Where("id = ? AND owner_id = ?", datasetID, ownerID).
+		First(ctx); err != nil {
+		utils.Logger.Errorf("Failed to find dataset %d: %v", datasetID, err)
+		return gorm.ErrRecordNotFound
 	}
 
 	var wg sync.WaitGroup
@@ -67,7 +73,7 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, filename 
 
 // GetFileListByUserID retrieves files for a specific user with pagination
 // page: page number (1-indexed), pageSize: number of items per page
-func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, page int, pageSize int) (total int64, files []models.SimpleFileInfo, e error) {
+func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, datasetID uint, page int, pageSize int) (total int64, files []models.SimpleFileInfo, e error) {
 
 	page = max(page, 1)
 	pageSize = max(pageSize, 10)
@@ -75,34 +81,20 @@ func (this *FileService) GetFileListByUserID(ctx context.Context, userID uint, p
 	offset := (page - 1) * pageSize
 
 	result := db.PgSqlDB.Model(&models.File{}).
-		Where("user_id= ?", userID).
+		Where("user_id= ? AND dataset_id =?", userID, datasetID).
 		Offset(offset).
 		Limit(pageSize).
 		Find(&files)
-
-	switch result.Error {
-	case nil:
-		break
-	case gorm.ErrRecordNotFound:
-		utils.Logger.Errorf("No files found for user %d: %v", userID, result.Error)
-		return 0, files, nil
-	default:
-		utils.Logger.Errorf("Failed to get file list for user %d: %v", userID, result.Error)
-		return 0, nil, errors.New("Unknown error occurred while retrieving file list")
-	}
-	return result.RowsAffected, files, nil
+	return result.RowsAffected, files, result.Error
 }
 
 // GetFileInfoByFileID retrieves a file by fileID
-func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint) (fileInfo *models.DetailedFileInfo, e error) {
+func (this *FileService) GetFileInfoByFileID(ctx context.Context, fileID uint, ownerID uint) (fileInfo *models.DetailedFileInfo, e error) {
 	result := db.PgSqlDB.Model(&models.File{}).
-		Where("ID = ?", fileID).
+		Where("ID = ? AND user_id = ?", fileID, ownerID).
 		Find(&fileInfo)
-	if result.Error != nil {
-		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileID, result.Error)
-		return nil, result.Error
-	}
-	return fileInfo, nil
+
+	return fileInfo, result.Error
 }
 
 func (this *FileService) GetFilePathByFileID(ctx context.Context, fileID uint, ownerID uint) (string, error) {
@@ -110,16 +102,7 @@ func (this *FileService) GetFilePathByFileID(ctx context.Context, fileID uint, o
 		Select("minio_path").
 		Where("id = ? AND user_id = ?", fileID, ownerID).
 		First(ctx)
-	switch err {
-	case nil:
-		break
-	case gorm.ErrRecordNotFound:
-		return "", errors.New("file not found")
-	default:
-		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileID, err)
-		return "", err
-	}
-	return dbFile.MinioPath, nil
+	return dbFile.MinioPath, err
 }
 
 // GetDownloadURLByFilePath generates a presigned download URL for a file by file path
@@ -154,7 +137,7 @@ func (this *FileService) DeleteFileByFileID(ctx context.Context, fileID uint, fi
 	wg.Go(func() {
 		if _, err := gorm.G[models.File](db.PgSqlDB).
 			Where("ID = ?", fileID).
-			Update(ctx, "DeletedAt", time.Now()); err != nil {
+			Delete(ctx); err != nil {
 			utils.Logger.Errorf("Failed to delete file record from database: %v", err)
 			errChan <- err
 		}

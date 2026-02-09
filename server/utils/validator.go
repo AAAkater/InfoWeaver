@@ -5,7 +5,7 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-var validatorInstance = validator.New()
+var validatorInstance = validator.New(validator.WithRequiredStructEnabled())
 
 func BindAndValidate[T any](ctx *echo.Context) (*T, error) {
 

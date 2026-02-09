@@ -18,7 +18,7 @@ func connectPgSqlDB(cfg *config.Config) (*gorm.DB, error) {
 		DSN:                  dsn,
 		PreferSimpleProtocol: false,
 	}
-	db, err := gorm.Open(postgres.New(postgreConfig), &gorm.Config{})
+	db, err := gorm.Open(postgres.New(postgreConfig), &gorm.Config{TranslateError: true})
 	if err != nil {
 		return nil, err
 	}

@@ -1,10 +1,12 @@
 package v1
 
 import (
+	"errors"
 	"server/config"
 	"server/middleware"
 	"server/models"
 	"server/models/response"
+	"server/service"
 	"server/utils"
 
 	"github.com/labstack/echo/v5"
@@ -32,7 +34,7 @@ type userApi struct{}
 // @Param        body body models.RegisterReq true "Register Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Register successful"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "User already exists or registration failed"
+// @Failure      403 {object} response.ResponseBase[any] "User already exists"
 // @Router       /user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
@@ -41,11 +43,20 @@ func (this *userApi) register(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.CreateNewUser(ctx.Request().Context(), newUserInfo.Username, newUserInfo.Password, newUserInfo.Email); err != nil {
+	switch err := userService.CreateNewUser(
+		ctx.Request().Context(),
+		newUserInfo.Username,
+		newUserInfo.Password,
+		newUserInfo.Email); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrDuplicatedKey):
 		utils.Logger.Error(err)
-		return response.NoAuthWithMsg(err.Error())
+		return response.ForbiddenWithMsg("this email has been already used")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-	return response.Ok(ctx)
 }
 
 // login godoc
@@ -57,8 +68,7 @@ func (this *userApi) register(ctx *echo.Context) error {
 // @Param        body body models.UserLoginReq true "Login Request Body"
 // @Success      200 {object} response.ResponseBase[models.UserLoginResp] "Login successful, returns Bearer token"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid password or credentials"
-// @Failure      404 {object} response.ResponseBase[any] "User not found"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid credentials"
 // @Router       /user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
@@ -66,13 +76,16 @@ func (this *userApi) login(ctx *echo.Context) error {
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-
 	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
-
-	if err != nil && dbUser == nil {
-		return response.NotFoundWithMsg(err.Error())
+	switch err {
+	case nil:
+	case service.ErrNotFound:
+		utils.Logger.Error(err)
+		return response.NoAuthWithMsg("User does not exist")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-
 	if !utils.BcryptCheck(userInfo.Password, dbUser.Password) {
 		return response.NoAuthWithMsg("Invalid password")
 	}
@@ -80,7 +93,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 	token, err := utils.CreateToken(dbUser.ID, dbUser.Role == "admin")
 	if err != nil {
 		utils.Logger.Error(err)
-		return response.NoAuthWithMsg("Failed to generate token")
+		return response.FailWithMsg(ctx, "Failed to generate token")
 	}
 
 	return response.OkWithData(ctx, models.UserLoginResp{
@@ -107,16 +120,21 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID)
-	if err != nil || dbUser == nil {
-		return response.NoAuthWithMsg(err.Error())
+	switch dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID); {
+	case err == nil:
+		return response.OkWithData(ctx, models.UserInfoResp{
+			ID:       dbUser.ID,
+			Username: dbUser.Username,
+			Email:    dbUser.Email,
+			Role:     dbUser.Role,
+		})
+	case errors.Is(err, service.ErrNotFound):
+		utils.Logger.Error(err)
+		return response.NotFoundWithMsg("User not found")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-	return response.OkWithData(ctx, models.UserInfoResp{
-		ID:       dbUser.ID,
-		Username: dbUser.Username,
-		Email:    dbUser.Email,
-		Role:     dbUser.Role,
-	})
 }
 
 // resetUserPassword godoc
@@ -130,23 +148,28 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 // @Success      200 {object} response.ResponseBase[any] "Password reset successful"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
+// @Failure      403 {object} response.ResponseBase[any] "User does not exist"
 // @Router       /user/resetPassword [post]
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg("token invalid or expired")
+		return response.NoAuthWithMsg(err.Error())
 	}
 
-	newPasswordInfo, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
+	req, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
 	if err != nil {
-		return response.BadRequest()
+		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, newPasswordInfo.NewPassword); err != nil {
-		return response.NoAuthWithMsg("Failed to reset password")
+	switch err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, req.FirstPassword); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return response.ForbiddenWithMsg("User does not exist")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-
-	return response.Ok(ctx)
 }
 
 // updateUserInfo godoc
@@ -160,6 +183,7 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 // @Success      200 {object} response.ResponseBase[any] "User information updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
+// @Failure      403 {object} response.ResponseBase[any] "User does not exist"
 // @Router       /user/updateInfo [post]
 func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -172,10 +196,13 @@ func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); err != nil {
-		return response.NoAuthWithMsg(err.Error())
+	switch err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return response.ForbiddenWithMsg("User does not exist")
+	default:
+		utils.Logger.Error(err)
+		return response.FailWithMsg(ctx, "Unknown error")
 	}
-
-	return response.Ok(ctx)
-
 }

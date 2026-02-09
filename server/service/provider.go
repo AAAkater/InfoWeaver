@@ -12,21 +12,24 @@ var ProviderServiceApp = new(ProviderService)
 
 type ProviderService struct{}
 
-func (this *ProviderService) CreateProvider(ctx context.Context, ownerID uint, name string, baseURL string, apiKey string) error {
+func (this *ProviderService) CreateProvider(ctx context.Context, ownerID uint, name string, baseURL string, apiKey string, mode string) error {
 
 	dbProvider := &models.Provider{
+		OwnerID: ownerID,
 		Name:    name,
 		BaseURL: baseURL,
 		APIKey:  apiKey,
+		Mode:    mode,
 	}
 	return gorm.G[models.Provider](db.PgSqlDB).Create(ctx, dbProvider)
 }
 
-func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint, ownerID uint, name string, baseURL string, apiKey string) error {
+func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint, ownerID uint, name string, baseURL string, apiKey string, mode string) error {
 	newProvider := models.Provider{
 		Name:    name,
 		BaseURL: baseURL,
 		APIKey:  apiKey,
+		Mode:    mode,
 	}
 	_, err := gorm.G[models.Provider](db.PgSqlDB).
 		Where("id = ? AND owner_id = ?", providerID, ownerID).

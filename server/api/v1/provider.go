@@ -19,7 +19,7 @@ func SetProviderRouter(e *echo.Echo) {
 	providerRouterGroup.POST("", providerHandler.createProvider)
 	providerRouterGroup.GET("/list", providerHandler.getAllProviders)
 	providerRouterGroup.GET("/info/:provider_id", providerHandler.getProviderByID)
-	providerRouterGroup.POST("/update/:provider_id", providerHandler.updateProvider)
+	providerRouterGroup.POST("/update", providerHandler.updateProvider)
 	providerRouterGroup.POST("/delete/:provider_id", providerHandler.deleteProvider)
 }
 
@@ -96,7 +96,7 @@ func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 // @Param        provider_id path int true "Provider ID"
 // @Success      200 {object} response.ResponseBase[models.ProviderInfo] "Provider retrieved successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid provider ID"
-// @Failure      404 {object} response.ResponseBase[any] "Provider not found"
+// @Failure      403 {object} response.ResponseBase[any] "Forbidden: Unauthorized access to the provider"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider/info/{provider_id} [get]
 func (this *providerApi) getProviderByID(ctx *echo.Context) error {
@@ -128,12 +128,12 @@ func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 // @Tags         Provider
 // @Accept       json
 // @Produce      json
-// @Param        provider_id path int true "Provider ID"
 // @Param        body body models.ProviderUpdateReq true "Update Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      403 {object} response.ResponseBase[any] "Forbidden: Provider does not exist"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /provider/update/{provider_id} [post]
+// @Router       /provider/update [post]
 func (this *providerApi) updateProvider(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -146,7 +146,7 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := service.ProviderServiceApp.UpdateProvider(
+	switch err := providerService.UpdateProvider(
 		ctx.Request().Context(),
 		req.ID,
 		currentUser.ID,

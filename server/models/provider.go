@@ -36,7 +36,7 @@ type ProviderCreateReq struct {
 
 // ProviderUpdateReq represents a request to update a provider
 type ProviderUpdateReq struct {
-	ID      uint   `param:"provider_id" validate:"required"`
+	ID      uint   `json:"id" validate:"required"`
 	Name    string `json:"name" validate:"required,min=1,max=50"`
 	BaseURL string `json:"base_url" validate:"required,url"`
 	APIKey  string `json:"api_key" validate:"required,min=1"`

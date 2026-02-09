@@ -31,9 +31,12 @@ func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint
 		APIKey:  apiKey,
 		Mode:    mode,
 	}
-	_, err := gorm.G[models.Provider](db.PgSqlDB).
+	rows, err := gorm.G[models.Provider](db.PgSqlDB).
 		Where("id = ? AND owner_id = ?", providerID, ownerID).
 		Updates(ctx, newProvider)
+	if rows == 0 {
+		return ErrNotFound
+	}
 	return err
 }
 func (this *ProviderService) GetProviderByID(ctx context.Context, providerID uint, ownerID uint) (*models.Provider, error) {

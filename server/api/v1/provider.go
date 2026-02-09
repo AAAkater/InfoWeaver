@@ -17,10 +17,10 @@ func SetProviderRouter(e *echo.Echo) {
 	providerRouterGroup := e.Group(config.API_V1+"/provider", middleware.TokenMiddleware())
 	providerHandler := &providerApi{}
 	providerRouterGroup.POST("", providerHandler.createProvider)
-	providerRouterGroup.GET("", providerHandler.getAllProviders)
-	providerRouterGroup.GET("/:id", providerHandler.getProviderByID)
-	providerRouterGroup.PUT("/:id", providerHandler.updateProvider)
-	providerRouterGroup.DELETE("/:id", providerHandler.deleteProvider)
+	providerRouterGroup.GET("/list", providerHandler.getAllProviders)
+	providerRouterGroup.GET("/info/:provider_id", providerHandler.getProviderByID)
+	providerRouterGroup.POST("/update/:provider_id", providerHandler.updateProvider)
+	providerRouterGroup.POST("/delete/:provider_id", providerHandler.deleteProvider)
 }
 
 type providerApi struct{}
@@ -31,10 +31,10 @@ type providerApi struct{}
 // @Tags         Provider
 // @Accept       json
 // @Produce      json
-// @Security     Bearer
-// @Param        body body models.ProviderCreateRequest true "Create Provider Request Body"
+// @Param        body body models.ProviderCreateReq true "Create Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider created successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      403 {object} response.ResponseBase[any] "Forbidden: Provider name already exists"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider [post]
 func (this *providerApi) createProvider(ctx *echo.Context) error {
@@ -43,16 +43,17 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	req, err := utils.BindAndValidate[models.ProviderCreateRequest](ctx)
+	req, err := utils.BindAndValidate[models.ProviderCreateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, req.Name, req.BaseURL, req.BaseURL); err != nil {
+	switch err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, req.Name, req.BaseURL, req.APIKey, req.Mode); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
-		return response.ForbiddenWithMsg("Provider Name:" + req.Name + "already exists")
+		utils.Logger.Error(err)
+		return response.ForbiddenWithMsg("Provider Name:" + req.Name + " already exists")
 	default:
 		utils.Logger.Error(err)
 		return response.FailWithMsg(ctx, "Failed to create provider")
@@ -65,10 +66,9 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 // @Tags         Provider
 // @Accept       json
 // @Produce      json
-// @Security     Bearer
 // @Success      200 {object} response.ResponseBase[models.ProviderListResp] "Providers retrieved successfully"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /provider [get]
+// @Router       /provider/list [get]
 func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -93,13 +93,12 @@ func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 // @Tags         Provider
 // @Accept       json
 // @Produce      json
-// @Security     Bearer
-// @Param        id path int true "Provider ID"
+// @Param        provider_id path int true "Provider ID"
 // @Success      200 {object} response.ResponseBase[models.ProviderInfo] "Provider retrieved successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid provider ID"
 // @Failure      404 {object} response.ResponseBase[any] "Provider not found"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /provider/{id} [get]
+// @Router       /provider/info/{provider_id} [get]
 func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -129,13 +128,12 @@ func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 // @Tags         Provider
 // @Accept       json
 // @Produce      json
-// @Security     Bearer
-// @Param        id path int true "Provider ID"
-// @Param        body body models.ProviderUpdateRequest true "Update Provider Request Body"
+// @Param        provider_id path int true "Provider ID"
+// @Param        body body models.ProviderUpdateReq true "Update Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /provider/{id} [put]
+// @Router       /provider/update/{provider_id} [post]
 func (this *providerApi) updateProvider(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -154,7 +152,8 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 		currentUser.ID,
 		req.Name,
 		req.BaseURL,
-		req.APIKey); {
+		req.APIKey,
+		req.Mode); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
@@ -171,12 +170,12 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 // @Tags         Provider
 // @Accept       json
 // @Produce      json
-// @Security     Bearer
-// @Param        id path int true "Provider ID"
+// @Param        provider_id path int true "Provider ID"
+// @Param        body body models.ProviderInfoReq true "Delete Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider deleted successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid provider ID"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /provider/{id} [delete]
+// @Router       /provider/delete/{provider_id} [post]
 func (this *providerApi) deleteProvider(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)

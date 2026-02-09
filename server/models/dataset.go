@@ -1,14 +1,16 @@
 package models
 
 type DatasetCreateReq struct {
+	Icon        string `json:"icon" validate:"required,emoji"`
 	Name        string `json:"name" validate:"required,min=1,max=100"`
 	Description string `json:"description" validate:"max=500"`
 }
 
 type DatasetUpdateReq struct {
 	ID          uint   `json:"id" validate:"required"`
-	Name        string `json:"name" validate:"omitempty,min=1,max=100"`
-	Description string `json:"description" validate:"omitempty,max=500"`
+	Icon        string `json:"icon" validate:"emoji"`
+	Name        string `json:"name" validate:"required,min=1,max=100"`
+	Description string `json:"description" validate:"max=500"`
 }
 
 type DatasetInfo struct {

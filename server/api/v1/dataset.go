@@ -48,7 +48,7 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), req.Name, req.Description, currentUser.ID); {
+	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), req.Icon, req.Name, req.Description, currentUser.ID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
@@ -148,7 +148,7 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := datasetService.UpdateDataset(ctx.Request().Context(), req.ID, currentUser.ID, req.Name, req.Description); {
+	switch err := datasetService.UpdateDataset(ctx.Request().Context(), req.ID, currentUser.ID, req.Icon, req.Name, req.Description); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):

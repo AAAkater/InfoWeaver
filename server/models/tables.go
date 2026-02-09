@@ -55,6 +55,7 @@ type (
 	Dataset struct {
 		gorm.Model
 		Name        string `gorm:"not null;unique"`
+		Icon        string // Icon is an emoji (e.g., 🚀, ❤️).
 		Description string
 		OwnerID     uint `gorm:"not null"`
 		User        User `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`

@@ -12,10 +12,11 @@ var DatasetServiceApp = new(DatasetService)
 
 type DatasetService struct{}
 
-func (this *DatasetService) CreateNewDataset(ctx context.Context, datasetName string, description string, ownerID uint) error {
+func (this *DatasetService) CreateNewDataset(ctx context.Context, icon string, datasetName string, description string, ownerID uint) error {
 
 	dbDataset := models.Dataset{
 		Name:        datasetName,
+		Icon:        icon,
 		Description: description,
 		OwnerID:     ownerID,
 	}
@@ -43,9 +44,13 @@ func (this *DatasetService) ListDatasetsByOwnerID(ctx context.Context, ownerID u
 	return result.RowsAffected, datasets, result.Error
 }
 
-func (this *DatasetService) UpdateDataset(ctx context.Context, id uint, ownerID uint, name string, description string) error {
+func (this *DatasetService) UpdateDataset(ctx context.Context, id uint, ownerID uint, icon string, name string, description string) error {
 
-	newDatasetInfo := models.Dataset{Name: name, Description: description}
+	newDatasetInfo := models.Dataset{
+		Icon:        icon,
+		Name:        name,
+		Description: description,
+	}
 
 	rowsAffected, err := gorm.G[models.Dataset](db.PgSqlDB).
 		Where("id = ? AND owner_id = ?", id, ownerID).

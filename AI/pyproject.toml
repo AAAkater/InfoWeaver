@@ -1,0 +1,29 @@
+[project]
+name = "ai"
+version = "0.1.0"
+description = "InfoWeaver RAG"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "llama-index>=0.14.10",
+    "llama-index-core>=0.10.43",
+    "llama-index-embeddings-ollama>=0.8.6",
+    "llama-index-llms-deepseek>=0.2.2",
+    "llama-index-llms-openai>=0.6.12",
+    "llama-index-vector-stores-milvus>=0.9.4",
+    "loguru>=0.7.3",
+    "matplotlib>=3.10.7",
+    "nest-asyncio>=1.6.0",
+    "openai>=2.14.0",
+    "openinference-instrumentation-llama-index>=2",
+    "opentelemetry-exporter-otlp>=1.39.1",
+    "opentelemetry-proto>=1.12.0",
+    "opentelemetry-sdk>=1.39.1",
+    "pydantic>=2.12.5",
+    "pydantic-core>=2.41.5",
+    "pydantic-settings>=2.12.0",
+    "pymilvus>=2.6.5",
+    "pypdf2>=3.0.1",
+    "pytest>=9.0.2",
+    "ruff>=0.14.10",
+]

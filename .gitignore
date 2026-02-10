@@ -1,9 +1,2 @@
 
-__pycache__/
 .DS_Store
-server/config.yaml
-
-AI/data
-logs
-.pytest_cache
-.env.local

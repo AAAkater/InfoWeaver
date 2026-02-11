@@ -226,6 +226,7 @@ const local: App.I18n.Schema = {
     'iframe-page': '外链页面',
     home: '首页',
     document: '文档',
+    dataset: '知识库',
     document_project: '项目文档',
     'document_project-link': '项目文档(外链)',
     document_video: '视频教程',

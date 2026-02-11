@@ -242,6 +242,7 @@ const local: App.I18n.Schema = {
     document_alova: 'Alova Document',
     'user-center': 'User Center',
     about: 'About',
+    dataset: 'Dataset',
     function: 'System Function',
     alova: 'Alova Example',
     alova_request: 'Alova Request',

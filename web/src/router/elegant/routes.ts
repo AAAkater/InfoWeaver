@@ -85,6 +85,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'dataset',
+    path: '/dataset',
+    component: 'layout.base$view.dataset',
+    meta: {
+      title: 'dataset',
+      i18nKey: 'route.dataset',
+      icon: 'material-symbols-light:book-4-spark-rounded',
+    }
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',

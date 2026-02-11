@@ -106,6 +106,8 @@
     "@unocss/transformer-directives": "66.5.10",
     "@unocss/transformer-variant-group": "66.5.10",
     "@unocss/vite": "66.5.10",
+    "@vicons/fluent": "^0.13.0",
+    "@vicons/material": "^0.13.0",
     "@vitejs/plugin-vue": "6.0.3",
     "@vitejs/plugin-vue-jsx": "5.1.2",
     "consola": "3.4.2",

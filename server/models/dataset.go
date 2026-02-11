@@ -15,6 +15,7 @@ type DatasetUpdateReq struct {
 
 type DatasetInfo struct {
 	ID          uint   `json:"id"`
+	Icon        string `json:"icon"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	OwnerID     uint   `json:"owner_id"`

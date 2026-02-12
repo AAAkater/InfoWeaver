@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -17,6 +18,12 @@ func InitLogger(isDev bool) *zap.SugaredLogger {
 	} else {
 		config = zap.NewProductionConfig()
 	}
+
+	// Customize time format to YYYY-MM-DD HH:MM:SS.mmm
+	config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+	}
+
 	l, err := config.Build()
 	if err != nil {
 		panic(fmt.Errorf("fatal error init logger: %w", err))

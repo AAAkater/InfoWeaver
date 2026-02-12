@@ -31,3 +31,7 @@ type DatasetListResp struct {
 type DatasetInfoReq struct {
 	ID uint `param:"dataset_id" validate:"required"`
 }
+
+type DatasetListReq struct {
+	Name string `query:"name" validate:"omitempty,min=1,max=100"`
+}

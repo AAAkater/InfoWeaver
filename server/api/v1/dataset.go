@@ -62,11 +62,13 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 
 // listDatasets godoc
 // @Summary      List Datasets
-// @Description  List all datasets owned by the authenticated user
+// @Description  List all datasets owned by the authenticated user. If name query parameter is provided, filter datasets by name.
 // @Tags         Dataset
 // @Accept       json
 // @Produce      json
+// @Param        name query string false "Dataset name to filter by"
 // @Success      200 {object} response.ResponseBase[models.DatasetListResp] "List of datasets"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
 // @Router       /dataset [get]
@@ -77,7 +79,22 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	switch total, datasets, err := datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID); err {
+	// Parse optional name query parameter
+	req, err := utils.BindAndValidate[models.DatasetListReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	var total int64
+	var datasets []models.DatasetInfo
+
+	if req.Name != "" {
+		total, datasets, err = datasetService.ListDatasetsByName(ctx.Request().Context(), currentUser.ID, req.Name)
+	} else {
+		total, datasets, err = datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID)
+	}
+
+	switch err {
 	case nil:
 		return response.OkWithData(ctx, models.DatasetListResp{
 			Total:    total,

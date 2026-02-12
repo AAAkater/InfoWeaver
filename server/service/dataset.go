@@ -72,3 +72,11 @@ func (this *DatasetService) DeleteDataset(ctx context.Context, id uint, ownerID 
 	}
 	return err
 }
+
+// GetDatasetInfoByName retrieves a dataset by its name and owner ID using fuzzy matching (contains)
+func (this *DatasetService) ListDatasetsByName(ctx context.Context, ownerID uint, name string) (rowsAffected int64, dbDataset []models.DatasetInfo, err error) {
+	result := db.PgSqlDB.Model(&models.Dataset{}).
+		Where("name LIKE ? AND owner_id = ?", "%"+name+"%", ownerID).
+		Find(&dbDataset)
+	return result.RowsAffected, dbDataset, result.Error
+}

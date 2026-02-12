@@ -91,7 +91,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'dataset',
       i18nKey: 'route.dataset',
-      icon: 'material-symbols-light:book-4-spark-rounded',
+      icon: 'material-symbols-light:book-4-spark-rounded'
     }
   },
   {

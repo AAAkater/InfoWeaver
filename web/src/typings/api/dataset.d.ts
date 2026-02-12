@@ -4,6 +4,7 @@ declare namespace Api {
       icon: string;
       description: string;
       name: string;
+      id?: number;
     }
     interface DatasetItem {
       created_at: string;
@@ -14,7 +15,10 @@ declare namespace Api {
       owner_id: number;
       updated_at: string;
     }
-    interface DeleteResponse {
+    interface GetDatasetResponse {
+      datasets: DatasetItem[];
+    }
+    interface DatasetResponse {
       code: number;
       data: any;
       msg: string;

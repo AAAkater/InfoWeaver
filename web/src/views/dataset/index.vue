@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { h, onMounted, reactive, ref } from 'vue';
 import type { Component } from 'vue';
-import { NIcon, useMessage } from 'naive-ui';
+import { NIcon, useDialog, useMessage } from 'naive-ui';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/zh-cn';
 import {
   Add12Filled,
   Delete16Regular as DeleteIcon,
@@ -9,14 +12,24 @@ import {
   MoreHorizontal28Regular,
   Search48Filled
 } from '@vicons/fluent';
-import { createDataset, deleteDataset, getDatasets } from '@/service/api/dataset';
-const showModal = ref(false);
+import { createDataset, deleteDataset, getDatasets, updateDataset } from '@/service/api/dataset';
 
+const dialog = useDialog();
+dayjs.extend(relativeTime);
+dayjs.locale('zh-cn');
+
+function formatTime(isoString: string) {
+  return dayjs(isoString).fromNow();
+}
+const showModal = ref(false);
+const isEdit = ref(false);
 const bodyStyle = {
   width: '500px'
 };
+const searchId = ref();
 const datasets = ref<Api.Dataset.DatasetItem[]>();
 const model: Api.Dataset.FormModel = reactive({
+  id: undefined,
   icon: '🤖',
   description: '',
   name: ''
@@ -29,8 +42,30 @@ function renderIcon(icon: Component) {
     });
   };
 }
+function openCreateModal() {
+  model.id = undefined;
+  model.icon = '🤖';
+  model.name = '';
+  model.description = '';
+  isEdit.value = false;
+  showModal.value = true;
+}
 async function fetchDatasets() {
-  const { response: res } = await getDatasets();
+  let id: number | undefined;
+
+  if (searchId.value) {
+    const parsed = Number(searchId.value);
+    if (Number.isNaN(parsed)) {
+      message.warning('请输入有效的数字 ID');
+      datasets.value = [];
+      return;
+    }
+    id = parsed;
+  } else {
+    id = undefined;
+  }
+
+  const { response: res } = await getDatasets(id);
   if (res?.data?.code === 0) {
     const datasetList = res.data.data?.datasets ?? [];
     datasets.value = datasetList;
@@ -59,6 +94,16 @@ async function handleDeleteDataset(id: number) {
   }
   fetchDatasets();
 }
+async function handleEditDataset(md: Api.Dataset.FormModel) {
+  const { response: res } = await updateDataset(md);
+  if (res.data.code === 0) {
+    message.success('编辑成功');
+  } else {
+    const errorMsg = res.data.msg;
+    window.$message?.error(errorMsg);
+  }
+  fetchDatasets();
+}
 const emojiList = ['😀', '😂', '😎', '🤖', '🐱', '🦊', '🐶', '🦄', '🐼', '🦉'];
 
 const hovered = ref<string | null>(null);
@@ -74,15 +119,35 @@ const dropdownOptions = [
     icon: renderIcon(DeleteIcon)
   }
 ];
-function handleSelect(key: string, id: number) {
+function handleSelect(key: string, dataset: Api.Dataset.DatasetItem) {
   switch (key) {
     case 'edit':
       showModal.value = true;
+      isEdit.value = true;
+      Object.assign(model, {
+        id: dataset.id,
+        icon: dataset.icon || '🤖',
+        name: dataset.name,
+        description: dataset.description
+      });
       break;
     case 'delete':
-      handleDeleteDataset(id);
+      dialog.warning({
+        title: '确认删除',
+        content: `确定要删除知识库 “${dataset.name}” 吗？此操作不可恢复。`,
+        positiveText: '删除',
+        negativeText: '取消',
+        onPositiveClick: () => handleDeleteDataset(dataset.id)
+      });
       break;
     default:
+  }
+}
+function handleSubmit() {
+  if (isEdit.value && model.id !== null) {
+    handleEditDataset(model);
+  } else {
+    handleCreateDataset(model);
   }
 }
 function selectEmoji(emoji: string) {
@@ -97,7 +162,7 @@ onMounted(() => {
 <template>
   <NSpace vertical :size="16">
     <NSpace>
-      <NInput round placeholder="请输入知识库id" clearable>
+      <NInput v-model:value="searchId" round placeholder="请输入知识库id" clearable @blur="fetchDatasets()">
         <template #prefix>
           <NIcon :component="Search48Filled" />
         </template>
@@ -107,7 +172,7 @@ onMounted(() => {
     <NGrid cols="3" x-gap="16" y-gap="17" responsive="screen" item-responsive>
       <NGridItem class="grid-item-equal-height">
         <NCard size="huge" class="bg-[#E8ECEF]" content-style="padding-left: 5px;padding-right: 5px; height: 100%;">
-          <NButton quaternary class="w-full justify-start" @click="showModal = true">
+          <NButton quaternary class="w-full justify-start" @click="openCreateModal">
             <NIcon :component="Add12Filled" class="mr-2" />
             创建知识库
           </NButton>
@@ -120,7 +185,7 @@ onMounted(() => {
             positive-text="确认"
             negative-text="取消"
             title="知识库设置"
-            @positive-click="handleCreateDataset(model)"
+            @positive-click="handleSubmit"
           >
             <NSpace :size="10" vertical>
               <NCard title="知识库名称" :bordered="false" size="small" content-style="display:flex;gap: 8px;">
@@ -174,7 +239,7 @@ onMounted(() => {
           </NModal>
         </NCard>
       </NGridItem>
-      <NGridItem v-for="dataset in datasets" :key="dataset.id">
+      <NGridItem v-for="dataset in datasets" :key="dataset.id" class="grid-item-equal-height">
         <NCard hoverable size="huge" style="cursor: pointer">
           <NSpace vertical>
             <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%">
@@ -198,7 +263,7 @@ onMounted(() => {
                 :options="dropdownOptions"
                 trigger="click"
                 size="small"
-                @select="key => handleSelect(key, dataset.id)"
+                @select="key => handleSelect(key, dataset)"
               >
                 <NButton size="small" secondary>
                   <NIcon>
@@ -217,7 +282,7 @@ onMounted(() => {
                 transform-origin: left top;
               "
             >
-              更新于 · {{ dataset.updated_at }}
+              更新于 · {{ formatTime(dataset.updated_at) }}
             </div>
           </NSpace>
         </NCard>
@@ -229,9 +294,6 @@ onMounted(() => {
 <style scoped>
 .grid-item-equal-height {
   display: flex;
-}
-.grid-item-equal-height .n-card {
-  flex: 1;
-  min-height: 0;
+  min-height: 170px;
 }
 </style>

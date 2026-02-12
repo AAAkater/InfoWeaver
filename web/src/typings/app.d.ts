@@ -485,6 +485,7 @@ declare namespace App {
             userNamePlaceholder: string;
             phonePlaceholder: string;
             codePlaceholder: string;
+            emailPlaceholder: string;
             passwordPlaceholder: string;
             confirmPasswordPlaceholder: string;
             codeLogin: string;
@@ -492,6 +493,7 @@ declare namespace App {
             back: string;
             validateSuccess: string;
             loginSuccess: string;
+            registerSuccess: string;
             welcomeBack: string;
           };
           pwdLogin: {
@@ -893,7 +895,7 @@ declare namespace App {
     /** The backend service response data */
     type Response<T = unknown> = {
       /** The backend service response code */
-      code: string;
+      code: number;
       /** The backend service response message */
       msg: string;
       /** The backend service response data */

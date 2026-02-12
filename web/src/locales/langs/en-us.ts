@@ -1,6 +1,6 @@
 const local: App.I18n.Schema = {
   system: {
-    title: 'SoybeanAdmin',
+    title: 'InfoWeaver',
     updateTitle: 'System Version Update Notification',
     updateContent: 'A new version of the system has been detected. Do you want to refresh the page immediately?',
     updateConfirm: 'Refresh immediately',
@@ -242,6 +242,7 @@ const local: App.I18n.Schema = {
     document_alova: 'Alova Document',
     'user-center': 'User Center',
     about: 'About',
+    dataset: 'Dataset',
     function: 'System Function',
     alova: 'Alova Example',
     alova_request: 'Alova Request',
@@ -309,6 +310,7 @@ const local: App.I18n.Schema = {
         loginOrRegister: 'Login / Register',
         userNamePlaceholder: 'Please enter user name',
         phonePlaceholder: 'Please enter phone number',
+        emailPlaceholder: 'Please enter email',
         codePlaceholder: 'Please enter verification code',
         passwordPlaceholder: 'Please enter password',
         confirmPasswordPlaceholder: 'Please enter password again',
@@ -316,6 +318,7 @@ const local: App.I18n.Schema = {
         confirm: 'Confirm',
         back: 'Back',
         validateSuccess: 'Verification passed',
+        registerSuccess: 'Register successfully',
         loginSuccess: 'Login successfully',
         welcomeBack: 'Welcome back, {userName} !'
       },

@@ -6,12 +6,12 @@ import { request } from '../request';
  * @param userName User name
  * @param password Password
  */
-export function fetchLogin(userName: string, password: string) {
+export function fetchLogin(username: string, password: string) {
   return request<Api.Auth.LoginToken>({
-    url: '/auth/login',
+    url: '/user/login',
     method: 'post',
     data: {
-      userName,
+      username,
       password
     }
   });
@@ -19,7 +19,7 @@ export function fetchLogin(userName: string, password: string) {
 
 /** Get user info */
 export function fetchGetUserInfo() {
-  return request<Api.Auth.UserInfo>({ url: '/auth/getUserInfo' });
+  return request<Api.Auth.UserInfo>({ url: '/user/info' });
 }
 
 /**
@@ -45,4 +45,16 @@ export function fetchRefreshToken(refreshToken: string) {
  */
 export function fetchCustomBackendError(code: string, msg: string) {
   return request({ url: '/auth/error', params: { code, msg } });
+}
+
+export function UserRegister(username: string, password: string, email: string) {
+  return request<Api.Auth.registerResponse>({
+    url: '/user/register',
+    method: 'post',
+    data: {
+      email,
+      username,
+      password
+    }
+  });
 }

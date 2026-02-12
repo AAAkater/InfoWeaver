@@ -12,7 +12,7 @@ defineOptions({
 
 const authStore = useAuthStore();
 const { toggleLoginModule } = useRouterPush();
-const { formRef, validate } = useNaiveForm();
+const { validate } = useNaiveForm();
 
 interface FormModel {
   userName: string;
@@ -20,7 +20,7 @@ interface FormModel {
 }
 
 const model: FormModel = reactive({
-  userName: 'Soybean',
+  userName: '铭铭又香又甜',
   password: '123456'
 });
 

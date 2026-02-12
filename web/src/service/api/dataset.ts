@@ -1,7 +1,8 @@
 import { request } from '../request';
 export function getDatasets(id?: number) {
-  return request<Api.Dataset.DatasetItem[]>({
-    url: `/dataset/${id}`,
+  const url = id !== undefined ? `/dataset/${id}` : '/dataset';
+  return request<Api.Dataset.GetDatasetResponse>({
+    url,
     method: 'get'
   });
 }

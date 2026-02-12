@@ -38,15 +38,46 @@ func validateEmoji(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	// Check if it contains only emoji characters
-	for _, r := range value {
+	// For emoji validation, we need to handle sequences properly
+	// Check if the entire string consists of valid emoji characters and modifiers
+	runes := []rune(value)
+	if len(runes) == 0 {
+		return false
+	}
+
+	// Allow emoji sequences with base emojis, modifiers, and joiners
+	for _, r := range runes {
 		if !isEmoji(r) {
 			return false
 		}
 	}
 
-	// Limit emoji length (typically emojis are 1-4 characters)
-	return len(value) >= 1 && len(value) <= 10
+	// Special case: allow zero-width joiner sequences
+	// But ensure we have at least one base emoji
+	hasBaseEmoji := false
+	for _, r := range runes {
+		// Base emoji ranges (excluding modifiers and joiners)
+		if (r >= 0x1F600 && r <= 0x1F64F) || // Emoticons
+			(r >= 0x1F300 && r <= 0x1F5FF) || // Misc Symbols and Pictographs
+			(r >= 0x1F680 && r <= 0x1F6FF) || // Transport and Map
+			(r >= 0x1F1E6 && r <= 0x1F1FF) || // Regional country flags
+			(r >= 0x2600 && r <= 0x26FF) || // Misc symbols
+			(r >= 0x2700 && r <= 0x27BF) || // Dingbats
+			(r >= 0x1F900 && r <= 0x1F9FF) || // Supplemental Symbols and Pictographs
+			(r >= 0x1F018 && r <= 0x1F270) || // Various asian characters
+			(r >= 0x238C && r <= 0x2454) { // Dingbats and additional emoticons
+			hasBaseEmoji = true
+			break
+		}
+	}
+
+	// Must have at least one base emoji
+	if !hasBaseEmoji {
+		return false
+	}
+
+	// Limit emoji length (typically emojis are 1-4 characters, but sequences can be longer)
+	return len(value) >= 1 && len(value) <= 20
 }
 
 // isEmoji checks if a single character is an emoji
@@ -62,7 +93,9 @@ func isEmoji(r rune) bool {
 		(r >= 0x1F900 && r <= 0x1F9FF) || // Supplemental Symbols and Pictographs
 		(r >= 0x1F018 && r <= 0x1F270) || // Various asian characters
 		(r >= 0x238C && r <= 0x2454) || // Dingbats and additional emoticons
-		(r >= 0x20D0 && r <= 0x20FF) { // Combining Diacritical Marks for Symbols
+		(r >= 0x20D0 && r <= 0x20FF) || // Combining Diacritical Marks for Symbols
+		(r >= 0x1F3FB && r <= 0x1F3FF) || // Skin tone modifiers
+		(r == 0x200D) { // Zero-width joiner
 		return true
 	}
 

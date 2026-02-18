@@ -48,6 +48,13 @@ type Config struct {
 	MINIO_SECRET_KEY             string `mapstructure:"MINIO_SECRET_KEY"`
 	MINIO_BUCKET_NAME            string `mapstructure:"MINIO_BUCKET_NAME"`
 	MINIO_USE_SSL                bool   `mapstructure:"MINIO_USE_SSL"`
+	RABBITMQ_HOST                string `mapstructure:"RABBITMQ_HOST"`
+	RABBITMQ_PORT                int    `mapstructure:"RABBITMQ_PORT"`
+	RABBITMQ_USERNAME            string `mapstructure:"RABBITMQ_USERNAME"`
+	RABBITMQ_PASSWORD            string `mapstructure:"RABBITMQ_PASSWORD"`
+	RABBITMQ_VHOST               string `mapstructure:"RABBITMQ_VHOST"`
+	RABBITMQ_EXCHANGE            string `mapstructure:"RABBITMQ_EXCHANGE"`
+	RABBITMQ_QUEUE               string `mapstructure:"RABBITMQ_QUEUE"`
 }
 
 func (this *Config) GetServerPort() string {
@@ -70,6 +77,10 @@ func (this *Config) GetMilvusDSN() string {
 
 func (this *Config) GetMinioDSN() string {
 	return fmt.Sprintf("%s:%d", this.MINIO_HOST, this.MINIO_PORT)
+}
+
+func (this *Config) GetRabbitMQDSN() string {
+	return fmt.Sprintf("amqp://%s:%s@%s:%d/%s", this.RABBITMQ_USERNAME, this.RABBITMQ_PASSWORD, this.RABBITMQ_HOST, this.RABBITMQ_PORT, this.RABBITMQ_VHOST)
 }
 
 func (this *Config) GetJWTExpireTime() time.Duration {

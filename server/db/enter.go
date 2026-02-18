@@ -16,6 +16,7 @@ func InitAllDB() {
 	handler.initPgSql()
 	handler.initRedis()
 	handler.initMinio()
+	handler.initRabbitMQ()
 	// handler.InitMilvus()
 }
 
@@ -85,4 +86,13 @@ func (this *InitDBHandler) InitMilvus() {
 		os.Exit(0)
 	}
 	utils.Logger.Info("success to connect to Milvus")
+}
+
+func (this *InitDBHandler) initRabbitMQ() {
+	var err error
+	if RabbitMQConn, err = connectRabbitMQ(config.Settings); err != nil {
+		utils.Logger.Errorf("Failed to connect to RabbitMQ:%s", err)
+		os.Exit(0)
+	}
+	utils.Logger.Info("success to connect to RabbitMQ")
 }

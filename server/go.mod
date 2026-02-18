@@ -17,6 +17,7 @@ require (
 	github.com/labstack/echo/v5 v5.0.1
 	github.com/milvus-io/milvus/client/v2 v2.6.1
 	github.com/minio/minio-go/v7 v7.0.98
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/sony/sonyflake v1.3.0
 	github.com/stretchr/testify v1.11.1

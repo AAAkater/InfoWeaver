@@ -57,3 +57,11 @@ type FileInfoUpdate struct {
 	MinioPath string
 	UserID    uint
 }
+
+// FileUploadMessage represents the message sent to RabbitMQ when a file is uploaded
+type FileUploadMessage struct {
+	Event     string    `json:"event"`
+	FileID    uint      `json:"file_id"`
+	MinioPath string    `json:"minio_path"`
+	Timestamp time.Time `json:"timestamp"`
+}

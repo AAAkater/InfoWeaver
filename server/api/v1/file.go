@@ -9,6 +9,7 @@ import (
 	"server/models/response"
 	"server/service"
 	"server/utils"
+	"sync"
 
 	"github.com/labstack/echo/v5"
 )
@@ -58,6 +59,10 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 		return response.BadRequestWithMsg("Failed to get dataset ID")
 	}
 
+	if dbDatasetInfo, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), datasetID, currentUser.ID); err != nil {
+		utils.Logger.Error(err)
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", dbDatasetInfo.ID))
+	}
 	// Open the uploaded file
 	src, err := fileHeader.Open()
 	if err != nil {
@@ -72,25 +77,62 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 		fileType = "application/octet-stream"
 	}
 
-	// Call CreateFile service to upload and save
-	switch err := fileService.CreateFile(
-		ctx.Request().Context(),
-		currentUser.ID,
-		datasetID,
-		fileHeader.Filename,
-		fileType,
-		src,
-		fileHeader.Size,
-	); {
-	case err == nil:
-		// ok
-	case errors.Is(err, service.ErrNotFound) || errors.Is(err, service.ErrDuplicatedKey):
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
-	default:
-		utils.Logger.Errorf("Failed to create file: %v", err)
-		return response.FailWithMsg(ctx, "Failed to upload file")
+	var wg sync.WaitGroup
+	errChan := make(chan error, 2)
+	fileChan := make(chan *models.File, 1) // Channel to pass dbFile to main thread
+
+	wg.Go(func() {
+		switch dbFile, err := fileService.CreateFileInfo(
+			ctx.Request().Context(),
+			currentUser.ID,
+			datasetID,
+			fileHeader.Filename,
+			fileType,
+			src,
+			fileHeader.Size,
+		); {
+		case err == nil:
+			// Send dbFile to main thread on success
+			fileChan <- dbFile
+		case errors.Is(err, service.ErrDuplicatedKey):
+			utils.Logger.Errorf("Failed to save file record to database: %v", err)
+			errChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+		default:
+			utils.Logger.Errorf("Failed to create file: %v", err)
+			errChan <- response.FailWithMsg(ctx, "Failed to upload file")
+		}
+	})
+
+	wg.Go(func() {
+		// Call CreateFile service to upload to MinIO
+		if err := fileService.UploadFileToMinio(
+			ctx.Request().Context(), currentUser.ID, fileHeader.Filename, src, fileHeader.Size); err != nil {
+			utils.Logger.Errorf("Failed to upload file to Minio: %v", err)
+			errChan <- response.FailWithMsg(ctx, "Failed to upload file to Minio")
+		}
+	})
+
+	wg.Wait()
+	close(errChan)
+	close(fileChan)
+
+	// Check for any errors
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
 	}
 
+	// Get dbFile from channel
+	dbFile := <-fileChan
+
+	// Publish file upload event
+	if err := fileService.PublishFileUploadEvent(ctx.Request().Context(), dbFile); err != nil {
+		utils.Logger.Errorf("Failed to publish file upload event: %v", err)
+		return response.FailWithMsg(ctx, "Failed to publish file upload event")
+	}
+
+	utils.Logger.Infof("File created successfully: %s", fileHeader.Filename)
 	return response.OkWithData(ctx, models.FileUploadResp{
 		OwnerID:   currentUser.ID,
 		DatasetID: datasetID,

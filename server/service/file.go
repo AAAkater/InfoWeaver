@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"server/db"
 	"server/models"
 	"server/utils"
 	"sync"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -16,13 +18,24 @@ var FileServiceApp = new(FileService)
 
 type FileService struct{}
 
-// CreateFile uploads a file to Minio and creates a database record
-func (this *FileService) CreateFile(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) error {
+// CreateFile uploads a file to Minio
+func (this *FileService) UploadFileToMinio(ctx context.Context, ownerID uint, filename string, fileReader io.Reader, fileSize int64) error {
+	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
+
+	if err := db.MinioClient.UploadFile(ctx, objectName, fileReader, fileSize); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateFileInfo creates a database record
+func (this *FileService) CreateFileInfo(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) (dbFile *models.File, err error) {
 
 	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
 
 	// Prepare database record
-	dbFile := models.File{
+	dbFile = &models.File{
 		UserID:    ownerID,
 		Name:      filename,
 		MinioPath: objectName,
@@ -30,45 +43,12 @@ func (this *FileService) CreateFile(ctx context.Context, ownerID uint, datasetID
 		Type:      fileType,
 		DatasetID: datasetID,
 	}
-
-	if _, err := gorm.G[models.Dataset](db.PgSqlDB).
-		Where("id = ? AND owner_id = ?", datasetID, ownerID).
-		First(ctx); err != nil {
-		utils.Logger.Errorf("Failed to find dataset %d: %v", datasetID, err)
-		return gorm.ErrRecordNotFound
-	}
-
-	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
-
-	// Upload file to Minio in parallel
-	wg.Go(func() {
-		if err := db.MinioClient.UploadFile(ctx, objectName, fileReader, fileSize); err != nil {
-			utils.Logger.Errorf("Failed to upload file to Minio: %v", err)
-			errChan <- err
-		}
-	})
-
 	// Save file record to database in parallel
-	wg.Go(func() {
-		if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, &dbFile); err != nil {
-			utils.Logger.Errorf("Failed to save file record to database: %v", err)
-			errChan <- err
-		}
-	})
-
-	wg.Wait()
-	close(errChan)
-
-	// Check for any errors
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
+	if err := gorm.G[models.File](db.PgSqlDB).Create(ctx, dbFile); err != nil {
+		return nil, err
 	}
 
-	utils.Logger.Infof("File created successfully: %s (ID: %d)", dbFile.Name, dbFile.ID)
-	return nil
+	return dbFile, nil
 }
 
 // GetFileListByUserID retrieves files for a specific user with pagination
@@ -193,4 +173,40 @@ func (this *FileService) CheckFileExistsByFileID(ctx context.Context, fileID uin
 	}
 
 	return exists, nil
+}
+
+// PublishFileUploadEvent publishes a file upload event to RabbitMQ
+// This function is designed to be called in a goroutine for concurrent execution
+func (this *FileService) PublishFileUploadEvent(ctx context.Context, fileInfo *models.File) error {
+	// Create the message payload
+	message := models.FileUploadMessage{
+		Event:     "file.uploaded",
+		FileID:    fileInfo.ID,
+		MinioPath: fileInfo.MinioPath,
+		Timestamp: time.Now(),
+	}
+
+	// Marshal the message to JSON
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		utils.Logger.Errorf("Failed to marshal file upload message: %v", err)
+		return err
+	}
+
+	// Create a work queue for file upload events
+	fileUploadQueue, err := db.NewWorkQueue("file_upload_events")
+	if err != nil {
+		utils.Logger.Errorf("Failed to create file upload queue: %v", err)
+		return err
+	}
+	defer fileUploadQueue.Close()
+
+	// Publish the message
+	if err := fileUploadQueue.Publish(messageBytes); err != nil {
+		utils.Logger.Errorf("Failed to publish file upload event: %v", err)
+		return err
+	}
+
+	utils.Logger.Infof("File upload event published to RabbitMQ: %s (ID: %d)", fileInfo.MinioPath, fileInfo.ID)
+	return nil
 }

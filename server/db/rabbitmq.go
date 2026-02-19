@@ -37,6 +37,7 @@ type WorkQueue struct {
 }
 
 // ========== Work Queue Pattern ==========
+//
 // NewWorkQueue creates a new work queue
 func NewWorkQueue(queueName string) (*WorkQueue, error) {
 	ch, err := GetChannel()

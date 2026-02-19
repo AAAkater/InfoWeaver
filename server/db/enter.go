@@ -32,7 +32,7 @@ func (this *InitDBHandler) initPgSql() {
 	if err = PgSqlDB.AutoMigrate(
 		&models.User{},
 		&models.File{},
-		&models.Document{},
+		&models.Chunk{},
 		&models.Memory{},
 		&models.Dataset{},
 		&models.Provider{}); err != nil {

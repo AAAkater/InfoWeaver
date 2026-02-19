@@ -27,20 +27,14 @@ type (
 		Dataset   Dataset `gorm:"foreignKey:DatasetID;constraint:OnDelete:CASCADE"`
 	}
 
-	// Document represents a knowledge document for RAG system
-	//
-	// file chunks are processed into documents
-	Document struct {
+	// Chunk represents a knowledge document for RAG system
+	Chunk struct {
 		gorm.Model
 		Content  string         `gorm:"type:text;not null"` // Document content
 		Metadata map[string]any `gorm:"type:jsonb"`         // Additional metadata (source, type, etc.)
-	}
-	// Embedding references vector representations in Milvus
-	Embedding struct {
-		ID             uint   `gorm:"primaryKey"`
-		DocumentID     uint   `gorm:"uniqueIndex;not null"` // Unique embedding per document
-		VectorID       string `gorm:"unique;not null"`      // Reference to Milvus vector ID
-		CollectionName string `gorm:"not null"`             // Milvus collection name
+		VectorID string         `gorm:"unique;not null"`    // Reference to Milvus vector ID
+		FileID   uint           `gorm:"not null"`           // Source file ID
+		File     File           `gorm:"foreignKey:FileID;constraint:OnDelete:CASCADE"`
 	}
 	// Memory stores user interaction history and retrieval results
 	Memory struct {
@@ -48,7 +42,7 @@ type (
 		Question string `gorm:"type:text;not null"`
 		Answer   string `gorm:"type:text"` // Generated answer
 		// Many-to-Many relationship with RetrievedDocuments
-		RetrievedDocuments []Document `gorm:"many2many:memory_documents;"`
+		RetrievedDocuments []Chunk `gorm:"many2many:memory_documents;"`
 	}
 
 	// Dataset represents a collection of files owned by a user

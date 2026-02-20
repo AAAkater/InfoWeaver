@@ -6,15 +6,19 @@ import (
 )
 
 type FileUploadReq struct {
-	File multipart.FileHeader `form:"file" binding:"required"`
+	Files []multipart.FileHeader `form:"files" binding:"required"`
 }
 
-type FileUploadResp struct {
+type FileUploadInfo struct {
 	OwnerID   uint   `json:"owner_id"`
 	DatasetID uint   `json:"dataset_id"`
 	Name      string `json:"name"`
 	Type      string `json:"type"`
 	Size      int64  `json:"size"`
+}
+
+type MultiFileUploadResp struct {
+	Files []FileUploadInfo `json:"files"`
 }
 
 type ListFilesReq struct {

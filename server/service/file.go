@@ -30,7 +30,7 @@ func (this *FileService) UploadFileToMinio(ctx context.Context, ownerID uint, fi
 }
 
 // CreateFileInfo creates a database record
-func (this *FileService) CreateFileInfo(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileReader io.Reader, fileSize int64) (dbFile *models.File, err error) {
+func (this *FileService) CreateFileInfo(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileSize int64) (dbFile *models.File, err error) {
 
 	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
 

@@ -30,15 +30,15 @@ func SetFileRouter(e *echo.Echo) {
 type fileApi struct{}
 
 // uploadFile godoc
-// @Summary      File Upload
-// @Description  Upload a file to the server and associate it with a dataset. The file is stored in MinIO object storage.
+// @Summary      Multi-File Upload
+// @Description  Upload multiple files to the server and associate them with a dataset. Files are stored in MinIO object storage.
 // @Tags         File
 // @Accept       multipart/form-data
 // @Produce      json
-// @Param        file formData file true "File to upload"
-// @Param        id formData int true "Dataset ID to associate the uploaded file with"
-// @Success      200 {object} response.ResponseBase[models.FileUploadResp] "File uploaded successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid file, missing parameters, or upload failed"
+// @Param        files formData []file true "Files to upload"
+// @Param        id formData int true "Dataset ID to associate the uploaded files with"
+// @Success      200 {object} response.ResponseBase[models.MultiFileUploadResp] "Files uploaded successfully"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid files, missing parameters, or upload failed"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
 // @Failure      403 {object} response.ResponseBase[any] "Forbidden, user not authorized to access the specified dataset"
 // @Router       /file/upload [post]
@@ -48,97 +48,147 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileHeader, err := ctx.FormFile("file")
-	if err != nil {
-		utils.Logger.Error(err)
-		return response.BadRequestWithMsg("Failed to get uploaded file")
-	}
+	// Get dataset ID
 	datasetID, err := echo.FormValue[uint](ctx, "id")
 	if err != nil {
 		utils.Logger.Error(err)
 		return response.BadRequestWithMsg("Failed to get dataset ID")
 	}
 
-	if dbDatasetInfo, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), datasetID, currentUser.ID); err != nil {
+	// Validate dataset ownership
+	if _, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), datasetID, currentUser.ID); err != nil {
 		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", dbDatasetInfo.ID))
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
 	}
-	// Open the uploaded file
-	src, err := fileHeader.Open()
+
+	// Get all uploaded files
+	form, err := ctx.MultipartForm()
 	if err != nil {
-		utils.Logger.Errorf("Failed to open uploaded file: %v", err)
-		return response.BadRequestWithMsg("Failed to open uploaded file")
-	}
-	defer src.Close()
-
-	// Get file type/MIME type
-	fileType := fileHeader.Header.Get("Content-Type")
-	if fileType == "" {
-		fileType = "application/octet-stream"
+		utils.Logger.Error(err)
+		return response.BadRequestWithMsg("Failed to get multipart form")
 	}
 
+	fileHeaders := form.File["files"]
+	if len(fileHeaders) == 0 {
+		return response.BadRequestWithMsg("No files uploaded")
+	}
+
+	// Limit maximum number of files to 5
+	if len(fileHeaders) > 5 {
+		return response.BadRequestWithMsg("Maximum 5 files allowed per upload")
+	}
+
+	utils.Logger.Infof("Received %d files for upload", len(fileHeaders))
+
+	// Process files in parallel
 	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
-	fileChan := make(chan *models.File, 1) // Channel to pass dbFile to main thread
+	resultChan := make(chan models.FileUploadInfo, len(fileHeaders))
+	errChan := make(chan error, len(fileHeaders))
 
-	wg.Go(func() {
-		switch dbFile, err := fileService.CreateFileInfo(
-			ctx.Request().Context(),
-			currentUser.ID,
-			datasetID,
-			fileHeader.Filename,
-			fileType,
-			src,
-			fileHeader.Size,
-		); {
-		case err == nil:
-			// Send dbFile to main thread on success
-			fileChan <- dbFile
-		case errors.Is(err, service.ErrDuplicatedKey):
-			utils.Logger.Errorf("Failed to save file record to database: %v", err)
-			errChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
-		default:
-			utils.Logger.Errorf("Failed to create file: %v", err)
-			errChan <- response.FailWithMsg(ctx, "Failed to upload file")
-		}
-	})
+	for _, fileHeader := range fileHeaders {
+		wg.Go(func() {
+			fh := fileHeader
 
-	wg.Go(func() {
-		// Call CreateFile service to upload to MinIO
-		if err := fileService.UploadFileToMinio(
-			ctx.Request().Context(), currentUser.ID, fileHeader.Filename, src, fileHeader.Size); err != nil {
-			utils.Logger.Errorf("Failed to upload file to Minio: %v", err)
-			errChan <- response.FailWithMsg(ctx, "Failed to upload file to Minio")
-		}
-	})
+			// Open the uploaded file
+			src, err := fh.Open()
+			if err != nil {
+				utils.Logger.Errorf("Failed to open uploaded file %s: %v", fh.Filename, err)
+				errChan <- fmt.Errorf("failed to open file %s: %w", fh.Filename, err)
+				return
+			}
+			defer src.Close()
+
+			// Get file type/MIME type
+			fileType := fh.Header.Get("Content-Type")
+			if fileType == "" {
+				fileType = "application/octet-stream"
+			}
+
+			// Upload to MinIO
+			if err := fileService.UploadFileToMinio(
+				ctx.Request().Context(), currentUser.ID, fh.Filename, src, fh.Size); err != nil {
+				utils.Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
+				errChan <- fmt.Errorf("failed to upload file %s to Minio: %w", fh.Filename, err)
+				return
+			}
+
+			// Re-open file for database operation (since src was consumed)
+			src2, err := fh.Open()
+			if err != nil {
+				utils.Logger.Errorf("Failed to re-open uploaded file %s: %v", fh.Filename, err)
+				errChan <- fmt.Errorf("failed to re-open file %s: %w", fh.Filename, err)
+				return
+			}
+			defer src2.Close()
+
+			// Create database record
+			dbFile, err := fileService.CreateFileInfo(
+				ctx.Request().Context(),
+				currentUser.ID,
+				datasetID,
+				fh.Filename,
+				fileType,
+				src2,
+				fh.Size,
+			)
+			if err != nil {
+				if errors.Is(err, service.ErrDuplicatedKey) {
+					utils.Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
+					errChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+				} else {
+					utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
+					errChan <- fmt.Errorf("failed to create file record %s: %w", fh.Filename, err)
+				}
+				return
+			}
+
+			// Publish file upload event
+			if err := fileService.PublishFileUploadEvent(ctx.Request().Context(), dbFile); err != nil {
+				utils.Logger.Errorf("Failed to publish file upload event for %s: %v", fh.Filename, err)
+				// Continue even if event publishing fails
+			}
+
+			utils.Logger.Infof("File uploaded successfully: %s", fh.Filename)
+			resultChan <- models.FileUploadInfo{
+				OwnerID:   currentUser.ID,
+				DatasetID: datasetID,
+				Name:      fh.Filename,
+				Type:      fileType,
+				Size:      fh.Size,
+			}
+		})
+	}
 
 	wg.Wait()
+	close(resultChan)
 	close(errChan)
-	close(fileChan)
 
-	// Check for any errors
+	// Collect results
+	var uploadedFiles []models.FileUploadInfo
+	var errors []error
+
+	for resp := range resultChan {
+		uploadedFiles = append(uploadedFiles, resp)
+	}
+
 	for err := range errChan {
-		if err != nil {
-			return err
-		}
+		errors = append(errors, err)
 	}
 
-	// Get dbFile from channel
-	dbFile := <-fileChan
-
-	// Publish file upload event
-	if err := fileService.PublishFileUploadEvent(ctx.Request().Context(), dbFile); err != nil {
-		utils.Logger.Errorf("Failed to publish file upload event: %v", err)
-		return response.FailWithMsg(ctx, "Failed to publish file upload event")
+	// If all files failed, return error
+	if len(uploadedFiles) == 0 && len(errors) > 0 {
+		utils.Logger.Errorf("All file uploads failed: %v", errors)
+		return response.FailWithMsg(ctx, fmt.Sprintf("All file uploads failed: %v", errors))
 	}
 
-	utils.Logger.Infof("File created successfully: %s", fileHeader.Filename)
-	return response.OkWithData(ctx, models.FileUploadResp{
-		OwnerID:   currentUser.ID,
-		DatasetID: datasetID,
-		Name:      fileHeader.Filename,
-		Type:      fileType,
-		Size:      fileHeader.Size,
+	// If some files failed, log warnings but return success for successful uploads
+	if len(errors) > 0 {
+		utils.Logger.Warnf("Some file uploads failed: %v", errors)
+	}
+
+	utils.Logger.Infof("Successfully uploaded %d out of %d files", len(uploadedFiles), len(fileHeaders))
+	return response.OkWithData(ctx, models.MultiFileUploadResp{
+		Files: uploadedFiles,
 	})
 }
 

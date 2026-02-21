@@ -19,8 +19,8 @@ var FileServiceApp = new(FileService)
 type FileService struct{}
 
 // CreateFile uploads a file to Minio
-func (this *FileService) UploadFileToMinio(ctx context.Context, ownerID uint, filename string, fileReader io.Reader, fileSize int64) error {
-	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
+func (this *FileService) UploadFileToMinio(ctx context.Context, ownerID uint, datasetID uint, filename string, fileReader io.Reader, fileSize int64) error {
+	objectName := fmt.Sprintf("%d/%d/%s", ownerID, datasetID, filename)
 
 	if err := db.MinioClient.UploadFile(ctx, objectName, fileReader, fileSize); err != nil {
 		return err
@@ -32,7 +32,7 @@ func (this *FileService) UploadFileToMinio(ctx context.Context, ownerID uint, fi
 // CreateFileInfo creates a database record
 func (this *FileService) CreateFileInfo(ctx context.Context, ownerID uint, datasetID uint, filename string, fileType string, fileSize int64) (dbFile *models.File, err error) {
 
-	objectName := fmt.Sprintf("%d/%s", ownerID, filename)
+	objectName := fmt.Sprintf("%d/%d/%s", ownerID, datasetID, filename)
 
 	// Prepare database record
 	dbFile = &models.File{

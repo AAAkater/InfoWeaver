@@ -112,7 +112,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 			// Goroutine 1: Upload to MinIO
 			fileWg.Go(func() {
 				if err := fileService.UploadFileToMinio(
-					ctx.Request().Context(), currentUser.ID, fh.Filename, src, fh.Size); err != nil {
+					ctx.Request().Context(), currentUser.ID, datasetID, fh.Filename, src, fh.Size); err != nil {
 					utils.Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
 					minioErrChan <- fmt.Errorf("failed to upload file %s to Minio: %w", fh.Filename, err)
 				} else {

@@ -131,14 +131,14 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 					fileType,
 					fh.Size,
 				)
-				if err != nil {
-					if errors.Is(err, service.ErrDuplicatedKey) {
-						utils.Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
-						dbErrChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
-					} else {
-						utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
-						dbErrChan <- fmt.Errorf("failed to create file record %s: %w", fh.Filename, err)
-					}
+				switch {
+				case errors.Is(err, service.ErrDuplicatedKey):
+					utils.Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
+					dbErrChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+					return
+				case err != nil:
+					utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
+					dbErrChan <- fmt.Errorf("failed to create file record %s: %w", fh.Filename, err)
 					return
 				}
 				dbFileChan <- dbFile

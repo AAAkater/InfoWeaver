@@ -35,8 +35,8 @@ type fileApi struct{}
 // @Tags         File
 // @Accept       multipart/form-data
 // @Produce      json
-// @Param        files formData []file true "Files to upload"
-// @Param        id formData int true "Dataset ID to associate the uploaded files with"
+// @Param        files formData []file true "Files to upload" format(binary)
+// @Param        id formData uint true "Dataset ID to associate the uploaded files with"
 // @Success      200 {object} response.ResponseBase[models.MultiFileUploadResp] "Files uploaded successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid files, missing parameters, or upload failed"
 // @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
@@ -69,21 +69,19 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	}
 
 	fileHeaders := form.File["files"]
-	if len(fileHeaders) == 0 {
+	fileNumber := len(fileHeaders)
+	if fileNumber == 0 {
 		return response.BadRequestWithMsg("No files uploaded")
-	}
-
-	// Limit maximum number of files to 5
-	if len(fileHeaders) > 5 {
+	} else if fileNumber > 5 { // Limit maximum number of files to 5
 		return response.BadRequestWithMsg("Maximum 5 files allowed per upload")
 	}
 
-	utils.Logger.Infof("Received %d files for upload", len(fileHeaders))
+	utils.Logger.Infof("Received %d files for upload", fileNumber)
 
 	// Process files in parallel
 	var wg sync.WaitGroup
-	resultChan := make(chan models.FileUploadInfo, len(fileHeaders))
-	errChan := make(chan error, len(fileHeaders))
+	resultChan := make(chan models.FileUploadInfo, fileNumber)
+	errChan := make(chan error, fileNumber)
 
 	for _, fileHeader := range fileHeaders {
 		wg.Go(func() {
@@ -104,43 +102,68 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 				fileType = "application/octet-stream"
 			}
 
-			// Upload to MinIO
-			if err := fileService.UploadFileToMinio(
-				ctx.Request().Context(), currentUser.ID, fh.Filename, src, fh.Size); err != nil {
-				utils.Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
-				errChan <- fmt.Errorf("failed to upload file %s to Minio: %w", fh.Filename, err)
-				return
-			}
+			// Use channels to coordinate parallel MinIO upload and DB record creation
+			minioErrChan := make(chan error, 1)
+			dbFileChan := make(chan *models.File, 1)
+			dbErrChan := make(chan error, 1)
 
-			// Re-open file for database operation (since src was consumed)
-			src2, err := fh.Open()
-			if err != nil {
-				utils.Logger.Errorf("Failed to re-open uploaded file %s: %v", fh.Filename, err)
-				errChan <- fmt.Errorf("failed to re-open file %s: %w", fh.Filename, err)
-				return
-			}
-			defer src2.Close()
+			var fileWg sync.WaitGroup
 
-			// Create database record
-			dbFile, err := fileService.CreateFileInfo(
-				ctx.Request().Context(),
-				currentUser.ID,
-				datasetID,
-				fh.Filename,
-				fileType,
-				src2,
-				fh.Size,
-			)
-			if err != nil {
-				if errors.Is(err, service.ErrDuplicatedKey) {
-					utils.Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
-					errChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+			// Goroutine 1: Upload to MinIO
+			fileWg.Go(func() {
+				if err := fileService.UploadFileToMinio(
+					ctx.Request().Context(), currentUser.ID, fh.Filename, src, fh.Size); err != nil {
+					utils.Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
+					minioErrChan <- fmt.Errorf("failed to upload file %s to Minio: %w", fh.Filename, err)
 				} else {
-					utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
-					errChan <- fmt.Errorf("failed to create file record %s: %w", fh.Filename, err)
+					minioErrChan <- nil
 				}
+			})
+
+			// Goroutine 2: Create database record
+			fileWg.Go(func() {
+				// Create database record
+				dbFile, err := fileService.CreateFileInfo(
+					ctx.Request().Context(),
+					currentUser.ID,
+					datasetID,
+					fh.Filename,
+					fileType,
+					fh.Size,
+				)
+				if err != nil {
+					if errors.Is(err, service.ErrDuplicatedKey) {
+						utils.Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
+						dbErrChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+					} else {
+						utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
+						dbErrChan <- fmt.Errorf("failed to create file record %s: %w", fh.Filename, err)
+					}
+					return
+				}
+				dbFileChan <- dbFile
+				dbErrChan <- nil
+			})
+
+			fileWg.Wait()
+			close(minioErrChan)
+			close(dbFileChan)
+			close(dbErrChan)
+
+			// Check for MinIO upload errors
+			if minioErr := <-minioErrChan; minioErr != nil {
+				errChan <- minioErr
 				return
 			}
+
+			// Check for database errors
+			if dbErr := <-dbErrChan; dbErr != nil {
+				errChan <- dbErr
+				return
+			}
+
+			// Get dbFile from channel
+			dbFile := <-dbFileChan
 
 			// Publish file upload event
 			if err := fileService.PublishFileUploadEvent(ctx.Request().Context(), dbFile); err != nil {

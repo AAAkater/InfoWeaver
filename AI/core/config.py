@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def POSTGRESQL_URI(self) -> PostgresDsn:
+    def POSTGRESQL_DSN(self) -> PostgresDsn:
         return PostgresDsn.build(
             scheme="postgresql+psycopg2",
             username=self.POSTGRESQL_USER,
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def REDIS_URL(self) -> RedisDsn:
+    def REDIS_DSN(self) -> RedisDsn:
         return RedisDsn.build(
             scheme="redis",
             host=self.REDIS_HOST,
@@ -54,7 +54,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def MILVUS_URL(self) -> str:
+    def MILVUS_URI(self) -> str:
         return f"http://{self.MILVUS_HOST}:{self.MILVUS_PORT}"
 
     # MINIO

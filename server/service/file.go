@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"server/config"
 	"server/db"
 	"server/models"
 	"server/utils"
@@ -194,7 +195,7 @@ func (this *FileService) PublishFileUploadEvent(ctx context.Context, fileInfo *m
 	}
 
 	// Create a work queue for file upload events
-	fileUploadQueue, err := db.NewWorkQueue("file_upload_events")
+	fileUploadQueue, err := db.NewWorkQueue(config.Settings.RABBITMQ_QUEUE)
 	if err != nil {
 		utils.Logger.Errorf("Failed to create file upload queue: %v", err)
 		return err

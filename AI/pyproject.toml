@@ -31,3 +31,7 @@ dependencies = [
     "redis>=7.1.1",
     "ruff>=0.14.10",
 ]
+
+[tool.pytest]
+minversion = "9.0"
+pythonpath = ["./"]

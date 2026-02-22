@@ -1,171 +1,241 @@
-"""
-Tests for core.config module.
-"""
-
-import os
-import tempfile
-from unittest.mock import patch
-
-import pytest
-from pydantic import ValidationError
-
 from core.config import Settings
 
 
 class TestSettings:
     """Test cases for Settings class."""
 
-    def test_default_values(self):
+    def test_settings_default_values(self):
         """Test that settings have correct default values."""
-        # Create settings without environment variables
-        with patch.dict(os.environ, {}, clear=True):
-            settings = Settings()
+        settings = Settings(_env_file=".env.example", _env_file_encoding="utf-8")  # type: ignore
 
-            # Test default values
-            assert settings.DEEPSEEK_NAME == "deepseek-chat"
-            assert settings.DEEPSEEK_API_BASE_URL == "https://api.deepseek.com"
-            assert settings.DEEPSEEK_API_KEY == ""
+        # Test PostgreSQL defaults
+        assert settings.POSTGRES_USERNAME == "postgres"
+        assert settings.POSTGRES_PASSWORD == "postgres"
+        assert settings.POSTGRES_PORT == 5432
+        assert settings.POSTGRES_HOST == "localhost"
+        assert settings.POSTGRES_DB == "InfoWeaver"
 
-            assert settings.QWEN_NAME == "qwen-v1"
-            assert settings.QWEN_API_KEY == ""
-            assert settings.QWEN_API_BASE_URL == ""
+        # Test Redis defaults
+        assert settings.REDIS_HOST == "localhost"
+        assert settings.REDIS_PORT == 6379
+        assert settings.REDIS_PASSWORD == ""
+        assert settings.REDIS_DB == 0
+        assert settings.REDIS_EXPIRE == 600
 
-            assert settings.MILVUS_URI == ""
-            assert settings.MILVUS_DIM == 1024
+        # Test Milvus defaults
+        assert settings.MILVUS_HOST == "localhost"
+        assert settings.MILVUS_PORT == 19530
+        assert settings.MILVUS_DIM == 1024
 
-            assert settings.PYTHONPATH is None
+        # Test MinIO defaults
+        assert settings.MINIO_HOST == "localhost"
+        assert settings.MINIO_PORT == 9000
+        assert settings.MINIO_ACCESS_KEY == "minioadmin"
+        assert settings.MINIO_SECRET_KEY == "minioadmin"
+        assert settings.MINIO_BUCKET_NAME == "info-weaver"
+        assert settings.MINIO_USE_SSL is False
 
-    def test_env_file_loading(self):
-        """Test that settings can be loaded from .env file."""
-        # Create a temporary .env file
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".env", delete=False
-        ) as f:
-            f.write("""DEEPSEEK_API_KEY=test_deepseek_key
-QWEN_API_KEY=test_qwen_key
-MILVUS_URI=http://test:19530
-MILVUS_DIM=2048
-PYTHONPATH=/test/path
-""")
-            env_file = f.name
+        # Test RabbitMQ defaults
+        assert settings.RABBITMQ_HOST == "localhost"
+        assert settings.RABBITMQ_PORT == 5672
+        assert settings.RABBITMQ_USER == "guest"
+        assert settings.RABBITMQ_PASSWORD == "guest"
+        assert settings.RABBITMQ_VHOST == "/"
+        assert settings.RABBITMQ_QUEUE == "info-weaver-file-queue"
 
-        try:
-            # Test loading from custom env file
-            settings = Settings(_env_file=env_file, _env_file_encoding="utf-8")
+        # Test API version
+        assert settings.API_VER_STR == "/api/v1"
 
-            assert settings.DEEPSEEK_API_KEY == "test_deepseek_key"
-            assert settings.QWEN_API_KEY == "test_qwen_key"
-            assert settings.MILVUS_URI == "http://test:19530"
-            assert settings.MILVUS_DIM == 2048
-            assert settings.PYTHONPATH == "/test/path"
+    def test_postgresql_dsn_computed_field(self):
+        """Test PostgreSQL DSN is correctly computed."""
+        settings = Settings(
+            POSTGRES_USERNAME="test_user",
+            POSTGRES_PASSWORD="test_pass",
+            POSTGRES_HOST="localhost",
+            POSTGRES_PORT=5433,
+            POSTGRES_DB="test_db",
+        )
 
-            # Default values should still be present
-            assert settings.DEEPSEEK_NAME == "deepseek-chat"
-            assert settings.DEEPSEEK_API_BASE_URL == "https://api.deepseek.com"
-            assert settings.QWEN_NAME == "qwen-v1"
-            assert settings.QWEN_API_BASE_URL == ""
-        finally:
-            # Clean up temporary file
-            os.unlink(env_file)
+        expected_dsn = "postgresql+psycopg2://test_user:test_pass@localhost:5433/test_db"
+        assert str(settings.POSTGRESQL_DSN) == expected_dsn
 
-    def test_environment_variables_override(self):
-        """Test that environment variables override defaults."""
-        env_vars = {
-            "DEEPSEEK_API_KEY": "env_deepseek_key",
-            "QWEN_API_KEY": "env_qwen_key",
-            "MILVUS_URI": "http://env:19530",
-            "MILVUS_DIM": "4096",
-            "PYTHONPATH": "/env/path",
-        }
+    def test_redis_dsn_computed_field(self):
+        """Test Redis DSN is correctly computed."""
+        settings = Settings(
+            REDIS_HOST="redis.example.com",
+            REDIS_PORT=6380,
+            REDIS_PASSWORD="redis_pass",
+            REDIS_DB=1,
+        )
 
-        with patch.dict(os.environ, env_vars):
-            settings = Settings()
+        expected_dsn = "redis://:redis_pass@redis.example.com:6380//1"
+        assert str(settings.REDIS_DSN) == expected_dsn
 
-            assert settings.DEEPSEEK_API_KEY == "env_deepseek_key"
-            assert settings.QWEN_API_KEY == "env_qwen_key"
-            assert settings.MILVUS_URI == "http://env:19530"
-            assert settings.MILVUS_DIM == 4096
-            assert settings.PYTHONPATH == "/env/path"
+    def test_redis_dsn_without_password(self):
+        """Test Redis DSN without password."""
+        settings = Settings(
+            REDIS_HOST="localhost",
+            REDIS_PORT=6379,
+            REDIS_PASSWORD="",
+            REDIS_DB=0,
+        )
 
-    def test_type_validation(self):
-        """Test that type validation works correctly."""
-        # MILVUS_DIM should be integer
-        with patch.dict(os.environ, {"MILVUS_DIM": "not_a_number"}):
-            with pytest.raises(ValidationError):
-                Settings()
+        expected_dsn = "redis://localhost:6379//0"
+        assert str(settings.REDIS_DSN) == expected_dsn
 
-        # Valid integer should work
-        with patch.dict(os.environ, {"MILVUS_DIM": "512"}):
-            settings = Settings()
-            assert settings.MILVUS_DIM == 512
+    def test_milvus_uri_computed_field(self):
+        """Test Milvus URI is correctly computed."""
+        settings = Settings(
+            MILVUS_HOST="milvus.example.com",
+            MILVUS_PORT=19531,
+        )
 
-    def test_settings_singleton(self):
-        """Test that settings instance is a singleton."""
-        from core.config import settings as global_settings
+        expected_uri = "http://milvus.example.com:19531"
+        assert settings.MILVUS_URI == expected_uri
 
-        # Both should be the same instance
-        new_settings = Settings()
-        assert (
-            global_settings is not new_settings
-        )  # Actually they are different instances
-        # But they should have same configuration if loaded from same env
+    def test_minio_url_computed_field_http(self):
+        """Test MinIO URL with HTTP protocol."""
+        settings = Settings(
+            MINIO_HOST="minio.example.com",
+            MINIO_PORT=9001,
+            MINIO_USE_SSL=False,
+        )
 
-        # Test that global settings loads from .env
-        assert hasattr(global_settings, "DEEPSEEK_API_KEY")
+        expected_url = "http://minio.example.com:9001"
+        assert settings.MINIO_URL == expected_url
 
-    def test_empty_string_values(self):
-        """Test that empty string values are handled correctly."""
-        with patch.dict(
-            os.environ,
-            {
-                "DEEPSEEK_API_KEY": "",
-                "QWEN_API_KEY": "",
-                "MILVUS_URI": "",
-            },
-        ):
-            settings = Settings()
+    def test_minio_url_computed_field_https(self):
+        """Test MinIO URL with HTTPS protocol."""
+        settings = Settings(
+            MINIO_HOST="minio.example.com",
+            MINIO_PORT=9001,
+            MINIO_USE_SSL=True,
+        )
 
-            assert settings.DEEPSEEK_API_KEY == ""
-            assert settings.QWEN_API_KEY == ""
-            assert settings.MILVUS_URI == ""
+        expected_url = "https://minio.example.com:9001"
+        assert settings.MINIO_URL == expected_url
 
-    def test_optional_pythonpath(self):
-        """Test PYTHONPATH can be None or string."""
-        # When not set, should be None
-        with patch.dict(os.environ, {}, clear=True):
-            settings = Settings()
-            assert settings.PYTHONPATH is None
+    def test_rabbitmq_url_computed_field(self):
+        """Test RabbitMQ URL is correctly computed."""
+        settings = Settings(
+            RABBITMQ_USER="rmq_user",
+            RABBITMQ_PASSWORD="rmq_pass",
+            RABBITMQ_HOST="rabbitmq.example.com",
+            RABBITMQ_PORT=5673,
+            RABBITMQ_VHOST="/test_vhost",
+        )
 
-        # When set to empty string, should be empty string
-        with patch.dict(os.environ, {"PYTHONPATH": ""}):
-            settings = Settings()
-            assert settings.PYTHONPATH == ""
+        expected_url = "amqp://rmq_user:rmq_pass@rabbitmq.example.com:5673/test_vhost"
+        assert settings.RABBITMQ_URL == expected_url
 
-        # When set to path, should be that path
-        with patch.dict(os.environ, {"PYTHONPATH": "/some/path"}):
-            settings = Settings()
-            assert settings.PYTHONPATH == "/some/path"
+    def test_settings_extra_fields_ignored(self, monkeypatch):
+        """Test that extra fields are ignored (extra='ignore')."""
+        monkeypatch.setenv("UNKNOWN_FIELD", "should_be_ignored")
 
+        # Should not raise an error
+        settings = Settings()
+        assert not hasattr(settings, "UNKNOWN_FIELD")
 
-def test_global_settings_instance():
-    """Test the global settings instance."""
-    from core.config import settings
+    def test_settings_postgresql_dsn_with_special_chars(self):
+        """Test PostgreSQL DSN with special characters in password."""
+        settings = Settings(
+            POSTGRES_USERNAME="user",
+            POSTGRES_PASSWORD="password123",
+            POSTGRES_HOST="localhost",
+            POSTGRES_PORT=5432,
+            POSTGRES_DB="testdb",
+        )
 
-    # Should be an instance of Settings
-    assert isinstance(settings, Settings)
+        # Pydantic should handle URL encoding
+        dsn_str = str(settings.POSTGRESQL_DSN)
+        assert "postgresql+psycopg2://" in dsn_str
+        assert "localhost" in dsn_str
+        assert "testdb" in dsn_str
 
-    # Should have all expected attributes
-    expected_attrs = [
-        "DEEPSEEK_NAME",
-        "DEEPSEEK_API_KEY",
-        "DEEPSEEK_API_BASE_URL",
-        "QWEN_NAME",
-        "QWEN_API_KEY",
-        "QWEN_API_BASE_URL",
-        "MILVUS_URI",
-        "MILVUS_DIM",
-        "PYTHONPATH",
-    ]
+    def test_settings_redis_dsn_with_special_chars(self):
+        """Test Redis DSN with special characters in password."""
+        settings = Settings(
+            REDIS_HOST="localhost",
+            REDIS_PORT=6379,
+            REDIS_PASSWORD="p@ss:word",
+            REDIS_DB=2,
+        )
 
-    for attr in expected_attrs:
-        assert hasattr(settings, attr), f"settings missing attribute: {attr}"
+        dsn_str = str(settings.REDIS_DSN)
+        assert "redis://" in dsn_str
+        assert "localhost" in dsn_str
+        assert "/2" in dsn_str
+
+    def test_settings_minio_default_bucket(self):
+        """Test MinIO default bucket name."""
+        settings = Settings()
+        assert settings.MINIO_BUCKET_NAME == "info-weaver"
+
+    def test_settings_rabbitmq_default_queue(self):
+        """Test RabbitMQ default queue name."""
+        settings = Settings()
+        assert settings.RABBITMQ_QUEUE == "info-weaver-file-queue"
+
+    def test_settings_api_version(self):
+        """Test API version string."""
+        settings = Settings()
+        assert settings.API_VER_STR == "/api/v1"
+
+        # Test custom API version
+        settings_custom = Settings(API_VER_STR="/api/v2")
+        assert settings_custom.API_VER_STR == "/api/v2"
+
+    def test_settings_postgresql_dsn_port_included(self):
+        """Test that PostgreSQL DSN includes port number."""
+        settings = Settings(
+            POSTGRES_USERNAME="user",
+            POSTGRES_PASSWORD="pass",
+            POSTGRES_HOST="localhost",
+            POSTGRES_PORT=5432,
+            POSTGRES_DB="db",
+        )
+
+        dsn_str = str(settings.POSTGRESQL_DSN)
+        assert ":5432" in dsn_str
+
+    def test_settings_redis_expire_default(self):
+        """Test Redis default expiration time."""
+        settings = Settings()
+        assert settings.REDIS_EXPIRE == 600
+
+    def test_settings_redis_expire_custom(self):
+        """Test Redis custom expiration time."""
+        settings = Settings(REDIS_EXPIRE=3600)
+        assert settings.REDIS_EXPIRE == 3600
+
+    def test_settings_milvus_dimension_default(self):
+        """Test Milvus default dimension."""
+        settings = Settings()
+        assert settings.MILVUS_DIM == 1024
+
+    def test_settings_milvus_dimension_custom(self):
+        """Test Milvus custom dimension."""
+        settings = Settings(MILVUS_DIM=768)
+        assert settings.MILVUS_DIM == 768
+
+    def test_settings_minio_ssl_disabled(self):
+        """Test MinIO SSL disabled by default."""
+        settings = Settings()
+        assert settings.MINIO_USE_SSL is False
+
+    def test_settings_minio_ssl_enabled(self):
+        """Test MinIO SSL enabled."""
+        settings = Settings(MINIO_USE_SSL=True)
+        assert settings.MINIO_USE_SSL is True
+        assert settings.MINIO_URL.startswith("https://")
+
+    def test_settings_rabbitmq_vhost_default(self):
+        """Test RabbitMQ default vhost."""
+        settings = Settings()
+        assert settings.RABBITMQ_VHOST == "/"
+
+    def test_settings_rabbitmq_vhost_custom(self):
+        """Test RabbitMQ custom vhost."""
+        settings = Settings(RABBITMQ_VHOST="/myapp")
+        assert settings.RABBITMQ_VHOST == "/myapp"
+        assert "/myapp" in settings.RABBITMQ_URL

@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from pydantic import PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -5,32 +7,33 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file="./.env",
-        env_ignore_empty=True,
+        env_ignore_empty=False,
         extra="ignore",
+        case_sensitive=True,
     )
     PYTHONPATH: str | None = None
 
     # POSTGRESQL
-    POSTGRESQL_USER: str = "postgres"
-    POSTGRESQL_PASSWORD: str = ""
-    POSTGRESQL_PORT: int = 5432
-    POSTGRESQL_SERVER: str = "127.0.0.1"
-    POSTGRESQL_DB: str = ""
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USERNAME: str = "postgres"
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = ""
 
     @computed_field
     @property
     def POSTGRESQL_DSN(self) -> PostgresDsn:
         return PostgresDsn.build(
             scheme="postgresql+psycopg2",
-            username=self.POSTGRESQL_USER,
-            password=self.POSTGRESQL_PASSWORD,
-            host=self.POSTGRESQL_SERVER,
-            port=self.POSTGRESQL_PORT,
-            path=self.POSTGRESQL_DB,
+            username=self.POSTGRES_USERNAME,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
         )
 
     # REDIS
-    REDIS_HOST: str = "127.0.0.1"
+    REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
     REDIS_DB: int = 0
@@ -48,7 +51,7 @@ class Settings(BaseSettings):
         )
 
     # MILVUS
-    MILVUS_HOST: str = "127.0.0.1"
+    MILVUS_HOST: str = "localhost"
     MILVUS_PORT: int = 19530
     MILVUS_DIM: int = 1024
 
@@ -58,7 +61,7 @@ class Settings(BaseSettings):
         return f"http://{self.MILVUS_HOST}:{self.MILVUS_PORT}"
 
     # MINIO
-    MINIO_HOST: str = "127.0.0.1"
+    MINIO_HOST: str = "localhost"
     MINIO_PORT: int = 9000
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
@@ -72,7 +75,7 @@ class Settings(BaseSettings):
         return f"{protocol}://{self.MINIO_HOST}:{self.MINIO_PORT}"
 
     # RABBITMQ
-    RABBITMQ_HOST: str = "127.0.0.1"
+    RABBITMQ_HOST: str = "localhost"
     RABBITMQ_PORT: int = 5672
     RABBITMQ_USER: str = "guest"
     RABBITMQ_PASSWORD: str = "guest"
@@ -88,3 +91,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if __name__ == "__main__":
+    b = Settings(_env_file=".env.example")
+    pprint(b.model_dump())

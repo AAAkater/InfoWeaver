@@ -28,6 +28,7 @@ dependencies = [
     "pymilvus>=2.6.5",
     "pypdf2>=3.0.1",
     "pytest>=9.0.2",
+    "pytest-env>=1.5.0",
     "redis>=7.1.1",
     "ruff>=0.14.10",
 ]
@@ -35,3 +36,6 @@ dependencies = [
 [tool.pytest]
 minversion = "9.0"
 pythonpath = ["./"]
+
+[tool.pytest_env]
+env_files = [".env.example"]

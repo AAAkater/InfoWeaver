@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     RABBITMQ_USER: str = "guest"
     RABBITMQ_PASSWORD: str = "guest"
     RABBITMQ_VHOST: str = "/"
+    RABBITMQ_QUEUE: str = "info-weaver-file-queue"
 
     @computed_field
     @property

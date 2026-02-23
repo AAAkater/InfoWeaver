@@ -26,7 +26,7 @@ const isEdit = ref(false);
 const bodyStyle = {
   width: '500px'
 };
-const searchId = ref();
+const searchKey = ref();
 const datasets = ref<Api.Dataset.DatasetItem[]>();
 const model: Api.Dataset.FormModel = reactive({
   id: undefined,
@@ -53,8 +53,8 @@ function openCreateModal() {
 async function fetchDatasets() {
   let id: number | undefined;
 
-  if (searchId.value) {
-    const parsed = Number(searchId.value);
+  if (searchKey.value) {
+    const parsed = Number(searchKey.value);
     if (Number.isNaN(parsed)) {
       message.warning('请输入有效的数字 ID');
       datasets.value = [];
@@ -162,7 +162,7 @@ onMounted(() => {
 <template>
   <NSpace vertical :size="16">
     <NSpace>
-      <NInput v-model:value="searchId" round placeholder="请输入知识库id" clearable @blur="fetchDatasets()">
+      <NInput v-model:value="searchKey" round placeholder="请输入知识库id" clearable @blur="fetchDatasets()">
         <template #prefix>
           <NIcon :component="Search48Filled" />
         </template>

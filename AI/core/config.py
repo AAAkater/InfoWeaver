@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from pydantic import PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -71,8 +69,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def MINIO_URL(self) -> str:
-        protocol = "https" if self.MINIO_USE_SSL else "http"
-        return f"{protocol}://{self.MINIO_HOST}:{self.MINIO_PORT}"
+        return f"{self.MINIO_HOST}:{self.MINIO_PORT}"
 
     # RABBITMQ
     RABBITMQ_HOST: str = "localhost"
@@ -91,7 +88,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-if __name__ == "__main__":
-    b = Settings(_env_file=".env.example")
-    pprint(b.model_dump())

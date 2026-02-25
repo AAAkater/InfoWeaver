@@ -34,7 +34,8 @@ type userApi struct{}
 // @Param        body body models.RegisterReq true "Register Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Register successful"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      403 {object} response.ResponseBase[any] "User already exists"
+// @Failure      403 {object} response.ResponseBase[any] "Email already used"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
@@ -67,7 +68,9 @@ func (this *userApi) register(ctx *echo.Context) error {
 // @Param        body body models.UserLoginReq true "Login Request Body"
 // @Success      200 {object} response.ResponseBase[models.UserLoginResp] "Login successful, returns Bearer token"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid credentials"
+// @Failure      404 {object} response.ResponseBase[any] "User not found"
+// @Failure      403 {object} response.ResponseBase[any] "Invalid password"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
@@ -108,8 +111,9 @@ func (this *userApi) login(ctx *echo.Context) error {
 // @Produce      json
 // @Security     Bearer
 // @Success      200 {object} response.ResponseBase[models.UserInfoResp] "User information retrieved successfully"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
 // @Failure      404 {object} response.ResponseBase[any] "User not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /user/info [get]
 func (this *userApi) getUserInfo(ctx *echo.Context) error {
 
@@ -144,8 +148,9 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 // @Param        body body models.ResetPasswordReq true "Reset Password Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Password reset successful"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
-// @Failure      403 {object} response.ResponseBase[any] "User does not exist"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      404 {object} response.ResponseBase[any] "User not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /user/resetPassword [post]
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -179,8 +184,9 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 // @Param        body body models.UpdateUserInfoReq true "Update User Info Request Body"
 // @Success      200 {object} response.ResponseBase[any] "User information updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized or invalid token"
-// @Failure      403 {object} response.ResponseBase[any] "User does not exist"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      404 {object} response.ResponseBase[any] "User not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /user/updateInfo [post]
 func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)

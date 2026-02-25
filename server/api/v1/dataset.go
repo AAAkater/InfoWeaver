@@ -41,7 +41,7 @@ type datasetApi struct{}
 func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 	args, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
 	if err != nil {
@@ -52,11 +52,10 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
-		Logger.Error(err)
-		return response.ForbiddenWithMsg("dataset with the same name already exists")
+		return response.ErrDatasetNameAlreadyExists()
 	default:
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }
 
@@ -76,7 +75,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	// Parse optional name query parameter
@@ -102,7 +101,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 		})
 	default:
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }
 
@@ -120,25 +119,24 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
 // @Router       /dataset/{dataset_id} [get]
 func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
-	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
-	if err != nil {
-		return response.BadRequestWithMsg(err.Error())
-	}
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
+	}
+	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	switch dbDataset, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), args.ID, currentUser.ID); {
 	case err == nil:
 		return response.OkWithData(ctx, dbDataset)
 	case errors.Is(err, service.ErrNotFound):
-		Logger.Error(err)
-		return response.NotFoundWithMsg("Dataset not found")
+		return response.ErrDatasetNotFound()
 	default:
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }
 
@@ -158,7 +156,7 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 	args, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
 	if err != nil {
@@ -169,11 +167,10 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		Logger.Error(err)
-		return response.NotFoundWithMsg("Dataset not found")
+		return response.ErrDatasetNotFound()
 	default:
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }
 
@@ -190,23 +187,23 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
 // @Router       /dataset/delete/{dataset_id} [post]
 func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.ErrInvalidToken()
+	}
 	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	currentUser, err := utils.GetCurrentUser(ctx)
-	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
-	}
 	switch err := datasetService.DeleteDataset(ctx.Request().Context(), args.ID, currentUser.ID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
 		Logger.Error(err)
-		return response.NotFoundWithMsg("Dataset not found")
+		return response.ErrDatasetNotFound()
 	default:
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }

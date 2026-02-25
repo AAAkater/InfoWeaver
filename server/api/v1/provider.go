@@ -17,8 +17,8 @@ func SetProviderRouter(e *echo.Echo) {
 	providerHandler := &providerApi{}
 	providerRouterGroup.POST("", providerHandler.createProvider)
 	providerRouterGroup.GET("/list", providerHandler.getAllProviders)
-	providerRouterGroup.GET("/info/:provider_id", providerHandler.getProviderByID)
-	providerRouterGroup.POST("/update", providerHandler.updateProvider)
+	providerRouterGroup.GET("/info/:provider_id", providerHandler.getProviderInfoByID)
+	providerRouterGroup.POST("/update", providerHandler.updateProviderInfo)
 	providerRouterGroup.POST("/delete/:provider_id", providerHandler.deleteProvider)
 }
 
@@ -33,7 +33,8 @@ type providerApi struct{}
 // @Param        body body models.ProviderCreateReq true "Create Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider created successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden: Provider name already exists"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      403 {object} response.ResponseBase[any] "Provider name already exists"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider [post]
 func (this *providerApi) createProvider(ctx *echo.Context) error {
@@ -72,6 +73,7 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} response.ResponseBase[models.ProviderListResp] "Providers retrieved successfully"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider/list [get]
 func (this *providerApi) getAllProviders(ctx *echo.Context) error {
@@ -92,7 +94,7 @@ func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 
 }
 
-// getProviderByID godoc
+// getProviderInfoByID godoc
 // @Summary      Get Provider by ID
 // @Description  Get a provider by its ID
 // @Tags         Provider
@@ -100,11 +102,12 @@ func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 // @Produce      json
 // @Param        provider_id path int true "Provider ID"
 // @Success      200 {object} response.ResponseBase[models.ProviderInfo] "Provider retrieved successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid provider ID"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden: Unauthorized access to the provider"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      404 {object} response.ResponseBase[any] "Provider not found"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider/info/{provider_id} [get]
-func (this *providerApi) getProviderByID(ctx *echo.Context) error {
+func (this *providerApi) getProviderInfoByID(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.ErrInvalidToken()
@@ -127,7 +130,7 @@ func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 	}
 }
 
-// updateProvider godoc
+// updateProviderInfo godoc
 // @Summary      Update Provider
 // @Description  Update an existing provider
 // @Tags         Provider
@@ -136,10 +139,12 @@ func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 // @Param        body body models.ProviderUpdateReq true "Update Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden: Provider does not exist"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      403 {object} response.ResponseBase[any] "Provider name already exists"
+// @Failure      404 {object} response.ResponseBase[any] "Provider not found"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider/update [post]
-func (this *providerApi) updateProvider(ctx *echo.Context) error {
+func (this *providerApi) updateProviderInfo(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -178,9 +183,10 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 // @Accept       json
 // @Produce      json
 // @Param        provider_id path int true "Provider ID"
-// @Param        body body models.ProviderInfoReq true "Delete Provider Request Body"
 // @Success      200 {object} response.ResponseBase[any] "Provider deleted successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      404 {object} response.ResponseBase[any] "Provider not found"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /provider/delete/{provider_id} [post]
 func (this *providerApi) deleteProvider(ctx *echo.Context) error {

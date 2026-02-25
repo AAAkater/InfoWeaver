@@ -6,7 +6,7 @@ import (
 	"server/config"
 	"server/middleware"
 	"server/models"
-	"server/models/response"
+	"server/models/common/response"
 	"server/service"
 	"server/utils"
 

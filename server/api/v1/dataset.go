@@ -5,7 +5,7 @@ import (
 	"server/config"
 	"server/middleware"
 	"server/models"
-	"server/models/response"
+	"server/models/common/response"
 	"server/service"
 	"server/utils"
 
@@ -52,10 +52,10 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.ForbiddenWithMsg("dataset with the same name already exists")
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -101,7 +101,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 			Datasets: datasets,
 		})
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -134,10 +134,10 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 	case err == nil:
 		return response.OkWithData(ctx, dbDataset)
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.NotFoundWithMsg("Dataset not found")
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -169,10 +169,10 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.NotFoundWithMsg("Dataset not found")
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -203,10 +203,10 @@ func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.NotFoundWithMsg("Dataset not found")
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }

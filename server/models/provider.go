@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 const (
 	PROVIDER_MODE_OPENAI      = "openai"
 	PROVIDER_MODE_OPENAI_RESP = "openai_response"
@@ -10,10 +12,10 @@ const (
 
 // ProviderInfo represents the configuration for a provider
 type ProviderInfo struct {
-	Name    string `json:"name"`
-	Mode    string `json:"mode"`
-	BaseURL string `json:"base_url"`
-	APIKey  string `json:"api_key"`
+	CreatedAt time.Time `json:"created_at"`
+	Name      string    `json:"name"`
+	Mode      string    `json:"mode"`
+	BaseURL   string    `json:"base_url"`
 }
 
 type ProviderInfoReq struct {

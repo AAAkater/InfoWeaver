@@ -40,3 +40,31 @@ func ErrInvalidPassword() error {
 		Message: "Invalid password",
 	}
 }
+
+func ErrDatasetNameAlreadyExists() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: "dataset with the same name already exists",
+	}
+}
+
+func ErrDatasetNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "Dataset not found",
+	}
+}
+
+func ErrProviderNameAlreadyExists() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: "provider with the same name already exists",
+	}
+}
+
+func ErrProviderNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "Model provider not found",
+	}
+}

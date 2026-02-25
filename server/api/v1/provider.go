@@ -47,15 +47,22 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, args.Name, args.BaseURL, args.APIKey, args.Mode); {
-	case err == nil:
-		return response.Ok(ctx)
-	case errors.Is(err, service.ErrDuplicatedKey):
+	// Check if a provider with the same name already exists for this owner
+	switch existingProvider, err := providerService.GetProviderByName(ctx.Request().Context(), args.Name, currentUser.ID); {
+	case err == nil && existingProvider != nil:
 		return response.ErrProviderNameAlreadyExists()
+	case errors.Is(err, service.ErrNotFound):
+		// continue to create
 	default:
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
+
+	if err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, args.Name, args.BaseURL, args.APIKey, args.Mode); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+	return response.Ok(ctx)
 }
 
 // getAllProviders godoc
@@ -75,8 +82,8 @@ func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 
 	cows, providers, err := providerService.GetAllProviders(ctx.Request().Context(), currentUser.ID)
 	if err != nil {
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Failed to get providers")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 	return response.OkWithData(ctx, models.ProviderListResp{
 		Total:     cows,

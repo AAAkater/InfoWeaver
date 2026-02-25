@@ -45,38 +45,35 @@ type fileApi struct{}
 func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	// Get dataset ID
 	datasetID, err := echo.FormValue[uint](ctx, "id")
 	if err != nil {
-		utils.Logger.Error(err)
-		return response.BadRequestWithMsg("Failed to get dataset ID")
+		return response.ErrMissDatasetID()
 	}
 
 	// Validate dataset ownership
 	if _, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), datasetID, currentUser.ID); err != nil {
-		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
+		return response.ErrDatasetNotFound()
 	}
 
 	// Get all uploaded files
 	form, err := ctx.MultipartForm()
 	if err != nil {
-		utils.Logger.Error(err)
-		return response.BadRequestWithMsg("Failed to get multipart form")
+		return response.ErrMissFile()
 	}
 
 	fileHeaders := form.File["files"]
 	fileNumber := len(fileHeaders)
 	if fileNumber == 0 {
-		return response.BadRequestWithMsg("No files uploaded")
+		return response.ErrNoFileUploaded()
 	} else if fileNumber > 5 { // Limit maximum number of files to 5
-		return response.BadRequestWithMsg("Maximum 5 files allowed per upload")
+		return response.ErrFileNumberLimited()
 	}
 
-	utils.Logger.Infof("Received %d files for upload", fileNumber)
+	Logger.Infof("Received %d files for upload", fileNumber)
 
 	// Process files in parallel
 	var wg sync.WaitGroup
@@ -90,7 +87,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 			// Open the uploaded file
 			src, err := fh.Open()
 			if err != nil {
-				utils.Logger.Errorf("Failed to open uploaded file %s: %v", fh.Filename, err)
+				Logger.Errorf("Failed to open uploaded file %s: %v", fh.Filename, err)
 				errChan <- fmt.Errorf("failed to open file %s: %w", fh.Filename, err)
 				return
 			}
@@ -113,7 +110,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 			fileWg.Go(func() {
 				if err := fileService.UploadFileToMinio(
 					ctx.Request().Context(), currentUser.ID, datasetID, fh.Filename, src, fh.Size); err != nil {
-					utils.Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
+					Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
 					minioErrChan <- fmt.Errorf("failed to upload file %s to Minio: %w", fh.Filename, err)
 				} else {
 					minioErrChan <- nil
@@ -133,11 +130,11 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 				)
 				switch {
 				case errors.Is(err, service.ErrDuplicatedKey):
-					utils.Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
+					Logger.Errorf("Failed to save file record %s to database: %v", fh.Filename, err)
 					dbErrChan <- response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the dataset: %d", datasetID))
 					return
 				case err != nil:
-					utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
+					Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
 					dbErrChan <- fmt.Errorf("failed to create file record %s: %w", fh.Filename, err)
 					return
 				}
@@ -167,11 +164,11 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 
 			// Publish file upload event
 			if err := fileService.PublishFileUploadEvent(ctx.Request().Context(), dbFile); err != nil {
-				utils.Logger.Errorf("Failed to publish file upload event for %s: %v", fh.Filename, err)
+				Logger.Errorf("Failed to publish file upload event for %s: %v", fh.Filename, err)
 				// Continue even if event publishing fails
 			}
 
-			utils.Logger.Infof("File uploaded successfully: %s", fh.Filename)
+			Logger.Infof("File uploaded successfully: %s", fh.Filename)
 			resultChan <- models.FileUploadInfo{
 				OwnerID:   currentUser.ID,
 				DatasetID: datasetID,
@@ -200,16 +197,16 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 
 	// If all files failed, return error
 	if len(uploadedFiles) == 0 && len(errors) > 0 {
-		utils.Logger.Errorf("All file uploads failed: %v", errors)
+		Logger.Errorf("All file uploads failed: %v", errors)
 		return response.FailWithMsg(ctx, fmt.Sprintf("All file uploads failed: %v", errors))
 	}
 
 	// If some files failed, log warnings but return success for successful uploads
 	if len(errors) > 0 {
-		utils.Logger.Warnf("Some file uploads failed: %v", errors)
+		Logger.Warnf("Some file uploads failed: %v", errors)
 	}
 
-	utils.Logger.Infof("Successfully uploaded %d out of %d files", len(uploadedFiles), len(fileHeaders))
+	Logger.Infof("Successfully uploaded %d out of %d files", len(uploadedFiles), len(fileHeaders))
 	return response.OkWithData(ctx, models.MultiFileUploadResp{
 		Files: uploadedFiles,
 	})
@@ -230,7 +227,7 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 func (this *fileApi) ListFiles(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.ListFilesReq](ctx)
@@ -246,7 +243,8 @@ func (this *fileApi) ListFiles(ctx *echo.Context) error {
 		args.PageSize,
 	)
 	if err != nil {
-		return response.FailWithMsg(ctx, "Failed to get file list")
+		Logger.Errorf("Failed to get file list for user %d: %v", currentUser.ID, err)
+		return response.ErrUnknownError()
 	}
 
 	return response.OkWithData(ctx, models.SimpleFileInfoListResp{
@@ -270,24 +268,22 @@ func (this *fileApi) ListFiles(ctx *echo.Context) error {
 func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
-		return response.BadRequestWithMsg("Missing file_id parameter")
+		return response.BadRequestWithMsg(err.Error())
 	}
 
-	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), args.ID, currentUser.ID)
-
-	switch err {
-	case nil:
+	switch fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), args.ID, currentUser.ID); {
+	case err == nil:
 		return response.OkWithData(ctx, fileInfo)
-	case service.ErrNotFound:
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", args.ID))
+	case errors.Is(err, service.ErrNotFound):
+		return response.ErrFileNotFound()
 	default:
-		utils.Logger.Errorf("Failed to get file with ID %d: %v", args.ID, err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Errorf("Failed to get file with ID %d: %v", args.ID, err)
+		return response.ErrUnknownError()
 	}
 }
 
@@ -306,26 +302,26 @@ func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
-		return response.BadRequestWithMsg("Missing file_id parameter")
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	// Get file path from database
 	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), args.ID, currentUser.ID)
 	if err != nil {
-		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", args.ID, err)
-		return response.NotFoundWithMsg(err.Error())
+		Logger.Errorf("Failed to get file path for file ID %d: %v", args.ID, err)
+		return response.ErrFileNotFound()
 	}
 
 	// Get presigned download URL from MinIO
 	downloadURL, err := fileService.GetDownloadURLByFilePath(ctx.Request().Context(), filePath)
 	if err != nil {
-		utils.Logger.Errorf("Failed to get download URL for file: %v", err)
-		return response.FailWithMsg(ctx, "Failed to get download URL")
+		Logger.Errorf("Failed to get download URL for file: %v", err)
+		return response.ErrUnknownError()
 	}
 
 	return response.OkWithData(ctx, models.FileDownloadResp{
@@ -349,12 +345,12 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 func (this *fileApi) deleteFile(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
-		return response.BadRequestWithMsg("Missing file_id parameter")
+		return response.BadRequestWithMsg(err.Error())
 	}
 
 	// Get file path from database (also validates ownership)
@@ -363,16 +359,16 @@ func (this *fileApi) deleteFile(ctx *echo.Context) error {
 	case nil:
 		//ok
 	case service.ErrNotFound:
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", args.ID))
+		return response.ErrFileNotFound()
 	default:
-		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", args.ID, err)
-		return response.FailWithMsg(ctx, "Failed to delete file")
+		Logger.Errorf("Failed to get file path for file ID %d: %v", args.ID, err)
+		return response.ErrUnknownError()
 	}
 
 	// Delete file from MinIO and database
 	if err := fileService.DeleteFileByFileID(ctx.Request().Context(), args.ID, filePath); err != nil {
-		utils.Logger.Errorf("Failed to delete file with ID %d: %v", args.ID, err)
-		return response.FailWithMsg(ctx, "Failed to delete file")
+		Logger.Errorf("Failed to delete file with ID %d: %v", args.ID, err)
+		return response.ErrUnknownError()
 	}
 
 	return response.Ok(ctx)

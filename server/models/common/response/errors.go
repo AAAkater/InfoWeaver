@@ -68,3 +68,38 @@ func ErrProviderNotFound() error {
 		Message: "Model provider not found",
 	}
 }
+
+func ErrMissDatasetID() error {
+	return &echo.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: "Failed to get dataset ID",
+	}
+}
+
+func ErrMissFile() error {
+	return &echo.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: "Failed to get file from form data",
+	}
+}
+
+func ErrFileNumberLimited() error {
+	return &echo.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: "Maximum 5 files allowed per upload",
+	}
+}
+
+func ErrNoFileUploaded() error {
+	return &echo.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: "No files uploaded",
+	}
+}
+
+func ErrFileNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "File not found",
+	}
+}

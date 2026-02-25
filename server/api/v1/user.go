@@ -5,7 +5,7 @@ import (
 	"server/config"
 	"server/middleware"
 	"server/models"
-	"server/models/response"
+	"server/models/common/response"
 	"server/service"
 	"server/utils"
 
@@ -51,11 +51,10 @@ func (this *userApi) register(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
-		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg("this email has been already used")
+		return response.ErrEmailAlreadyUsed()
 	default:
 		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }
 
@@ -80,19 +79,18 @@ func (this *userApi) login(ctx *echo.Context) error {
 	switch err {
 	case nil:
 	case service.ErrNotFound:
-		utils.Logger.Error(err)
-		return response.NoAuthWithMsg("User does not exist")
+		return response.ErrUserNotFound()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 	if !utils.BcryptCheck(userInfo.Password, dbUser.Password) {
-		return response.NoAuthWithMsg("Invalid password")
+		return response.ErrInvalidPassword()
 	}
 
 	token, err := utils.CreateToken(dbUser.ID, dbUser.Role == "admin")
 	if err != nil {
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Failed to generate token")
 	}
 
@@ -129,10 +127,9 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 			Role:     dbUser.Role,
 		})
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
-		return response.NotFoundWithMsg("User not found")
+		return response.ErrUserNotFound()
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -153,7 +150,7 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	req, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
@@ -188,7 +185,7 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	newUserInfo, err := utils.BindAndValidate[models.UpdateUserInfoReq](ctx)
@@ -200,9 +197,9 @@ func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		return response.ForbiddenWithMsg("User does not exist")
+		return response.ErrUserNotFound()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }

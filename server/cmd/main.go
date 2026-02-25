@@ -13,8 +13,6 @@ import (
 
 func main() {
 	config.VP, config.Settings = config.InitViper(config.DEFAULT_ENV_FILENAME)
-	utils.Logger = utils.InitLogger(config.Settings.SYSTEM_IS_DEV)
-	defer utils.Logger.Sync()
 	db.InitAllDB()
 	e := echo.New()
 

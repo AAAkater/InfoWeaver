@@ -2,7 +2,6 @@ package v1
 
 import (
 	"errors"
-	"fmt"
 	"server/config"
 	"server/middleware"
 	"server/models"
@@ -40,7 +39,7 @@ type providerApi struct{}
 func (this *providerApi) createProvider(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.ProviderCreateReq](ctx)
@@ -52,11 +51,10 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
-		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg("Provider Name:" + args.Name + " already exists")
+		return response.ErrProviderNameAlreadyExists()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Failed to create provider")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }
 
@@ -72,7 +70,7 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	cows, providers, err := providerService.GetAllProviders(ctx.Request().Context(), currentUser.ID)
@@ -102,7 +100,7 @@ func (this *providerApi) getAllProviders(ctx *echo.Context) error {
 func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
@@ -115,10 +113,10 @@ func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 	case nil:
 		return response.OkWithData(ctx, provider)
 	case service.ErrNotFound:
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the model provider: %d", args.ID))
+		return response.ErrProviderNotFound()
 	default:
-		utils.Logger.Errorf("Failed to model provider with ID %d: %v", args.ID, err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Errorf("Failed to model provider with ID %d: %v", args.ID, err)
+		return response.ErrUnknownError()
 	}
 }
 
@@ -138,7 +136,7 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.ProviderUpdateReq](ctx)
@@ -157,10 +155,12 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		return response.ForbiddenWithMsg("Provider does not exist")
+		return response.ErrProviderNotFound()
+	case errors.Is(err, service.ErrDuplicatedKey):
+		return response.ErrProviderNameAlreadyExists()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Failed to update provider")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }
 
@@ -180,7 +180,7 @@ func (this *providerApi) deleteProvider(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	args, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
@@ -188,15 +188,13 @@ func (this *providerApi) deleteProvider(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if _, err := providerService.GetProviderByID(ctx.Request().Context(), args.ID, currentUser.ID); err != nil {
-		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to delete provider:%d", args.ID))
+	switch err := service.ProviderServiceApp.DeleteProvider(ctx.Request().Context(), args.ID, currentUser.ID); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return response.ErrProviderNotFound()
+	default:
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
-
-	if err := service.ProviderServiceApp.DeleteProvider(ctx.Request().Context(), args.ID); err != nil {
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Failed to delete provider")
-	}
-
-	return response.Ok(ctx)
 }

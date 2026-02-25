@@ -43,12 +43,12 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
-	req, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), req.Icon, req.Name, req.Description, currentUser.ID); {
+	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), args.Icon, args.Name, args.Description, currentUser.ID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
@@ -80,7 +80,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	}
 
 	// Parse optional name query parameter
-	req, err := utils.BindAndValidate[models.DatasetListReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetListReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -88,8 +88,8 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	var total int64
 	var datasets []models.DatasetInfo
 
-	if req.Name != "" {
-		total, datasets, err = datasetService.ListDatasetsByName(ctx.Request().Context(), currentUser.ID, req.Name)
+	if args.Name != "" {
+		total, datasets, err = datasetService.ListDatasetsByName(ctx.Request().Context(), currentUser.ID, args.Name)
 	} else {
 		total, datasets, err = datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID)
 	}
@@ -120,7 +120,7 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
 // @Router       /dataset/{dataset_id} [get]
 func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
-	req, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -130,7 +130,7 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	switch dbDataset, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), req.ID, currentUser.ID); {
+	switch dbDataset, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), args.ID, currentUser.ID); {
 	case err == nil:
 		return response.OkWithData(ctx, dbDataset)
 	case errors.Is(err, service.ErrNotFound):
@@ -160,12 +160,12 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
-	req, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := datasetService.UpdateDataset(ctx.Request().Context(), req.ID, currentUser.ID, req.Icon, req.Name, req.Description); {
+	switch err := datasetService.UpdateDataset(ctx.Request().Context(), args.ID, currentUser.ID, args.Icon, args.Name, args.Description); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
@@ -190,7 +190,7 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
 // @Router       /dataset/delete/{dataset_id} [post]
 func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
-	req, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -199,7 +199,7 @@ func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 	if err != nil {
 		return response.NoAuthWithMsg(err.Error())
 	}
-	switch err := datasetService.DeleteDataset(ctx.Request().Context(), req.ID, currentUser.ID); {
+	switch err := datasetService.DeleteDataset(ctx.Request().Context(), args.ID, currentUser.ID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):

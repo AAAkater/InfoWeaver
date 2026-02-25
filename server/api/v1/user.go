@@ -38,16 +38,16 @@ type userApi struct{}
 // @Router       /user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
-	newUserInfo, err := utils.BindAndValidate[models.RegisterReq](ctx)
+	args, err := utils.BindAndValidate[models.RegisterReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
 	switch err := userService.CreateNewUser(
 		ctx.Request().Context(),
-		newUserInfo.Username,
-		newUserInfo.Password,
-		newUserInfo.Email); {
+		args.Username,
+		args.Password,
+		args.Email); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
@@ -71,11 +71,11 @@ func (this *userApi) register(ctx *echo.Context) error {
 // @Router       /user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
-	userInfo, err := utils.BindAndValidate[models.UserLoginReq](ctx)
+	args, err := utils.BindAndValidate[models.UserLoginReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), userInfo.Username)
+	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), args.Username)
 	switch err {
 	case nil:
 	case service.ErrNotFound:
@@ -84,7 +84,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
-	if !utils.BcryptCheck(userInfo.Password, dbUser.Password) {
+	if !utils.BcryptCheck(args.Password, dbUser.Password) {
 		return response.ErrInvalidPassword()
 	}
 
@@ -115,7 +115,7 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	switch dbUser, err := userService.GetUserInfoByID(ctx.Request().Context(), currentUser.ID); {
@@ -153,12 +153,12 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 		return response.ErrInvalidToken()
 	}
 
-	req, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
+	args, err := utils.BindAndValidate[models.ResetPasswordReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, req.FirstPassword); {
+	switch err := userService.ResetUserPassword(ctx.Request().Context(), currentUser.ID, args.FirstPassword); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
@@ -188,12 +188,12 @@ func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 		return response.ErrInvalidToken()
 	}
 
-	newUserInfo, err := utils.BindAndValidate[models.UpdateUserInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.UpdateUserInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, newUserInfo.Username, newUserInfo.Email); {
+	switch err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, args.Username, args.Email); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):

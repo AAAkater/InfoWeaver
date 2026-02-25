@@ -233,7 +233,7 @@ func (this *fileApi) ListFiles(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoList, err := utils.BindAndValidate[models.ListFilesReq](ctx)
+	args, err := utils.BindAndValidate[models.ListFilesReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -241,9 +241,9 @@ func (this *fileApi) ListFiles(ctx *echo.Context) error {
 	total, files, err := fileService.GetFileListByUserID(
 		ctx.Request().Context(),
 		currentUser.ID,
-		fileInfoList.DatasetID,
-		fileInfoList.Page,
-		fileInfoList.PageSize,
+		args.DatasetID,
+		args.Page,
+		args.PageSize,
 	)
 	if err != nil {
 		return response.FailWithMsg(ctx, "Failed to get file list")
@@ -273,20 +273,20 @@ func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}
 
-	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
+	fileInfo, err := fileService.GetFileInfoByFileID(ctx.Request().Context(), args.ID, currentUser.ID)
 
 	switch err {
 	case nil:
 		return response.OkWithData(ctx, fileInfo)
 	case service.ErrNotFound:
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", fileInfoReq.ID))
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", args.ID))
 	default:
-		utils.Logger.Errorf("Failed to get file with ID %d: %v", fileInfoReq.ID, err)
+		utils.Logger.Errorf("Failed to get file with ID %d: %v", args.ID, err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -309,15 +309,15 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}
 
 	// Get file path from database
-	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
+	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), args.ID, currentUser.ID)
 	if err != nil {
-		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileInfoReq.ID, err)
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", args.ID, err)
 		return response.NotFoundWithMsg(err.Error())
 	}
 
@@ -352,26 +352,26 @@ func (this *fileApi) deleteFile(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	fileInfoReq, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.DetailedFileInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg("Missing file_id parameter")
 	}
 
 	// Get file path from database (also validates ownership)
-	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), fileInfoReq.ID, currentUser.ID)
+	filePath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), args.ID, currentUser.ID)
 	switch err {
 	case nil:
 		//ok
 	case service.ErrNotFound:
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", fileInfoReq.ID))
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the file: %d", args.ID))
 	default:
-		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", fileInfoReq.ID, err)
+		utils.Logger.Errorf("Failed to get file path for file ID %d: %v", args.ID, err)
 		return response.FailWithMsg(ctx, "Failed to delete file")
 	}
 
 	// Delete file from MinIO and database
-	if err := fileService.DeleteFileByFileID(ctx.Request().Context(), fileInfoReq.ID, filePath); err != nil {
-		utils.Logger.Errorf("Failed to delete file with ID %d: %v", fileInfoReq.ID, err)
+	if err := fileService.DeleteFileByFileID(ctx.Request().Context(), args.ID, filePath); err != nil {
+		utils.Logger.Errorf("Failed to delete file with ID %d: %v", args.ID, err)
 		return response.FailWithMsg(ctx, "Failed to delete file")
 	}
 

@@ -43,17 +43,17 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	req, err := utils.BindAndValidate[models.ProviderCreateReq](ctx)
+	args, err := utils.BindAndValidate[models.ProviderCreateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, req.Name, req.BaseURL, req.APIKey, req.Mode); {
+	switch err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, args.Name, args.BaseURL, args.APIKey, args.Mode); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrDuplicatedKey):
 		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg("Provider Name:" + req.Name + " already exists")
+		return response.ForbiddenWithMsg("Provider Name:" + args.Name + " already exists")
 	default:
 		utils.Logger.Error(err)
 		return response.FailWithMsg(ctx, "Failed to create provider")
@@ -105,19 +105,19 @@ func (this *providerApi) getProviderByID(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	req, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	provider, err := providerService.GetProviderByID(ctx.Request().Context(), req.ID, currentUser.ID)
+	provider, err := providerService.GetProviderByID(ctx.Request().Context(), args.ID, currentUser.ID)
 	switch err {
 	case nil:
 		return response.OkWithData(ctx, provider)
 	case service.ErrNotFound:
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the model provider: %d", req.ID))
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to the model provider: %d", args.ID))
 	default:
-		utils.Logger.Errorf("Failed to model provider with ID %d: %v", req.ID, err)
+		utils.Logger.Errorf("Failed to model provider with ID %d: %v", args.ID, err)
 		return response.FailWithMsg(ctx, "Unknown error")
 	}
 }
@@ -141,19 +141,19 @@ func (this *providerApi) updateProvider(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	req, err := utils.BindAndValidate[models.ProviderUpdateReq](ctx)
+	args, err := utils.BindAndValidate[models.ProviderUpdateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
 	switch err := providerService.UpdateProvider(
 		ctx.Request().Context(),
-		req.ID,
+		args.ID,
 		currentUser.ID,
-		req.Name,
-		req.BaseURL,
-		req.APIKey,
-		req.Mode); {
+		args.Name,
+		args.BaseURL,
+		args.APIKey,
+		args.Mode); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
@@ -183,17 +183,17 @@ func (this *providerApi) deleteProvider(ctx *echo.Context) error {
 		return response.NoAuthWithMsg(err.Error())
 	}
 
-	req, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
+	args, err := utils.BindAndValidate[models.ProviderInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if _, err := providerService.GetProviderByID(ctx.Request().Context(), req.ID, currentUser.ID); err != nil {
+	if _, err := providerService.GetProviderByID(ctx.Request().Context(), args.ID, currentUser.ID); err != nil {
 		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to delete provider:%d", req.ID))
+		return response.ForbiddenWithMsg(fmt.Sprintf("Unauthorized access to delete provider:%d", args.ID))
 	}
 
-	if err := service.ProviderServiceApp.DeleteProvider(ctx.Request().Context(), req.ID); err != nil {
+	if err := service.ProviderServiceApp.DeleteProvider(ctx.Request().Context(), args.ID); err != nil {
 		utils.Logger.Error(err)
 		return response.FailWithMsg(ctx, "Failed to delete provider")
 	}

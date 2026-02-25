@@ -34,9 +34,10 @@ type datasetApi struct{}
 // @Produce      json
 // @Param        dataset body models.DatasetCreateReq true "Dataset creation request"
 // @Success      200 {object} response.ResponseBase[any] "Dataset created successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      403 {object} response.ResponseBase[any] "Dataset name already exists"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset/create [post]
 func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -67,9 +68,9 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 // @Produce      json
 // @Param        name query string false "Dataset name to filter by"
 // @Success      200 {object} response.ResponseBase[models.DatasetListResp] "List of datasets"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset [get]
 func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	// Get user ID from token context
@@ -92,17 +93,14 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	} else {
 		total, datasets, err = datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID)
 	}
-
-	switch err {
-	case nil:
-		return response.OkWithData(ctx, models.DatasetListResp{
-			Total:    total,
-			Datasets: datasets,
-		})
-	default:
+	if err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
+	return response.OkWithData(ctx, models.DatasetListResp{
+		Total:    total,
+		Datasets: datasets,
+	})
 }
 
 // getDatasetInfo godoc
@@ -113,10 +111,10 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 // @Produce      json
 // @Param        dataset_id path int true "Dataset ID"
 // @Success      200 {object} response.ResponseBase[models.DatasetInfo] "Dataset details"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset/{dataset_id} [get]
 func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 	// Get user ID from token context
@@ -148,9 +146,10 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 // @Produce      json
 // @Param        dataset body models.DatasetUpdateReq true "Dataset update request"
 // @Success      200 {object} response.ResponseBase[any] "Dataset updated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset/update [post]
 func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	// Get user ID from token context
@@ -182,9 +181,10 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 // @Produce      json
 // @Param        dataset_id path int true "Dataset ID"
 // @Success      200 {object} response.ResponseBase[any] "Dataset deleted successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
+// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset/delete/{dataset_id} [post]
 func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)

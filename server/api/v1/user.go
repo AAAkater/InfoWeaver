@@ -53,7 +53,7 @@ func (this *userApi) register(ctx *echo.Context) error {
 	case errors.Is(err, service.ErrDuplicatedKey):
 		return response.ErrEmailAlreadyUsed()
 	default:
-		utils.Logger.Error(err)
+		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
 }
@@ -91,7 +91,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 	token, err := utils.CreateToken(dbUser.ID, dbUser.Role == "admin")
 	if err != nil {
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Failed to generate token")
+		return response.ErrUnknownError()
 	}
 
 	return response.OkWithData(ctx, models.UserLoginResp{
@@ -130,7 +130,7 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 		return response.ErrUserNotFound()
 	default:
 		Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		return response.ErrUnknownError()
 	}
 }
 
@@ -162,10 +162,10 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		return response.ForbiddenWithMsg("User does not exist")
+		return response.ErrUserNotFound()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }
 

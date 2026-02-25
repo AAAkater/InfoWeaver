@@ -4,6 +4,7 @@ import (
 	"context"
 	"server/db"
 	"server/models"
+	"server/utils"
 
 	"gorm.io/gorm"
 )
@@ -18,7 +19,7 @@ func (this *ProviderService) CreateProvider(ctx context.Context, ownerID uint, n
 		OwnerID: ownerID,
 		Name:    name,
 		BaseURL: baseURL,
-		APIKey:  apiKey,
+		APIKey:  utils.BcryptHash(apiKey),
 		Mode:    mode,
 	}
 	return gorm.G[models.Provider](db.PgSqlDB).Create(ctx, dbProvider)
@@ -39,18 +40,18 @@ func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint
 	}
 	return err
 }
-func (this *ProviderService) GetProviderByID(ctx context.Context, providerID uint, ownerID uint) (*models.Provider, error) {
-	dbProvider, err := gorm.G[models.Provider](db.PgSqlDB).
+func (this *ProviderService) GetProviderByID(ctx context.Context, providerID uint, ownerID uint) (dbProvider *models.ProviderInfo, e error) {
+	result := db.PgSqlDB.Model(&models.Provider{}).
 		Where("id = ? AND owner_id = ?", providerID, ownerID).
-		First(ctx)
-	return &dbProvider, err
+		First(dbProvider)
+	return dbProvider, result.Error
 }
 
-func (this *ProviderService) GetProviderByName(ctx context.Context, name string) (*models.Provider, error) {
-	db_provider, err := gorm.G[models.Provider](db.PgSqlDB).
-		Where("name = ?", name).
-		First(ctx)
-	return &db_provider, err
+func (this *ProviderService) GetProviderByName(ctx context.Context, name string, ownerID uint) (dbProvider *models.ProviderInfo, err error) {
+	result := db.PgSqlDB.Model(&models.Provider{}).
+		Where("name = ? AND owner_id = ?", name, ownerID).
+		First(dbProvider)
+	return dbProvider, result.Error
 }
 
 func (this *ProviderService) GetAllProviders(ctx context.Context, ownerID uint) (cows int64, dbProviders []models.ProviderInfo, err error) {
@@ -62,9 +63,9 @@ func (this *ProviderService) GetAllProviders(ctx context.Context, ownerID uint) 
 	return result.RowsAffected, dbProviders, result.Error
 }
 
-func (this *ProviderService) DeleteProvider(ctx context.Context, providerID uint) error {
+func (this *ProviderService) DeleteProvider(ctx context.Context, providerID uint, ownerID uint) error {
 	_, err := gorm.G[models.Provider](db.PgSqlDB).
-		Where("id = ?", providerID).
+		Where("id = ? AND owner_id = ?", providerID, ownerID).
 		Delete(ctx)
 	return err
 }

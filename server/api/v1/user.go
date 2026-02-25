@@ -75,7 +75,7 @@ func (this *userApi) login(ctx *echo.Context) error {
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-	dbUser, err := userService.GetUserInfoByUsername(ctx.Request().Context(), args.Username)
+	dbUser, err := userService.GetUserInfoByEmail(ctx.Request().Context(), args.Email)
 	switch err {
 	case nil:
 	case service.ErrNotFound:

@@ -176,15 +176,16 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 
 // updateUserInfo godoc
 // @Summary      Update User Info
-// @Description  Update the current authenticated user's username and/or email
+// @Description  Update the current authenticated user's username and/or email. Both fields are optional - only provided fields will be updated.
 // @Tags         User
 // @Accept       json
 // @Produce      json
 // @Security     Bearer
-// @Param        body body models.UpdateUserInfoReq true "Update User Info Request Body"
+// @Param        body body models.UpdateUserInfoReq true "Update User Info Request Body. Username (3-50 chars) and/or Email (valid email format)"
 // @Success      200 {object} response.ResponseBase[any] "User information updated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
+// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters (invalid email format or username length)"
 // @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      403 {object} response.ResponseBase[any] "Email already in use by another account"
 // @Failure      404 {object} response.ResponseBase[any] "User not found"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /user/updateInfo [post]
@@ -197,6 +198,12 @@ func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	args, err := utils.BindAndValidate[models.UpdateUserInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
+	}
+	if exists, err := userService.CheckUserExistsByEmail(ctx.Request().Context(), args.Email); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	} else if exists {
+		return response.ErrEmailAlreadyUsed()
 	}
 
 	switch err := userService.UpdateUserInfo(ctx.Request().Context(), currentUser.ID, args.Username, args.Email); {

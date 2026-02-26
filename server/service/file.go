@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"server/config"
 	"server/db"
 	"server/models"
@@ -18,6 +19,109 @@ import (
 var FileServiceApp = new(FileService)
 
 type FileService struct{}
+
+func (this *FileService) UploadFile(ctx context.Context, fileHeaders []*multipart.FileHeader, fileNumber int, ownerID uint, datasetID uint) (uploadedFiles []models.FileUploadInfo, errs []error) {
+	// Process files in parallel
+	var wg sync.WaitGroup
+	resultChan := make(chan models.FileUploadInfo, fileNumber)
+	errChan := make(chan error, fileNumber)
+
+	for _, fileHeader := range fileHeaders {
+		wg.Go(func() {
+			fh := fileHeader
+
+			// Open the uploaded file
+			src, err := fh.Open()
+			if err != nil {
+				utils.Logger.Errorf("Failed to open uploaded file %s: %v", fh.Filename, err)
+				errChan <- ErrOpenFile
+				return
+			}
+			defer src.Close()
+
+			// Get file type/MIME type
+			fileType := fh.Header.Get("Content-Type")
+			if fileType == "" {
+				fileType = "application/octet-stream"
+			}
+
+			// Use channels to coordinate parallel MinIO upload and DB record creation
+			type uploadResult struct {
+				file *models.File
+				err  error
+			}
+			minioResult := make(chan error, 1)
+			dbResult := make(chan uploadResult, 1)
+
+			var fileWg sync.WaitGroup
+
+			// Goroutine 1: Upload to MinIO
+			fileWg.Go(func() {
+				err := this.UploadFileToMinio(ctx, ownerID, datasetID, fh.Filename, src, fh.Size)
+				if err != nil {
+					utils.Logger.Errorf("Failed to upload file %s to Minio: %v", fh.Filename, err)
+					minioResult <- ErrUploadFile
+					return
+				}
+				minioResult <- nil
+			})
+
+			// Goroutine 2: Create database record
+			fileWg.Go(func() {
+				dbFile, err := this.CreateFileInfo(ctx, ownerID, datasetID, fh.Filename, fileType, fh.Size)
+				if err != nil {
+					utils.Logger.Errorf("Failed to create file record %s: %v", fh.Filename, err)
+					dbResult <- uploadResult{nil, ErrSaveFileInfo}
+					return
+				}
+				dbResult <- uploadResult{dbFile, nil}
+			})
+
+			fileWg.Wait()
+
+			// Check for MinIO upload errors
+			if minioErr := <-minioResult; minioErr != nil {
+				errChan <- minioErr
+				return
+			}
+
+			// Check for database errors and get dbFile
+			dbRes := <-dbResult
+			if dbRes.err != nil {
+				errChan <- dbRes.err
+				return
+			}
+
+			// Publish file upload event
+			if err := this.PublishFileUploadEvent(ctx, dbRes.file); err != nil {
+				utils.Logger.Errorf("Failed to publish file upload event for %s: %v", fh.Filename, err)
+				// Continue even if event publishing fails
+			}
+
+			utils.Logger.Infof("File uploaded successfully: %s", fh.Filename)
+			resultChan <- models.FileUploadInfo{
+				OwnerID:   ownerID,
+				DatasetID: datasetID,
+				Name:      fh.Filename,
+				Type:      fileType,
+				Size:      fh.Size,
+			}
+		})
+	}
+
+	wg.Wait()
+	close(resultChan)
+	close(errChan)
+
+	for resp := range resultChan {
+		uploadedFiles = append(uploadedFiles, resp)
+	}
+
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+	return uploadedFiles, errs
+}
 
 // CreateFile uploads a file to Minio
 func (this *FileService) UploadFileToMinio(ctx context.Context, ownerID uint, datasetID uint, filename string, fileReader io.Reader, fileSize int64) error {

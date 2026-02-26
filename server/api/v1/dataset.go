@@ -48,16 +48,18 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-
-	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), args.Icon, args.Name, args.Description, currentUser.ID); {
-	case err == nil:
-		return response.Ok(ctx)
-	case errors.Is(err, service.ErrDuplicatedKey):
+	if exist, err := datasetService.CheckDatasetExistsByName(ctx.Request().Context(), currentUser.ID, args.Name); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	} else if exist {
 		return response.ErrDatasetNameAlreadyExists()
-	default:
+	}
+
+	if err := datasetService.CreateNewDataset(ctx.Request().Context(), args.Icon, args.Name, args.Description, currentUser.ID); err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
+	return response.Ok(ctx)
 }
 
 // listDatasets godoc

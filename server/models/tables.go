@@ -48,7 +48,7 @@ type (
 	// Dataset represents a collection of files owned by a user
 	Dataset struct {
 		gorm.Model
-		Name        string `gorm:"not null;unique"`
+		Name        string `gorm:"not null"`
 		Icon        string // Icon is an emoji (e.g., 🚀, ❤️).
 		Description string
 		OwnerID     uint `gorm:"not null"`

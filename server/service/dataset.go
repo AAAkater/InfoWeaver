@@ -12,6 +12,13 @@ var DatasetServiceApp = new(DatasetService)
 
 type DatasetService struct{}
 
+func (this *DatasetService) CheckDatasetExistsByName(ctx context.Context, ownerID uint, name string) (exists bool, err error) {
+	cnt, err := gorm.G[models.Dataset](db.PgSqlDB).
+		Where("name = ? AND owner_id = ?", name, ownerID).
+		Count(ctx, "*")
+	return cnt > 0, err
+}
+
 func (this *DatasetService) CreateNewDataset(ctx context.Context, icon string, datasetName string, description string, ownerID uint) error {
 
 	dbDataset := models.Dataset{

@@ -114,10 +114,10 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   async function login(email: string, password: string, redirect = true) {
     startLoading();
 
-    const { data: loginToken, error } = await fetchLogin(email, password);
+    const { response: res } = await fetchLogin(email, password);
 
-    if (!error) {
-      const pass = await loginByToken(loginToken);
+    if (res.data.code === 0) {
+      const pass = await loginByToken(res.data.data);
 
       if (pass) {
         // Check if the tab needs to be cleared
@@ -137,6 +137,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
         });
       }
     } else {
+      window.$message?.error(res.data.msg || '登录失败');
       resetStore();
     }
 

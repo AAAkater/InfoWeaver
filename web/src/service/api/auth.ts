@@ -52,3 +52,21 @@ export function UserRegister(username: string, password: string, email: string) 
     }
   });
 }
+
+/** Update user profile info (username, email) */
+export function updateUserProfile(data: { username: string; email: string }) {
+  return request({
+    url: '/user/updateInfo',
+    method: 'post',
+    data
+  });
+}
+
+/** Update user password */
+export function updateUserPassword(data: { first_password: string; second_password: string }) {
+  return request({
+    url: '/user/resetPassword',
+    method: 'post',
+    data
+  });
+}

@@ -54,6 +54,13 @@ func (this *ProviderService) GetProviderByName(ctx context.Context, name string,
 	return dbProvider, result.Error
 }
 
+func (this *ProviderService) CheckProviderExistsByName(ctx context.Context, ownerID uint, name string) (exists bool, err error) {
+	cnt, err := gorm.G[models.Provider](db.PgSqlDB).
+		Where("name = ? AND owner_id = ?", name, ownerID).
+		Count(ctx, "*")
+	return cnt > 0, err
+}
+
 func (this *ProviderService) GetAllProviders(ctx context.Context, ownerID uint) (cows int64, dbProviders []models.ProviderInfo, err error) {
 
 	result := db.PgSqlDB.Model(&models.Provider{}).

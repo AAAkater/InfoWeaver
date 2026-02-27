@@ -49,14 +49,11 @@ func (this *providerApi) createProvider(ctx *echo.Context) error {
 	}
 
 	// Check if a provider with the same name already exists for this owner
-	switch existingProvider, err := providerService.GetProviderByName(ctx.Request().Context(), args.Name, currentUser.ID); {
-	case err == nil && existingProvider != nil:
-		return response.ErrProviderNameAlreadyExists()
-	case errors.Is(err, service.ErrNotFound):
-		// continue to create
-	default:
+	if exist, err := providerService.CheckProviderExistsByName(ctx.Request().Context(), currentUser.ID, args.Name); err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
+	} else if exist {
+		return response.ErrProviderNameAlreadyExists()
 	}
 
 	if err := providerService.CreateProvider(ctx.Request().Context(), currentUser.ID, args.Name, args.BaseURL, args.APIKey, args.Mode); err != nil {

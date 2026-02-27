@@ -15,12 +15,12 @@ const { toggleLoginModule } = useRouterPush();
 const { validate } = useNaiveForm();
 
 interface FormModel {
-  userName: string;
+  email: string;
   password: string;
 }
 
 const model: FormModel = reactive({
-  userName: '铭铭又香又甜',
+  email: '2857982862@qq.com',
   password: '123456'
 });
 
@@ -29,14 +29,14 @@ const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
   const { formRules } = useFormRules();
 
   return {
-    userName: formRules.userName,
+    email: formRules.email,
     password: formRules.pwd
   };
 });
 
 async function handleSubmit() {
   await validate();
-  await authStore.login(model.userName, model.password);
+  await authStore.login(model.email, model.password);
 }
 
 type AccountKey = 'super' | 'admin' | 'user';
@@ -75,9 +75,9 @@ async function handleAccountLogin(account: Account) {
 </script>
 
 <template>
-  <NForm ref="formRef" :model="model" :rules="rules" size="large" :show-label="false" @keyup.enter="handleSubmit">
+  <NForm :model="model" :rules="rules" size="large" :show-label="false" @keyup.enter="handleSubmit">
     <NFormItem path="userName">
-      <NInput v-model:value="model.userName" :placeholder="$t('page.login.common.userNamePlaceholder')" />
+      <NInput v-model:value="model.email" :placeholder="$t('page.login.common.emailPlaceholder')" />
     </NFormItem>
     <NFormItem path="password">
       <NInput

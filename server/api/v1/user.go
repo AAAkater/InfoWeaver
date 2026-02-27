@@ -199,7 +199,7 @@ func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-	if exists, err := userService.CheckUserExistsByEmail(ctx.Request().Context(), args.Email); err != nil {
+	if exists, err := userService.CheckUserExistsByEmail(ctx.Request().Context(), currentUser.ID, args.Email); err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	} else if exists {

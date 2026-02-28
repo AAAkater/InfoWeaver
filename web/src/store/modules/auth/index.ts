@@ -111,13 +111,13 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
    * @param password Password
    * @param [redirect=true] Whether to redirect after login. Default is `true`
    */
-  async function login(userName: string, password: string, redirect = true) {
+  async function login(email: string, password: string, redirect = true) {
     startLoading();
 
-    const { data: loginToken, error } = await fetchLogin(userName, password);
+    const { response: res } = await fetchLogin(email, password);
 
-    if (!error) {
-      const pass = await loginByToken(loginToken);
+    if (res.data.code === 0) {
+      const pass = await loginByToken(res.data.data);
 
       if (pass) {
         // Check if the tab needs to be cleared
@@ -137,6 +137,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
         });
       }
     } else {
+      window.$message?.error(res.data.msg || '登录失败');
       resetStore();
     }
 

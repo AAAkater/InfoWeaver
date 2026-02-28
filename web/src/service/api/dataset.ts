@@ -1,9 +1,12 @@
 import { request } from '../request';
-export function getDatasets(id?: number) {
-  const url = id !== undefined ? `/dataset/${id}` : '/dataset';
+export function getDatasets(name?: string) {
+  const url = '/dataset';
   return request<Api.Dataset.GetDatasetResponse>({
     url,
-    method: 'get'
+    method: 'get',
+    params: {
+      name
+    }
   });
 }
 export function createDataset(formModel: Api.Dataset.FormModel) {

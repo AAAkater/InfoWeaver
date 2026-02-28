@@ -1,17 +1,11 @@
 import { request } from '../request';
 
-/**
- * Login
- *
- * @param userName User name
- * @param password Password
- */
-export function fetchLogin(username: string, password: string) {
+export function fetchLogin(email: string, password: string) {
   return request<Api.Auth.LoginToken>({
     url: '/user/login',
     method: 'post',
     data: {
-      username,
+      email,
       password
     }
   });
@@ -56,5 +50,23 @@ export function UserRegister(username: string, password: string, email: string) 
       username,
       password
     }
+  });
+}
+
+/** Update user profile info (username, email) */
+export function updateUserProfile(data: { username: string; email: string }) {
+  return request({
+    url: '/user/updateInfo',
+    method: 'post',
+    data
+  });
+}
+
+/** Update user password */
+export function updateUserPassword(data: { first_password: string; second_password: string }) {
+  return request({
+    url: '/user/resetPassword',
+    method: 'post',
+    data
   });
 }

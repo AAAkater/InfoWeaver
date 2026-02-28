@@ -26,7 +26,7 @@ const isEdit = ref(false);
 const bodyStyle = {
   width: '500px'
 };
-const searchId = ref();
+const searchKey = ref();
 const datasets = ref<Api.Dataset.DatasetItem[]>();
 const model: Api.Dataset.FormModel = reactive({
   id: undefined,
@@ -51,21 +51,8 @@ function openCreateModal() {
   showModal.value = true;
 }
 async function fetchDatasets() {
-  let id: number | undefined;
-
-  if (searchId.value) {
-    const parsed = Number(searchId.value);
-    if (Number.isNaN(parsed)) {
-      message.warning('请输入有效的数字 ID');
-      datasets.value = [];
-      return;
-    }
-    id = parsed;
-  } else {
-    id = undefined;
-  }
-
-  const { response: res } = await getDatasets(id);
+  const keyword = searchKey.value && searchKey.value.trim() ? searchKey.value.trim() : undefined;
+  const { response: res } = await getDatasets(keyword);
   if (res?.data?.code === 0) {
     const datasetList = res.data.data?.datasets ?? [];
     datasets.value = datasetList;
@@ -162,7 +149,7 @@ onMounted(() => {
 <template>
   <NSpace vertical :size="16">
     <NSpace>
-      <NInput v-model:value="searchId" round placeholder="请输入知识库id" clearable @blur="fetchDatasets()">
+      <NInput v-model:value="searchKey" round placeholder="请输入关键字" clearable @blur="fetchDatasets()">
         <template #prefix>
           <NIcon :component="Search48Filled" />
         </template>
@@ -256,7 +243,9 @@ onMounted(() => {
 
               <div style="flex: 1">
                 <div :style="{ fontWeight: 'bold' }">{{ dataset.name }}</div>
-                <div style="color: #949494; font-size: 10px; line-height: 1.2">id · {{ dataset.id }}</div>
+                <div style="color: #949494; font-size: 10px; line-height: 1.2">
+                  {{ dayjs(dataset.created_at).format('YYYY-MM-DD') }}
+                </div>
               </div>
 
               <NDropdown
@@ -273,15 +262,7 @@ onMounted(() => {
               </NDropdown>
             </div>
             <div style="color: #666; font-size: 10px; line-height: 1.4">{{ dataset.description }}</div>
-            <div
-              style="
-                color: #949494;
-                font-size: 10px;
-                font-size: 10px;
-                transform: scale(0.85);
-                transform-origin: left top;
-              "
-            >
+            <div style="color: #949494; font-size: 10px; transform: scale(0.85); transform-origin: left top">
               更新于 · {{ formatTime(dataset.updated_at) }}
             </div>
           </NSpace>

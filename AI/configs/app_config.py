@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     MILVUS_HOST: str = "localhost"
     MILVUS_PORT: int = 19530
     MILVUS_DIM: int = 1024
+    MILVUS_DB_NAME: str = "info_weaver"
+    MILVUS_COLLECTION_NAME: str = "info_weaver_collection"
 
     @computed_field
     @property

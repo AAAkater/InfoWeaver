@@ -77,11 +77,12 @@ class MilvusDB:
         self.client.delete(collection_name=self.collection_name, filter_expression=expr)
         logger.info(f"Deleted entities with filter expression '{expr}' from collection '{self.collection_name}'")
 
-    def search_entities(
+    def search_entities_filter(
         self,
         query_vector: list[float],
         dataset_id: int,
         top_k: int = 10,
+        expr: str | None = None,
     ) -> list[dict]:
         """Search for similar vectors in the collection.
 
@@ -94,11 +95,13 @@ class MilvusDB:
             List of search results with distance and entity data.
         """
 
+        final_expr = f"dataset_id == {dataset_id}" + (f" and {expr}" if expr else "")
+
         results = self.client.search(
             collection_name=self.collection_name,
             data=[query_vector],
             limit=top_k,
-            filter=f"dataset_id == {dataset_id}",
+            filter=final_expr,
             output_fields=["id", "content"],
         )
 

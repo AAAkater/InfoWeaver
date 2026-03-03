@@ -6,7 +6,7 @@ from pika.adapters.blocking_connection import BlockingChannel
 from pika.exceptions import AMQPChannelError, AMQPConnectionError
 from pydantic import BaseModel, Field
 
-from core.config import settings
+from configs.app_config import settings
 from utils.logger import logger
 
 

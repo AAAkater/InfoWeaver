@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from core.config import settings
+from configs.app_config import settings
 
 # Create SQLAlchemy engine
 engine = create_engine(str(settings.POSTGRESQL_DSN), echo=True)

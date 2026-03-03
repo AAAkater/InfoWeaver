@@ -23,6 +23,7 @@ class MilvusDB:
                 self.client.create_database(db_name=db_name)
                 logger.info(f"Database '{db_name}' created successfully")
             self.client.use_database(db_name=db_name)
+        self.create_collection()
 
     def create_collection(self):
         """Create the collection if not exists."""
@@ -76,9 +77,37 @@ class MilvusDB:
         self.client.delete(collection_name=self.collection_name, filter_expression=expr)
         logger.info(f"Deleted entities with filter expression '{expr}' from collection '{self.collection_name}'")
 
+    def search_entities(
+        self,
+        query_vector: list[float],
+        dataset_id: int,
+        top_k: int = 10,
+    ) -> list[dict]:
+        """Search for similar vectors in the collection.
+
+        Args:
+            query_vector: The query vector to search for.
+            top_k: Number of results to return. Defaults to 10.
+            dataset_id: Optional dataset ID to filter results.
+
+        Returns:
+            List of search results with distance and entity data.
+        """
+
+        results = self.client.search(
+            collection_name=self.collection_name,
+            data=[query_vector],
+            limit=top_k,
+            filter=f"dataset_id == {dataset_id}",
+            output_fields=["id", "content"],
+        )
+
+        logger.info(f"Search returned {len(results[0])} results")
+        return results[0] if results else []
+
 
 milvus_db = MilvusDB(
     uri=settings.MILVUS_URI,
-    collection_name=settings.MILVUS_COLLECTION_NAME,
     db_name=settings.MILVUS_DB_NAME,
+    collection_name=settings.MILVUS_COLLECTION_NAME,
 )

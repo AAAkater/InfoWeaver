@@ -86,6 +86,16 @@ class Settings(BaseSettings):
     def RABBITMQ_URL(self) -> str:
         return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}{self.RABBITMQ_VHOST}"
 
+    # OLLAMA
+    OLLAMA_HOST: str = "localhost"
+    OLLAMA_PORT: int = 11434
+    OLLAMA_EMBEDDING_MODEL: str = "qwen3-embedding:0.6b"
+
+    @computed_field
+    @property
+    def OLLAMA_URL(self) -> str:
+        return f"http://{self.OLLAMA_HOST}:{self.OLLAMA_PORT}"
+
     API_VER_STR: str = "/api/v1"
 
 

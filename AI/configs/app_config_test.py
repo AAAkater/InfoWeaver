@@ -93,27 +93,21 @@ class TestSettings:
         expected_uri = "http://milvus.example.com:19531"
         assert settings.MILVUS_URI == expected_uri
 
-    def test_minio_url_computed_field_http(self):
-        """Test MinIO URL with HTTP protocol."""
+    def test_minio_endpoint_computed_field(self):
+        """Test MinIO endpoint is correctly computed."""
         settings = Settings(
             MINIO_HOST="minio.example.com",
             MINIO_PORT=9001,
-            MINIO_USE_SSL=False,
         )
 
-        expected_url = "http://minio.example.com:9001"
-        assert settings.MINIO_URL == expected_url
+        expected_endpoint = "minio.example.com:9001"
+        assert settings.MINIO_ENDPOINT == expected_endpoint
 
-    def test_minio_url_computed_field_https(self):
-        """Test MinIO URL with HTTPS protocol."""
-        settings = Settings(
-            MINIO_HOST="minio.example.com",
-            MINIO_PORT=9001,
-            MINIO_USE_SSL=True,
-        )
-
-        expected_url = "https://minio.example.com:9001"
-        assert settings.MINIO_URL == expected_url
+    def test_minio_endpoint_default(self):
+        """Test MinIO endpoint with default values."""
+        settings = Settings()
+        expected_endpoint = "localhost:9000"
+        assert settings.MINIO_ENDPOINT == expected_endpoint
 
     def test_rabbitmq_url_computed_field(self):
         """Test RabbitMQ URL is correctly computed."""
@@ -227,7 +221,6 @@ class TestSettings:
         """Test MinIO SSL enabled."""
         settings = Settings(MINIO_USE_SSL=True)
         assert settings.MINIO_USE_SSL is True
-        assert settings.MINIO_URL.startswith("https://")
 
     def test_settings_rabbitmq_vhost_default(self):
         """Test RabbitMQ default vhost."""
@@ -239,3 +232,43 @@ class TestSettings:
         settings = Settings(RABBITMQ_VHOST="/myapp")
         assert settings.RABBITMQ_VHOST == "/myapp"
         assert "/myapp" in settings.RABBITMQ_URL
+
+    # OLLAMA Tests
+    def test_settings_ollama_defaults(self):
+        """Test Ollama default values."""
+        settings = Settings()
+        assert settings.OLLAMA_HOST == "localhost"
+        assert settings.OLLAMA_PORT == 11434
+        assert settings.OLLAMA_EMBEDDING_MODEL == "qwen3-embedding:0.6b"
+
+    def test_settings_ollama_url_default(self):
+        """Test Ollama URL is correctly computed with defaults."""
+        settings = Settings()
+        expected_url = "http://localhost:11434"
+        assert settings.OLLAMA_URL == expected_url
+
+    def test_settings_ollama_url_custom(self):
+        """Test Ollama URL with custom host and port."""
+        settings = Settings(
+            OLLAMA_HOST="ollama.example.com",
+            OLLAMA_PORT=8080,
+        )
+        expected_url = "http://ollama.example.com:8080"
+        assert settings.OLLAMA_URL == expected_url
+
+    def test_settings_ollama_embedding_model_custom(self):
+        """Test Ollama custom embedding model."""
+        settings = Settings(OLLAMA_EMBEDDING_MODEL="nomic-embed-text")
+        assert settings.OLLAMA_EMBEDDING_MODEL == "nomic-embed-text"
+
+    def test_settings_ollama_host_custom(self):
+        """Test Ollama custom host."""
+        settings = Settings(OLLAMA_HOST="192.168.1.100")
+        assert settings.OLLAMA_HOST == "192.168.1.100"
+        assert "192.168.1.100" in settings.OLLAMA_URL
+
+    def test_settings_ollama_port_custom(self):
+        """Test Ollama custom port."""
+        settings = Settings(OLLAMA_PORT=11435)
+        assert settings.OLLAMA_PORT == 11435
+        assert ":11435" in settings.OLLAMA_URL

@@ -70,7 +70,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def MINIO_URL(self) -> str:
+    def MINIO_ENDPOINT(self) -> str:
         return f"{self.MINIO_HOST}:{self.MINIO_PORT}"
 
     # RABBITMQ

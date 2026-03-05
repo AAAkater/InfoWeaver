@@ -13,6 +13,7 @@ from utils.logger import logger
 class FileUploadMessage(BaseModel):
     event: str = Field(..., description="Event type/name")
     file_id: int = Field(..., description="Unique file identifier")
+    dataset_id: int = Field(..., description="Dataset identifier for grouping files")
     minio_path: str = Field(..., description="Path to file in MinIO storage")
     timestamp: datetime = Field(default_factory=datetime.now, description="Event timestamp")
 

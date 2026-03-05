@@ -6,7 +6,6 @@ from utils.logger import logger
 
 
 class VectorEntity(BaseModel):
-    id: int
     vector: list[float]
     content: str
     dataset_id: int
@@ -28,11 +27,10 @@ class MilvusDB:
     def create_collection(self):
         """Create the collection if not exists."""
         schema = MilvusClient.create_schema(
-            auto_id=False,
+            auto_id=True,
             enable_dynamic_field=True,
         )
 
-        schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
         schema.add_field(
             field_name="vector",
             datatype=DataType.FLOAT_VECTOR,
@@ -42,7 +40,6 @@ class MilvusDB:
         schema.add_field(field_name="dataset_id", datatype=DataType.INT64)
 
         index_params = self.client.prepare_index_params()
-        index_params.add_index(field_name="id", index_type="AUTOINDEX")
         index_params.add_index(field_name="vector", index_type="AUTOINDEX", metric_type="COSINE")
         index_params.add_index(field_name="dataset_id", index_type="AUTOINDEX")
 

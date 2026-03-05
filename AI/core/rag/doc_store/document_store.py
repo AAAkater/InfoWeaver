@@ -7,7 +7,6 @@ from utils.logger import logger
 class DocumentChunk(BaseModel):
     """Model representing a document chunk with its embedding."""
 
-    id: int
     content: str
     vector: list[float]
     dataset_id: int
@@ -36,7 +35,6 @@ class DocumentStore:
 
         entities = [
             VectorEntity(
-                id=chunk.id,
                 vector=chunk.vector,
                 content=chunk.content,
                 dataset_id=chunk.dataset_id,

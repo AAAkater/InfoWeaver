@@ -31,6 +31,13 @@ class MilvusDB:
             enable_dynamic_field=True,
         )
 
+        # Primary key field (required by Milvus)
+        schema.add_field(
+            field_name="id",
+            datatype=DataType.INT64,
+            is_primary=True,
+            auto_id=True,
+        )
         schema.add_field(
             field_name="vector",
             datatype=DataType.FLOAT_VECTOR,

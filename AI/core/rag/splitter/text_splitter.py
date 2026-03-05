@@ -1,9 +1,17 @@
 from pathlib import Path
 
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceSplitter
+from langchain_community.document_loaders import UnstructuredFileLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from utils.logger import logger
+
+
+def _get_splitter(chunk_size: int, chunk_overlap: int) -> RecursiveCharacterTextSplitter:
+    """Create a text splitter with the given parameters."""
+    return RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
 
 
 def split_documents(
@@ -23,10 +31,7 @@ def split_documents(
         list[str]: List of all text chunks from all documents.
     """
     all_chunks: list[str] = []
-    splitter = SentenceSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-    )
+    splitter = _get_splitter(chunk_size, chunk_overlap)
 
     for i, doc in enumerate(documents):
         chunks = splitter.split_text(doc)
@@ -39,7 +44,7 @@ def split_documents(
 
 def load_document(file_path: str | Path) -> list[str]:
     """
-    Load document from file path using SimpleDirectoryReader.
+    Load document from file path using UnstructuredFileLoader.
 
     Args:
         file_path: Path to the document file.
@@ -51,11 +56,11 @@ def load_document(file_path: str | Path) -> list[str]:
     if not file_path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
 
-    reader = SimpleDirectoryReader(input_files=[str(file_path)])
-    documents = reader.load_data()
+    loader = UnstructuredFileLoader(str(file_path))
+    documents = loader.load()
 
     logger.info(f"Loaded {len(documents)} documents from {file_path}")
-    return [doc.text for doc in documents]
+    return [doc.page_content for doc in documents]
 
 
 def load_and_split_document(
@@ -86,7 +91,7 @@ def split_text(
     chunk_overlap: int = 50,
 ) -> list[str]:
     """
-    Split text into chunks using SentenceSplitter.
+    Split text into chunks using RecursiveCharacterTextSplitter.
 
     Args:
         text: Text to split.
@@ -96,10 +101,7 @@ def split_text(
     Returns:
         list[str]: List of text chunks.
     """
-    splitter = SentenceSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-    )
+    splitter = _get_splitter(chunk_size, chunk_overlap)
     chunks = splitter.split_text(text)
     logger.info(f"Split text into {len(chunks)} chunks")
     return chunks

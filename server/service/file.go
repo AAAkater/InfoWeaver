@@ -289,6 +289,7 @@ func (this *FileService) PublishFileUploadEvent(ctx context.Context, fileInfo *m
 		FileID:    fileInfo.ID,
 		MinioPath: fileInfo.MinioPath,
 		Timestamp: time.Now(),
+		DatasetID: fileInfo.DatasetID,
 	}
 
 	// Marshal the message to JSON

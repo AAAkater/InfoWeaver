@@ -68,4 +68,5 @@ type FileUploadMessage struct {
 	FileID    uint      `json:"file_id"`
 	MinioPath string    `json:"minio_path"`
 	Timestamp time.Time `json:"timestamp"`
+	DatasetID uint      `json:"dataset_id"`
 }

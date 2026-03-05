@@ -1,4 +1,4 @@
-from core.config import Settings
+from configs.app_config import Settings
 
 
 class TestSettings:

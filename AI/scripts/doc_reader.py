@@ -2,11 +2,11 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-from core.rag.splitter.text_splitter import load_and_split_document
-
 from configs.app_config import settings
-from core.rag import doc_store, get_text_embeddings
+from core.rag.doc_store import document_store
 from core.rag.doc_store.document_store import DocumentChunk
+from core.rag.embedding.default_embedding_model import get_text_embeddings
+from core.rag.splitter.text_splitter import load_and_split_document
 from db.minio_client import minio_client
 from db.rabbitmq_client import FileUploadMessage, rabbitmq_client
 from utils.logger import logger
@@ -74,7 +74,7 @@ async def process_document(msg: FileUploadMessage) -> None:
                     for chunk, emb in zip(chunks, embeddings)
                 ]
 
-                await doc_store.add_chunks(doc_entities)
+                await document_store.add_chunks(doc_entities)
             except Exception as e:
                 logger.error(f"Failed to store chunks in Milvus: {e}")
                 raise

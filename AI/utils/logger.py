@@ -2,6 +2,8 @@ import sys
 
 from loguru import logger
 
+from configs.app_config import settings
+
 logger.remove()
 logger.add(
     "./logs/app_{time:YYYY-MM-DD}.log",
@@ -11,4 +13,4 @@ logger.add(
     level="DEBUG",
     enqueue=True,
 )
-logger.add(sys.stderr, level="INFO")
+logger.add(sys.stderr, level=settings.LOG_LEVEL)

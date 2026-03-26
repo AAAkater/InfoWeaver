@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,6 +12,8 @@ class Settings(BaseSettings):
         case_sensitive=True,
     )
     PYTHONPATH: str | None = None
+
+    LOG_LEVEL: Literal["INFO", "DEBUG", "WARNING", "ERROR"] = "INFO"
 
     # POSTGRESQL
     POSTGRES_HOST: str = "localhost"

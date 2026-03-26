@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
-from db.milvus_db import VectorEntity, milvus_db
+from configs.app_config import settings
+from db.milvus_db import VectorEntity, client
 from utils.logger import logger
 
 
@@ -10,6 +11,45 @@ class DocumentChunk(BaseModel):
     content: str
     vector: list[float]
     dataset_id: int
+
+
+def insert_entities(entities: list[VectorEntity]) -> None:
+    """Insert vector entities into the collection.
+
+    Args:
+        entities: List of VectorEntity objects to insert.
+    """
+    client.insert(
+        collection_name=settings.MILVUS_COLLECTION_NAME,
+        data=[data.model_dump() for data in entities],
+    )
+    logger.info(f"Inserted {len(entities)} records into collection '{settings.MILVUS_COLLECTION_NAME}'")
+
+
+def delete_entities_by_id(entity_ids: list[int]) -> None:
+    """Delete entities by their IDs.
+
+    Args:
+        entity_ids: List of entity IDs to delete.
+    """
+    client.delete(
+        collection_name=settings.MILVUS_COLLECTION_NAME,
+        ids=entity_ids,
+    )
+    logger.info(f"Deleted entities with IDs {entity_ids} from collection '{settings.MILVUS_COLLECTION_NAME}'")
+
+
+def delete_entities_by_filter(expr: str) -> None:
+    """Delete entities by filter expression.
+
+    Args:
+        expr: Filter expression for deletion.
+    """
+    client.delete(
+        collection_name=settings.MILVUS_COLLECTION_NAME,
+        filter_expression=expr,
+    )
+    logger.info(f"Deleted entities with filter expression '{expr}' from collection '{settings.MILVUS_COLLECTION_NAME}'")
 
 
 async def add_chunks(chunks: list[DocumentChunk]) -> int:
@@ -28,52 +68,17 @@ async def add_chunks(chunks: list[DocumentChunk]) -> int:
 
     entities = [
         VectorEntity(
-            vector=chunk.vector,
+            dense_vector=chunk.vector,
+            sparse_vector={},  # TODO: add sparse vector support
             content=chunk.content,
             dataset_id=chunk.dataset_id,
         )
         for chunk in chunks
     ]
 
-    milvus_db.insert_entities(entities)
-    logger.info(f"Added {len(chunks)} chunks to collection '{milvus_db.collection_name}'")
+    insert_entities(entities)
+    logger.info(f"Added {len(chunks)} chunks to collection")
     return len(chunks)
-
-
-def search_chunks(
-    query_vector: list[float],
-    dataset_id: int,
-    top_k: int = 10,
-) -> list[dict]:
-    """
-    Search for similar documents.
-
-    Args:
-        query_vector: Query embedding vector.
-        top_k: Number of results to return.
-        dataset_id: Optional dataset ID to filter results.
-
-    Returns:
-        list[dict]: List of search results with content and distance.
-    """
-
-    results = milvus_db.search_entities_filter(
-        query_vector=query_vector,
-        dataset_id=dataset_id,
-        top_k=top_k,
-    )
-
-    if results and len(results) > 0:
-        return [
-            {
-                "id": hit["id"],
-                "content": hit["entity"]["content"],
-                "dataset_id": hit["entity"]["dataset_id"],
-                "distance": hit["distance"],
-            }
-            for hit in results[0]
-        ]
-    return []
 
 
 def delete_chunks_by_dataset_id(dataset_id: int) -> None:
@@ -83,7 +88,7 @@ def delete_chunks_by_dataset_id(dataset_id: int) -> None:
     Args:
         dataset_id: The dataset ID to delete chunks for.
     """
-    milvus_db.delete_entities_by_filter(expr=f"dataset_id == {dataset_id}")
+    delete_entities_by_filter(expr=f"dataset_id == {dataset_id}")
     logger.info(f"Deleted chunks for dataset_id {dataset_id}")
 
 
@@ -94,5 +99,5 @@ def delete_chunks_by_ids(ids: list[int]) -> None:
     Args:
         ids: List of chunk IDs to delete.
     """
-    milvus_db.delete_entities_by_id(entity_ids=ids)
+    delete_entities_by_id(entity_ids=ids)
     logger.info(f"Deleted chunks with IDs: {ids}")

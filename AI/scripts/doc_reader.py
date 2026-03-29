@@ -54,27 +54,18 @@ async def process_document(msg: FileUploadMessage) -> None:
                 logger.error(f"Failed to load and split document: {e}")
                 raise
 
-            # Step 3: Generate embeddings
-            logger.info(f"Generating embeddings for {len(chunks)} chunks")
-            try:
-                embeddings = await get_text_embeddings(chunks)
-            except Exception as e:
-                logger.error(f"Failed to generate embeddings: {e}")
-                raise
-
             # Step 4: Store chunks with embeddings in Milvus
             logger.info(f"Storing {len(chunks)} chunks in Milvus")
             try:
                 doc_entities = [
                     DocumentChunk(
-                        vector=emb,
                         content=chunk,
                         dataset_id=msg.dataset_id,
                     )
-                    for chunk, emb in zip(chunks, embeddings)
+                    for chunk in chunks
                 ]
 
-                await document_store.add_chunks(doc_entities)
+                await document_store.add_document_chunks(doc_entities)
             except Exception as e:
                 logger.error(f"Failed to store chunks in Milvus: {e}")
                 raise

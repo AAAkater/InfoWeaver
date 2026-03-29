@@ -16,7 +16,7 @@ class VectorEntity(BaseModel):
     dataset_id: int
 
 
-def _create_database_if_not_exists(client: MilvusClient, db_name: str) -> None:
+def _create_database(client: MilvusClient, db_name: str) -> None:
     """Create database if it doesn't exist and switch to it."""
     if db_name == "default":
         return
@@ -30,6 +30,11 @@ def _create_database_if_not_exists(client: MilvusClient, db_name: str) -> None:
 
 def _create_collection(client: MilvusClient, collection_name: str) -> None:
     """Create the collection if not exists."""
+
+    if client.has_collection(collection_name):
+        logger.info(f"Collection '{collection_name}' already exists")
+        return
+    # Define schema with both dense and sparse vector fields, along with content and dataset_id
     schema = MilvusClient.create_schema(
         auto_id=True,
         enable_dynamic_field=True,
@@ -42,15 +47,31 @@ def _create_collection(client: MilvusClient, collection_name: str) -> None:
         auto_id=True,
     )
     schema.add_field(
-        field_name="vector",
+        field_name="dense_vector",
         datatype=DataType.FLOAT_VECTOR,
         dim=settings.MILVUS_DIM,
     )
+    schema.add_field(field_name="sparse_vector", datatype=DataType.SPARSE_FLOAT_VECTOR)
     schema.add_field(field_name="content", datatype=DataType.VARCHAR, max_length=512)
     schema.add_field(field_name="dataset_id", datatype=DataType.INT64)
-
+    # Create indexes for both dense and sparse vectors, and dataset_id for efficient querying
     index_params = client.prepare_index_params()
-    index_params.add_index(field_name="vector", index_type="AUTOINDEX", metric_type="COSINE")
+
+    index_params.add_index(
+        field_name="dense_vector",
+        index_name="dense_vector_index",
+        index_type="AUTOINDEX",
+        metric_type="IP",
+    )
+
+    index_params.add_index(
+        field_name="sparse_vector",
+        index_name="sparse_inverted_index",
+        index_type="SPARSE_INVERTED_INDEX",
+        metric_type="IP",
+        params={"inverted_index_algo": "DAAT_MAXSCORE"},
+    )
+
     index_params.add_index(field_name="dataset_id", index_type="AUTOINDEX")
 
     client.create_collection(
@@ -66,7 +87,7 @@ def _create_collection(client: MilvusClient, collection_name: str) -> None:
 def _init_milvus_client(uri: str, db_name: str, collection_name: str) -> MilvusClient:
     """Initialize Milvus client with database and collection setup."""
     client = MilvusClient(uri=uri, timeout=1000)
-    _create_database_if_not_exists(client, db_name)
+    _create_database(client, db_name)
     _create_collection(client, collection_name)
     return client
 

@@ -5,11 +5,10 @@ from pathlib import Path
 from configs.app_config import settings
 from core.rag.doc_store import document_store
 from core.rag.doc_store.document_store import DocumentChunk
-from core.rag.embedding.default_embedding_model import get_text_embeddings
 from core.rag.splitter.text_splitter import load_and_split_document
 from db.minio_client import minio_client
 from db.rabbitmq_client import FileUploadMessage, rabbitmq_client
-from utils.logger import logger
+from utils import logger
 
 
 async def process_document(msg: FileUploadMessage) -> None:

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from pymilvus import AnnSearchRequest, WeightedRanker
 
 from configs.app_config import settings
-from db.milvus_db import client
+from db.milvus_db import client as milvus_db
 from utils import logger
 
 
@@ -37,7 +37,7 @@ def dense_search(
     final_expr = f"dataset_id == {dataset_id}" + (f" and {expr}" if expr else "")
     search_params = {"metric_type": "IP", "params": {}}
 
-    results = client.search(
+    results = milvus_db.client.search(
         collection_name=settings.MILVUS_COLLECTION_NAME,
         data=[query_dense_embedding],
         anns_field="dense_vector",
@@ -72,7 +72,7 @@ def sparse_search(
     final_expr = f"dataset_id == {dataset_id}" + (f" and {expr}" if expr else "")
     search_params = {"metric_type": "IP", "params": {}}
 
-    results = client.search(
+    results = milvus_db.client.search(
         collection_name=settings.MILVUS_COLLECTION_NAME,
         data=[query_sparse_embedding],
         anns_field="sparse_vector",
@@ -131,13 +131,9 @@ def hybrid_search(
         limit=limit,
         expr=final_expr,
     )
-
-    rerank = WeightedRanker(sparse_weight, dense_weight)
-
-    results = client.hybrid_search(
+    results = milvus_db.client.search(
         collection_name=settings.MILVUS_COLLECTION_NAME,
         reqs=[sparse_req, dense_req],
-        ranker=rerank,
         limit=limit,
         output_fields=["id", "content"],
     )

@@ -4,14 +4,14 @@ from pydantic import BaseModel
 from pymilvus import DataType, MilvusClient
 
 from configs.app_config import settings
-from utils.logger import logger
+from utils import logger
 
 
 class VectorEntity(BaseModel):
     """Entity for hybrid vector insertion (dense + sparse)."""
 
     dense_vector: list[float]
-    sparse_vector: list[float]
+    sparse_vector: dict[int, float]
     content: str
     dataset_id: int
 

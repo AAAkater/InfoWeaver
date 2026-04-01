@@ -5,7 +5,7 @@ from pymilvus import AnnSearchRequest, WeightedRanker
 
 from configs.app_config import settings
 from db.milvus_db import client
-from utils.logger import logger
+from utils import logger
 
 
 class SearchResult(BaseModel):

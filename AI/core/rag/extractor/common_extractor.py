@@ -1,6 +1,6 @@
 from llama_index.core import SimpleDirectoryReader
 
-from utils.logger import logger
+from utils import logger
 
 documents = SimpleDirectoryReader(input_dir="./data").load_data()
 

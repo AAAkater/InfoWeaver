@@ -7,7 +7,7 @@ from pika.exceptions import AMQPChannelError, AMQPConnectionError
 from pydantic import BaseModel, Field
 
 from configs.app_config import settings
-from utils.logger import logger
+from utils import logger
 
 
 class FileUploadMessage(BaseModel):

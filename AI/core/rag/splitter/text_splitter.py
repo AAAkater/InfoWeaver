@@ -3,7 +3,7 @@ from pathlib import Path
 from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from utils.logger import logger
+from utils import logger
 
 
 def _get_splitter(chunk_size: int, chunk_overlap: int) -> RecursiveCharacterTextSplitter:

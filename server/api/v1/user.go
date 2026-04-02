@@ -26,17 +26,18 @@ func SetUserRouter(e *echo.Echo) {
 type userApi struct{}
 
 // register godoc
-// @Summary      User Register
-// @Description  Register a new user account with username, password and email
-// @Tags         User
-// @Accept       json
-// @Produce      json
-// @Param        body body models.RegisterReq true "Register Request Body"
-// @Success      200 {object} response.ResponseBase[any] "Register successful"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      403 {object} response.ResponseBase[any] "Email already used"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /user/register [post]
+//
+//	@Summary		User Register
+//	@Description	Register a new user account with username, password and email
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		models.RegisterReq			true	"Register Request Body"
+//	@Success		200		{object}	response.ResponseBase[any]	"Register successful"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		403		{object}	response.ResponseBase[any]	"Email already used"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/user/register [post]
 func (this *userApi) register(ctx *echo.Context) error {
 
 	args, err := utils.BindAndValidate[models.RegisterReq](ctx)
@@ -60,18 +61,19 @@ func (this *userApi) register(ctx *echo.Context) error {
 }
 
 // login godoc
-// @Summary      User Login
-// @Description  Login with username and password to get authentication token
-// @Tags         User
-// @Accept       json
-// @Produce      json
-// @Param        body body models.UserLoginReq true "Login Request Body"
-// @Success      200 {object} response.ResponseBase[models.UserLoginResp] "Login successful, returns Bearer token"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      404 {object} response.ResponseBase[any] "User not found"
-// @Failure      403 {object} response.ResponseBase[any] "Invalid password"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /user/login [post]
+//
+//	@Summary		User Login
+//	@Description	Login with username and password to get authentication token
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		models.UserLoginReq							true	"Login Request Body"
+//	@Success		200		{object}	response.ResponseBase[models.UserLoginResp]	"Login successful, returns Bearer token"
+//	@Failure		400		{object}	response.ResponseBase[any]					"Invalid request parameters"
+//	@Failure		404		{object}	response.ResponseBase[any]					"User not found"
+//	@Failure		403		{object}	response.ResponseBase[any]					"Invalid password"
+//	@Failure		500		{object}	response.ResponseBase[any]					"Internal server error"
+//	@Router			/user/login [post]
 func (this *userApi) login(ctx *echo.Context) error {
 
 	args, err := utils.BindAndValidate[models.UserLoginReq](ctx)
@@ -104,17 +106,18 @@ func (this *userApi) login(ctx *echo.Context) error {
 }
 
 // getUserInfo godoc
-// @Summary      Get User Info
-// @Description  Get current authenticated user information including id, username, email and role
-// @Tags         User
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Success      200 {object} response.ResponseBase[models.UserInfoResp] "User information retrieved successfully"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "User not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /user/info [get]
+//
+//	@Summary		Get User Info
+//	@Description	Get current authenticated user information including id, username, email and role
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Security		Bearer
+//	@Success		200	{object}	response.ResponseBase[models.UserInfoResp]	"User information retrieved successfully"
+//	@Failure		401	{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		404	{object}	response.ResponseBase[any]					"User not found"
+//	@Failure		500	{object}	response.ResponseBase[any]					"Internal server error"
+//	@Router			/user/info [get]
 func (this *userApi) getUserInfo(ctx *echo.Context) error {
 
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -139,19 +142,20 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 }
 
 // resetUserPassword godoc
-// @Summary      Reset User Password
-// @Description  Reset the current authenticated user's password
-// @Tags         User
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Param        body body models.ResetPasswordReq true "Reset Password Request Body"
-// @Success      200 {object} response.ResponseBase[any] "Password reset successful"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "User not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /user/resetPassword [post]
+//
+//	@Summary		Reset User Password
+//	@Description	Reset the current authenticated user's password
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Security		Bearer
+//	@Param			body	body		models.ResetPasswordReq		true	"Reset Password Request Body"
+//	@Success		200		{object}	response.ResponseBase[any]	"Password reset successful"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]	"User not found"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/user/resetPassword [post]
 func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -175,20 +179,21 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 }
 
 // updateUserInfo godoc
-// @Summary      Update User Info
-// @Description  Update the current authenticated user's username and/or email. Both fields are optional - only provided fields will be updated.
-// @Tags         User
-// @Accept       json
-// @Produce      json
-// @Security     Bearer
-// @Param        body body models.UpdateUserInfoReq true "Update User Info Request Body. Username (3-50 chars) and/or Email (valid email format)"
-// @Success      200 {object} response.ResponseBase[any] "User information updated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters (invalid email format or username length)"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      403 {object} response.ResponseBase[any] "Email already in use by another account"
-// @Failure      404 {object} response.ResponseBase[any] "User not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /user/updateInfo [post]
+//
+//	@Summary		Update User Info
+//	@Description	Update the current authenticated user's username and/or email. Both fields are optional - only provided fields will be updated.
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Security		Bearer
+//	@Param			body	body		models.UpdateUserInfoReq	true	"Update User Info Request Body. Username (3-50 chars) and/or Email (valid email format)"
+//	@Success		200		{object}	response.ResponseBase[any]	"User information updated successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters (invalid email format or username length)"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]	"Email already in use by another account"
+//	@Failure		404		{object}	response.ResponseBase[any]	"User not found"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/user/updateInfo [post]
 func (this *userApi) updateUserInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {

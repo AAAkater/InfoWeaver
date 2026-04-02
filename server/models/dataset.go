@@ -1,12 +1,12 @@
 package models
 
 type DatasetCreateReq struct {
-	Icon          string `json:"icon" validate:"required,emoji"`
-	Name          string `json:"name" validate:"required,min=1,max=100"`
-	Description   string `json:"description" validate:"max=500"`
-	SearchType    string `json:"search_type" validate:"required,oneof=sparse dense hybrid"`
+	Icon           string `json:"icon" validate:"required,emoji"`
+	Name           string `json:"name" validate:"required,min=1,max=100"`
+	Description    string `json:"description" validate:"max=500"`
+	SearchType     string `json:"search_type" validate:"required,oneof=sparse dense hybrid"`
 	EmbeddingModel string `json:"embedding_model" validate:"required"`
-	ProviderID    uint   `json:"provider_id" validate:"required"`
+	ProviderID     uint   `json:"provider_id" validate:"required"`
 }
 
 type DatasetUpdateReq struct {

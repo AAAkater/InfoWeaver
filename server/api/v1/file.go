@@ -28,20 +28,21 @@ func SetFileRouter(e *echo.Echo) {
 type fileApi struct{}
 
 // uploadFile godoc
-// @Summary      Multi-File Upload
-// @Description  Upload multiple files to the server and associate them with a dataset. Files are stored in MinIO object storage.
-// @Tags         File
-// @Accept       multipart/form-data
-// @Produce      json
-// @Param        files formData []file true "Files to upload" format(binary)
-// @Param        id formData uint true "Dataset ID to associate the uploaded files with"
-// @Success      200 {object} response.ResponseBase[models.MultiFileUploadResp] "Files uploaded successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters or no files provided"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      403 {object} response.ResponseBase[any] "Dataset not found or access denied"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /file/upload [post]
+//
+//	@Summary		Multi-File Upload
+//	@Description	Upload multiple files to the server and associate them with a dataset. Files are stored in MinIO object storage.
+//	@Tags			File
+//	@Accept			multipart/form-data
+//	@Produce		json
+//	@Param			files	formData	[]file												true	"Files to upload"	format(binary)
+//	@Param			id		formData	uint												true	"Dataset ID to associate the uploaded files with"
+//	@Success		200		{object}	response.ResponseBase[models.MultiFileUploadResp]	"Files uploaded successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]							"Invalid request parameters or no files provided"
+//	@Failure		401		{object}	response.ResponseBase[any]							"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]							"Dataset not found or access denied"
+//	@Failure		404		{object}	response.ResponseBase[any]							"Dataset not found"
+//	@Failure		500		{object}	response.ResponseBase[any]							"Internal server error"
+//	@Router			/file/upload [post]
 func (this *fileApi) uploadFile(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -94,19 +95,20 @@ func (this *fileApi) uploadFile(ctx *echo.Context) error {
 }
 
 // ListFiles godoc
-// @Summary      Get File List
-// @Description  Retrieve a paginated list of files for the current user
-// @Tags         File
-// @Accept       json
-// @Produce      json
-// @Param        page query int true "Page number" minimum(1)
-// @Param        page_size query int true "Number of files per page" minimum(1) maximum(100)
-// @Param        dataset_id query int false "Filter by dataset ID"
-// @Success      200 {object} response.ResponseBase[models.SimpleFileInfoListResp] "File list retrieved successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /file/list [get]
+//
+//	@Summary		Get File List
+//	@Description	Retrieve a paginated list of files for the current user
+//	@Tags			File
+//	@Accept			json
+//	@Produce		json
+//	@Param			page		query		int														true	"Page number"				minimum(1)
+//	@Param			page_size	query		int														true	"Number of files per page"	minimum(1)	maximum(100)
+//	@Param			dataset_id	query		int														false	"Filter by dataset ID"
+//	@Success		200			{object}	response.ResponseBase[models.SimpleFileInfoListResp]	"File list retrieved successfully"
+//	@Failure		400			{object}	response.ResponseBase[any]								"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]								"Invalid or expired token"
+//	@Failure		500			{object}	response.ResponseBase[any]								"Internal server error"
+//	@Router			/file/list [get]
 func (this *fileApi) ListFiles(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -137,18 +139,19 @@ func (this *fileApi) ListFiles(ctx *echo.Context) error {
 }
 
 // getSingleDetailedFileInfo godoc
-// @Summary      Get File Info
-// @Description  Get detailed information about a specific file
-// @Tags         File
-// @Accept       json
-// @Produce      json
-// @Param        file_id path int true "File ID"
-// @Success      200 {object} response.ResponseBase[models.DetailedFileInfo] "File info retrieved successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "File not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /file/info/{file_id} [get]
+//
+//	@Summary		Get File Info
+//	@Description	Get detailed information about a specific file
+//	@Tags			File
+//	@Accept			json
+//	@Produce		json
+//	@Param			file_id	path		int												true	"File ID"
+//	@Success		200		{object}	response.ResponseBase[models.DetailedFileInfo]	"File info retrieved successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]						"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]						"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]						"File not found"
+//	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error"
+//	@Router			/file/info/{file_id} [get]
 func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -172,18 +175,19 @@ func (this *fileApi) getSingleDetailedFileInfo(ctx *echo.Context) error {
 }
 
 // getDownloadFileURL godoc
-// @Summary      Get File Download URL
-// @Description  Get a presigned download URL for a file from MinIO
-// @Tags         File
-// @Accept       json
-// @Produce      json
-// @Param        file_id path int true "File ID"
-// @Success      200 {object} response.ResponseBase[models.FileDownloadResp] "Download URL generated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "File not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /file/download/{file_id} [get]
+//
+//	@Summary		Get File Download URL
+//	@Description	Get a presigned download URL for a file from MinIO
+//	@Tags			File
+//	@Accept			json
+//	@Produce		json
+//	@Param			file_id	path		int												true	"File ID"
+//	@Success		200		{object}	response.ResponseBase[models.FileDownloadResp]	"Download URL generated successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]						"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]						"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]						"File not found"
+//	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error"
+//	@Router			/file/download/{file_id} [get]
 func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -215,18 +219,19 @@ func (this *fileApi) getDownloadFileURL(ctx *echo.Context) error {
 }
 
 // deleteFile godoc
-// @Summary      Delete File
-// @Description  Delete a file from both MinIO storage and database
-// @Tags         File
-// @Accept       json
-// @Produce      json
-// @Param        file_id path int true "File ID"
-// @Success      200 {object} response.ResponseBase[any] "File deleted successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "File not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /file/delete/{file_id} [post]
+//
+//	@Summary		Delete File
+//	@Description	Delete a file from both MinIO storage and database
+//	@Tags			File
+//	@Accept			json
+//	@Produce		json
+//	@Param			file_id	path		int							true	"File ID"
+//	@Success		200		{object}	response.ResponseBase[any]	"File deleted successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]	"File not found"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/file/delete/{file_id} [post]
 func (this *fileApi) deleteFile(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {

@@ -27,18 +27,19 @@ func SetDatasetRouter(e *echo.Echo) {
 type datasetApi struct{}
 
 // createDataset godoc
-// @Summary      Create Dataset
-// @Description  Create a new dataset for the authenticated user
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset body models.DatasetCreateReq true "Dataset creation request"
-// @Success      200 {object} response.ResponseBase[any] "Dataset created successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      403 {object} response.ResponseBase[any] "Dataset name already exists or provider not owned"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /dataset/create [post]
+//
+//	@Summary		Create Dataset
+//	@Description	Create a new dataset for the authenticated user
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset	body		models.DatasetCreateReq		true	"Dataset creation request"
+//	@Success		200		{object}	response.ResponseBase[any]	"Dataset created successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]	"Dataset name already exists or provider not owned"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/dataset/create [post]
 func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
@@ -78,17 +79,18 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 }
 
 // listDatasets godoc
-// @Summary      List Datasets
-// @Description  List all datasets owned by the authenticated user. If name query parameter is provided, filter datasets by name.
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        name query string false "Dataset name to filter by"
-// @Success      200 {object} response.ResponseBase[models.DatasetListResp] "List of datasets"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /dataset [get]
+//
+//	@Summary		List Datasets
+//	@Description	List all datasets owned by the authenticated user. If name query parameter is provided, filter datasets by name.
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			name	query		string											false	"Dataset name to filter by"
+//	@Success		200		{object}	response.ResponseBase[models.DatasetListResp]	"List of datasets"
+//	@Failure		400		{object}	response.ResponseBase[any]						"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]						"Invalid or expired token"
+//	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error"
+//	@Router			/dataset [get]
 func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -121,18 +123,19 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 }
 
 // getDatasetInfo godoc
-// @Summary      Get Dataset
-// @Description  Get a specific dataset by ID
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset_id path int true "Dataset ID"
-// @Success      200 {object} response.ResponseBase[models.DatasetInfo] "Dataset details"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /dataset/{dataset_id} [get]
+//
+//	@Summary		Get Dataset
+//	@Description	Get a specific dataset by ID
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset_id	path		int											true	"Dataset ID"
+//	@Success		200			{object}	response.ResponseBase[models.DatasetInfo]	"Dataset details"
+//	@Failure		400			{object}	response.ResponseBase[any]					"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		404			{object}	response.ResponseBase[any]					"Dataset not found"
+//	@Failure		500			{object}	response.ResponseBase[any]					"Internal server error"
+//	@Router			/dataset/{dataset_id} [get]
 func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -156,19 +159,20 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 }
 
 // updateDatasetInfo godoc
-// @Summary      Update Dataset
-// @Description  Update an existing dataset
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset body models.DatasetUpdateReq true "Dataset update request"
-// @Success      200 {object} response.ResponseBase[any] "Dataset updated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      403 {object} response.ResponseBase[any] "Provider not owned"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /dataset/update [post]
+//
+//	@Summary		Update Dataset
+//	@Description	Update an existing dataset
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset	body		models.DatasetUpdateReq		true	"Dataset update request"
+//	@Success		200		{object}	response.ResponseBase[any]	"Dataset updated successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]	"Provider not owned"
+//	@Failure		404		{object}	response.ResponseBase[any]	"Dataset not found"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/dataset/update [post]
 func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -202,18 +206,19 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 }
 
 // deleteDataset godoc
-// @Summary      Delete Dataset
-// @Description  Delete a dataset by ID
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset_id path int true "Dataset ID"
-// @Success      200 {object} response.ResponseBase[any] "Dataset deleted successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
-// @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Failure      500 {object} response.ResponseBase[any] "Internal server error"
-// @Router       /dataset/delete/{dataset_id} [post]
+//
+//	@Summary		Delete Dataset
+//	@Description	Delete a dataset by ID
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset_id	path		int							true	"Dataset ID"
+//	@Success		200			{object}	response.ResponseBase[any]	"Dataset deleted successfully"
+//	@Failure		400			{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		404			{object}	response.ResponseBase[any]	"Dataset not found"
+//	@Failure		500			{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/dataset/delete/{dataset_id} [post]
 func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {

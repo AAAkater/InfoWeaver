@@ -19,13 +19,16 @@ func (this *DatasetService) CheckDatasetExistsByName(ctx context.Context, ownerI
 	return cnt > 0, err
 }
 
-func (this *DatasetService) CreateNewDataset(ctx context.Context, icon string, datasetName string, description string, ownerID uint) error {
+func (this *DatasetService) CreateNewDataset(ctx context.Context, icon string, datasetName string, description string, searchType string, embeddingModel string, providerID uint, ownerID uint) error {
 
 	dbDataset := models.Dataset{
-		Name:        datasetName,
-		Icon:        icon,
-		Description: description,
-		OwnerID:     ownerID,
+		Name:           datasetName,
+		Icon:           icon,
+		Description:    description,
+		SearchType:     searchType,
+		EmbeddingModel: embeddingModel,
+		ProviderID:     providerID,
+		OwnerID:        ownerID,
 	}
 	return gorm.G[models.Dataset](db.PgSqlDB).Create(ctx, &dbDataset)
 
@@ -51,12 +54,15 @@ func (this *DatasetService) ListDatasetsByOwnerID(ctx context.Context, ownerID u
 	return result.RowsAffected, datasets, result.Error
 }
 
-func (this *DatasetService) UpdateDataset(ctx context.Context, id uint, ownerID uint, icon string, name string, description string) error {
+func (this *DatasetService) UpdateDataset(ctx context.Context, id uint, ownerID uint, icon string, name string, description string, searchType string, embeddingModel string, providerID uint) error {
 
 	newDatasetInfo := models.Dataset{
-		Icon:        icon,
-		Name:        name,
-		Description: description,
+		Icon:           icon,
+		Name:           name,
+		Description:    description,
+		SearchType:     searchType,
+		EmbeddingModel: embeddingModel,
+		ProviderID:     providerID,
 	}
 
 	rowsAffected, err := gorm.G[models.Dataset](db.PgSqlDB).

@@ -55,7 +55,22 @@ func (this *datasetApi) createDataset(ctx *echo.Context) error {
 		return response.ErrDatasetNameAlreadyExists()
 	}
 
-	if err := datasetService.CreateNewDataset(ctx.Request().Context(), args.Icon, args.Name, args.Description, currentUser.ID); err != nil {
+	// Verify provider belongs to the user
+	if belongs, err := providerService.CheckProviderOwnership(ctx.Request().Context(), args.ProviderID, currentUser.ID); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	} else if !belongs {
+		return response.ErrProviderNotOwned()
+	}
+
+	if err := datasetService.CreateNewDataset(ctx.Request().Context(),
+		args.Icon,
+		args.Name,
+		args.Description,
+		args.SearchType,
+		args.EmbeddingModel,
+		args.ProviderID,
+		currentUser.ID); err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
@@ -164,7 +179,17 @@ func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := datasetService.UpdateDataset(ctx.Request().Context(), args.ID, currentUser.ID, args.Icon, args.Name, args.Description); {
+	// Verify provider belongs to the user (if provider_id is provided)
+	if args.ProviderID != 0 {
+		if belongs, err := providerService.CheckProviderOwnership(ctx.Request().Context(), args.ProviderID, currentUser.ID); err != nil {
+			Logger.Error(err)
+			return response.ErrUnknownError()
+		} else if !belongs {
+			return response.ErrProviderNotOwned()
+		}
+	}
+
+	switch err := datasetService.UpdateDataset(ctx.Request().Context(), args.ID, currentUser.ID, args.Icon, args.Name, args.Description, args.SearchType, args.EmbeddingModel, args.ProviderID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):

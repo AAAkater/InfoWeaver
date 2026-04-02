@@ -61,6 +61,14 @@ func (this *ProviderService) CheckProviderExistsByName(ctx context.Context, owne
 	return cnt > 0, err
 }
 
+// CheckProviderOwnership verifies that the provider belongs to the specified owner
+func (this *ProviderService) CheckProviderOwnership(ctx context.Context, providerID uint, ownerID uint) (belongs bool, err error) {
+	cnt, err := gorm.G[models.Provider](db.PgSqlDB).
+		Where("id = ? AND owner_id = ?", providerID, ownerID).
+		Count(ctx, "*")
+	return cnt > 0, err
+}
+
 func (this *ProviderService) GetAllProviders(ctx context.Context, ownerID uint) (cows int64, dbProviders []models.ProviderInfo, err error) {
 
 	result := db.PgSqlDB.Model(&models.Provider{}).

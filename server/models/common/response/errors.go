@@ -69,6 +69,13 @@ func ErrProviderNotFound() error {
 	}
 }
 
+func ErrProviderNotOwned() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: "Provider does not belong to the user",
+	}
+}
+
 func ErrMissDatasetID() error {
 	return &echo.HTTPError{
 		Code:    http.StatusBadRequest,

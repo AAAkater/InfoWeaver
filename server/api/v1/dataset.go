@@ -36,7 +36,7 @@ type datasetApi struct{}
 // @Success      200 {object} response.ResponseBase[any] "Dataset created successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
-// @Failure      403 {object} response.ResponseBase[any] "Dataset name already exists"
+// @Failure      403 {object} response.ResponseBase[any] "Dataset name already exists or provider not owned"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset/create [post]
 func (this *datasetApi) createDataset(ctx *echo.Context) error {
@@ -165,6 +165,7 @@ func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
 // @Success      200 {object} response.ResponseBase[any] "Dataset updated successfully"
 // @Failure      400 {object} response.ResponseBase[any] "Invalid request parameters"
 // @Failure      401 {object} response.ResponseBase[any] "Invalid or expired token"
+// @Failure      403 {object} response.ResponseBase[any] "Provider not owned"
 // @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
 // @Failure      500 {object} response.ResponseBase[any] "Internal server error"
 // @Router       /dataset/update [post]

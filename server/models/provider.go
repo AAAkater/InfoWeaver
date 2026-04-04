@@ -12,6 +12,7 @@ const (
 
 // ProviderInfo represents the configuration for a provider
 type ProviderInfo struct {
+	ID        uint      `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	Name      string    `json:"name"`
 	Mode      string    `json:"mode"`
@@ -50,14 +51,14 @@ type ProviderModelsReq struct {
 	ID uint `param:"provider_id" validate:"required"`
 }
 
-// EmbeddingModel represents an embedding model from a provider
-type EmbeddingModel struct {
-	ID     string `json:"id"`     // Model identifier (e.g., "text-embedding-3-small")
-	Object string `json:"object"` // Object type (usually "model")
+// ModelInfo represents a model from a provider
+type ModelInfo struct {
+	ID      string `json:"id"`       // Model identifier (e.g., "gpt-4", "text-embedding-3-small")
+	Object  string `json:"object"`   // Object type (usually "model")
 	OwnedBy string `json:"owned_by"` // Owner of the model (e.g., "openai")
 }
 
-// ProviderModelsResp represents a list of embedding models from a provider
+// ProviderModelsResp represents a list of models from a provider
 type ProviderModelsResp struct {
-	Models []EmbeddingModel `json:"models"`
+	Models []ModelInfo `json:"models"`
 }

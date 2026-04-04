@@ -147,10 +147,16 @@ func (this *ProviderService) ListModels(ctx context.Context, providerID uint, ow
 
 // listOpenAIModels uses OpenAI SDK to list embedding models
 func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL string, apiKey string) (*models.ProviderModelsResp, error) {
+	// Validate that baseURL ends with /v1
+	baseURL = strings.TrimSuffix(baseURL, "/")
+	if !strings.HasSuffix(baseURL, "/v1") {
+		return nil, fmt.Errorf("OpenAI base URL must end with /v1, got: %s", baseURL)
+	}
+
 	// Create OpenAI client with custom base URL
 	client := openai.NewClient(
 		option.WithAPIKey(apiKey),
-		option.WithBaseURL(strings.TrimSuffix(baseURL, "/")+"/v1"),
+		option.WithBaseURL(baseURL),
 	)
 
 	// List all models
@@ -159,28 +165,25 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 		return nil, fmt.Errorf("failed to list OpenAI models: %w", err)
 	}
 
-	// Filter for embedding models only
-	embeddingModels := []models.EmbeddingModel{}
+	// Return all models
+	allModels := []models.ModelInfo{}
 	for _, model := range modelsList.Data {
-		// OpenAI embedding models typically have "embedding" in their ID
-		if strings.Contains(model.ID, "embedding") {
-			embeddingModels = append(embeddingModels, models.EmbeddingModel{
-				ID:      model.ID,
-				Object:  string(model.Object),
-				OwnedBy: model.OwnedBy,
-			})
-		}
+		allModels = append(allModels, models.ModelInfo{
+			ID:      model.ID,
+			Object:  string(model.Object),
+			OwnedBy: model.OwnedBy,
+		})
 	}
 
-	return &models.ProviderModelsResp{Models: embeddingModels}, nil
+	return &models.ProviderModelsResp{Models: allModels}, nil
 }
 
-// listAnthropicModels uses Anthropic SDK - Anthropic doesn't have embedding models
+// listAnthropicModels uses Anthropic SDK - Anthropic doesn't have a list models API
 func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL, apiKey string) (*models.ProviderModelsResp, error) {
-	// Anthropic doesn't have embedding models, return empty
-	// Note: Anthropic focuses on chat models, not embedding models
+	// Anthropic doesn't have a public list models API
+	// Note: Anthropic focuses on chat models, return empty for now
 	return &models.ProviderModelsResp{
-		Models: []models.EmbeddingModel{},
+		Models: []models.ModelInfo{},
 	}, nil
 }
 
@@ -203,22 +206,19 @@ func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiK
 		return nil, fmt.Errorf("failed to list Gemini models: %w", err)
 	}
 
-	// Filter for embedding models only
-	embeddingModels := []models.EmbeddingModel{}
+	// Return all models
+	allModels := []models.ModelInfo{}
 	for _, model := range modelsPage.Items {
-		// Gemini embedding models typically have "embedding" in their name
-		if strings.Contains(model.Name, "embedding") {
-			// Extract model name from full path (e.g., "models/text-embedding-004")
-			name := strings.TrimPrefix(model.Name, "models/")
-			embeddingModels = append(embeddingModels, models.EmbeddingModel{
-				ID:      name,
-				Object:  "model",
-				OwnedBy: "google",
-			})
-		}
+		// Extract model name from full path (e.g., "models/gemini-pro")
+		name := strings.TrimPrefix(model.Name, "models/")
+		allModels = append(allModels, models.ModelInfo{
+			ID:      name,
+			Object:  "model",
+			OwnedBy: "google",
+		})
 	}
 
-	return &models.ProviderModelsResp{Models: embeddingModels}, nil
+	return &models.ProviderModelsResp{Models: allModels}, nil
 }
 
 // listOllamaModels uses Ollama SDK to list embedding models
@@ -238,18 +238,15 @@ func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL strin
 		return nil, fmt.Errorf("failed to list Ollama models: %w", err)
 	}
 
-	// Filter for embedding models only
-	embeddingModels := []models.EmbeddingModel{}
+	// Return all models
+	allModels := []models.ModelInfo{}
 	for _, model := range modelsList.Models {
-		// Ollama embedding models typically have "embed" in their name
-		if strings.Contains(model.Name, "embed") {
-			embeddingModels = append(embeddingModels, models.EmbeddingModel{
-				ID:      model.Name,
-				Object:  "model",
-				OwnedBy: "ollama",
-			})
-		}
+		allModels = append(allModels, models.ModelInfo{
+			ID:      model.Name,
+			Object:  "model",
+			OwnedBy: "ollama",
+		})
 	}
 
-	return &models.ProviderModelsResp{Models: embeddingModels}, nil
+	return &models.ProviderModelsResp{Models: allModels}, nil
 }

@@ -217,12 +217,12 @@ func (this *providerApi) deleteProvider(ctx *echo.Context) error {
 
 // listModels godoc
 //
-//	@Summary		List Embedding Models
-//	@Description	Get available embedding models from a provider
+//	@Summary		List Models
+//	@Description	Get available models from a provider
 //	@Tags			Provider
 //	@Accept			json
 //	@Produce		json
-//	@Param			provider_id	path		int											true	"Provider ID"
+//	@Param			provider_id	path		int													true	"Provider ID"
 //	@Success		200			{object}	response.ResponseBase[models.ProviderModelsResp]	"Models retrieved successfully"
 //	@Failure		400			{object}	response.ResponseBase[any]							"Invalid request parameters"
 //	@Failure		401			{object}	response.ResponseBase[any]							"Invalid or expired token"

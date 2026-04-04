@@ -44,3 +44,20 @@ type ProviderUpdateReq struct {
 	APIKey  string `json:"api_key" validate:"required,min=1"`
 	Mode    string `json:"mode" validate:"required,oneof=openai openai_response gemini anthropic ollama"`
 }
+
+// ProviderModelsReq represents a request to list models from a provider
+type ProviderModelsReq struct {
+	ID uint `param:"provider_id" validate:"required"`
+}
+
+// EmbeddingModel represents an embedding model from a provider
+type EmbeddingModel struct {
+	ID     string `json:"id"`     // Model identifier (e.g., "text-embedding-3-small")
+	Object string `json:"object"` // Object type (usually "model")
+	OwnedBy string `json:"owned_by"` // Owner of the model (e.g., "openai")
+}
+
+// ProviderModelsResp represents a list of embedding models from a provider
+type ProviderModelsResp struct {
+	Models []EmbeddingModel `json:"models"`
+}

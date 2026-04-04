@@ -18,6 +18,7 @@ func SetProviderRouter(e *echo.Echo) {
 	providerRouterGroup.POST("", providerHandler.createProvider)
 	providerRouterGroup.GET("/list", providerHandler.getAllProviders)
 	providerRouterGroup.GET("/info/:provider_id", providerHandler.getProviderInfoByID)
+	providerRouterGroup.GET("/models/:provider_id", providerHandler.listModels)
 	providerRouterGroup.POST("/update", providerHandler.updateProviderInfo)
 	providerRouterGroup.POST("/delete/:provider_id", providerHandler.deleteProvider)
 }
@@ -210,6 +211,43 @@ func (this *providerApi) deleteProvider(ctx *echo.Context) error {
 		return response.ErrProviderNotFound()
 	default:
 		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+}
+
+// listModels godoc
+//
+//	@Summary		List Embedding Models
+//	@Description	Get available embedding models from a provider
+//	@Tags			Provider
+//	@Accept			json
+//	@Produce		json
+//	@Param			provider_id	path		int											true	"Provider ID"
+//	@Success		200			{object}	response.ResponseBase[models.ProviderModelsResp]	"Models retrieved successfully"
+//	@Failure		400			{object}	response.ResponseBase[any]							"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]							"Invalid or expired token"
+//	@Failure		404			{object}	response.ResponseBase[any]							"Provider not found"
+//	@Failure		500			{object}	response.ResponseBase[any]							"Internal server error"
+//	@Router			/provider/models/{provider_id} [get]
+func (this *providerApi) listModels(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.ErrInvalidToken()
+	}
+
+	args, err := utils.BindAndValidate[models.ProviderModelsReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	modelsResp, err := providerService.ListModels(ctx.Request().Context(), args.ID, currentUser.ID)
+	switch err {
+	case nil:
+		return response.OkWithData(ctx, modelsResp)
+	case service.ErrNotFound:
+		return response.ErrProviderNotFound()
+	default:
+		Logger.Errorf("Failed to list models for provider %d: %v", args.ID, err)
 		return response.ErrUnknownError()
 	}
 }

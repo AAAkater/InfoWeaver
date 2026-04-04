@@ -9,9 +9,12 @@ import (
 	"server/utils"
 	"strings"
 
+	"github.com/anthropics/anthropic-sdk-go"
+	anthropicOption "github.com/anthropics/anthropic-sdk-go/option"
+	openaiOption "github.com/openai/openai-go/v3/option"
+
 	"github.com/ollama/ollama/api"
 	"github.com/openai/openai-go/v3"
-	"github.com/openai/openai-go/v3/option"
 	"google.golang.org/genai"
 
 	"gorm.io/gorm"
@@ -59,18 +62,26 @@ func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint
 	}
 	return err
 }
-func (this *ProviderService) GetProviderByID(ctx context.Context, providerID uint, ownerID uint) (dbProvider *models.ProviderInfo, e error) {
+func (this *ProviderService) GetProviderByID(ctx context.Context, providerID uint, ownerID uint) (*models.ProviderInfo, error) {
+	var dbProvider models.ProviderInfo
 	result := db.PgSqlDB.Model(&models.Provider{}).
 		Where("id = ? AND owner_id = ?", providerID, ownerID).
-		First(dbProvider)
-	return dbProvider, result.Error
+		First(&dbProvider)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &dbProvider, nil
 }
 
-func (this *ProviderService) GetProviderByName(ctx context.Context, name string, ownerID uint) (dbProvider *models.ProviderInfo, err error) {
+func (this *ProviderService) GetProviderByName(ctx context.Context, name string, ownerID uint) (*models.ProviderInfo, error) {
+	var dbProvider models.ProviderInfo
 	result := db.PgSqlDB.Model(&models.Provider{}).
 		Where("name = ? AND owner_id = ?", name, ownerID).
-		First(dbProvider)
-	return dbProvider, result.Error
+		First(&dbProvider)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &dbProvider, nil
 }
 
 func (this *ProviderService) CheckProviderExistsByName(ctx context.Context, ownerID uint, name string) (exists bool, err error) {
@@ -155,8 +166,8 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 
 	// Create OpenAI client with custom base URL
 	client := openai.NewClient(
-		option.WithAPIKey(apiKey),
-		option.WithBaseURL(baseURL),
+		openaiOption.WithAPIKey(apiKey),
+		openaiOption.WithBaseURL(baseURL),
 	)
 
 	// List all models
@@ -178,13 +189,29 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 	return &models.ProviderModelsResp{Models: allModels}, nil
 }
 
-// listAnthropicModels uses Anthropic SDK - Anthropic doesn't have a list models API
-func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL, apiKey string) (*models.ProviderModelsResp, error) {
-	// Anthropic doesn't have a public list models API
-	// Note: Anthropic focuses on chat models, return empty for now
-	return &models.ProviderModelsResp{
-		Models: []models.ModelInfo{},
-	}, nil
+// listAnthropicModels uses Anthropic SDK to list available models
+func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL string, apiKey string) (*models.ProviderModelsResp, error) {
+	client := anthropic.NewClient(
+		anthropicOption.WithAPIKey(apiKey),
+		anthropicOption.WithBaseURL(baseURL))
+
+	// List models
+	page, err := client.Models.List(ctx, anthropic.ModelListParams{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list Anthropic models: %w", err)
+	}
+
+	// Return all models
+	allModels := []models.ModelInfo{}
+	for _, model := range page.Data {
+		allModels = append(allModels, models.ModelInfo{
+			ID:      model.ID,
+			Object:  string(model.Type),
+			OwnedBy: "anthropic",
+		})
+	}
+
+	return &models.ProviderModelsResp{Models: allModels}, nil
 }
 
 // listGeminiModels uses Google Genai SDK to list embedding models

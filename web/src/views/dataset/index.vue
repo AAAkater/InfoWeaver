@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, onMounted, reactive, ref } from 'vue';
 import type { Component } from 'vue';
-import { NIcon, useDialog, useMessage } from 'naive-ui';
+import { NIcon, NInputNumber, NSelect, useDialog, useMessage } from 'naive-ui';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
@@ -32,8 +32,17 @@ const model: Api.Dataset.FormModel = reactive({
   id: undefined,
   icon: '🤖',
   description: '',
-  name: ''
+  name: '',
+  search_type: 'hybrid',
+  embedding_model: '',
+  provider_id: 0
 });
+
+const searchTypeOptions = [
+  { label: '关键词检索', value: 'sparse' },
+  { label: '语义检索', value: 'dense' },
+  { label: '混合检索', value: 'hybrid' }
+];
 const message = useMessage();
 function renderIcon(icon: Component) {
   return () => {
@@ -47,6 +56,9 @@ function openCreateModal() {
   model.icon = '🤖';
   model.name = '';
   model.description = '';
+  model.search_type = 'hybrid';
+  model.embedding_model = '';
+  model.provider_id = 0;
   isEdit.value = false;
   showModal.value = true;
 }
@@ -115,7 +127,10 @@ function handleSelect(key: string, dataset: Api.Dataset.DatasetItem) {
         id: dataset.id,
         icon: dataset.icon || '🤖',
         name: dataset.name,
-        description: dataset.description
+        description: dataset.description,
+        search_type: dataset.search_type || 'hybrid',
+        embedding_model: dataset.embedding_model || '',
+        provider_id: dataset.provider_id || 0
       });
       break;
     case 'delete':
@@ -219,6 +234,31 @@ onMounted(() => {
                   size="tiny"
                   style="background-color: #f1f3f6"
                   placeholder="描述该数据集的内容。详细描述可以让AI更快地访问数据集的内容。如果为空，将使用默认的命中策略。"
+                />
+              </NCard>
+              <NCard title="检索方式" :bordered="false" size="small">
+                <NSelect
+                  v-model:value="model.search_type"
+                  :options="searchTypeOptions"
+                  size="tiny"
+                  style="background-color: #f1f3f6"
+                />
+              </NCard>
+              <NCard title="Embedding模型" :bordered="false" size="small">
+                <NInput
+                  v-model:value="model.embedding_model"
+                  type="text"
+                  size="tiny"
+                  style="background-color: #f1f3f6"
+                  placeholder="请输入Embedding模型名称"
+                />
+              </NCard>
+              <NCard title="Provider ID" :bordered="false" size="small">
+                <NInputNumber
+                  v-model:value="model.provider_id"
+                  size="tiny"
+                  style="background-color: #f1f3f6"
+                  placeholder="请输入Provider ID"
                 />
               </NCard>
             </NSpace>

@@ -39,6 +39,7 @@ declare module "@elegant-router/types" {
     "alova": "/alova";
     "alova_request": "/alova/request";
     "alova_scenes": "/alova/scenes";
+    "chat": "/chat";
     "dataset": "/dataset";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
@@ -148,6 +149,7 @@ declare module "@elegant-router/types" {
     | "500"
     | "about"
     | "alova"
+    | "chat"
     | "dataset"
     | "function"
     | "home"
@@ -184,6 +186,7 @@ declare module "@elegant-router/types" {
     | "about"
     | "alova_request"
     | "alova_scenes"
+    | "chat"
     | "dataset"
     | "function_hide-child_one"
     | "function_hide-child_three"

@@ -40,6 +40,17 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'chat',
+    path: '/chat',
+    component: 'layout.base$view.chat',
+    meta: {
+      title: 'chat',
+      i18nKey: 'route.chat',
+      icon: 'fluent:chat-bubbles-multiple-24-filled',
+      order: 2
+    }
+  },
+  {
     name: 'about',
     path: '/about',
     component: 'layout.base$view.about',
@@ -58,7 +69,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'alova',
       i18nKey: 'route.alova',
       icon: 'carbon:http',
-      order: 7
+      order: 7,
+      hideInMenu: true
     },
     children: [
       {
@@ -85,6 +97,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'chat',
+    path: '/chat',
+    component: 'layout.base$view.chat',
+    meta: {
+      title: 'chat',
+      i18nKey: 'route.chat'
+    }
+  },
+  {
     name: 'dataset',
     path: '/dataset',
     component: 'layout.base$view.dataset',
@@ -102,7 +123,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'function',
       i18nKey: 'route.function',
       icon: 'icon-park-outline:all-application',
-      order: 6
+      order: 6,
+      hideInMenu: true
     },
     children: [
       {
@@ -319,7 +341,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'multi-menu',
       i18nKey: 'route.multi-menu',
-      order: 8
+      order: 8,
+      hideInMenu: true
     },
     children: [
       {
@@ -382,7 +405,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: '插件示例',
       i18nKey: 'route.plugin',
       order: 7,
-      icon: 'clarity:plugin-line'
+      icon: 'clarity:plugin-line',
+      hideInMenu: true
     },
     children: [
       {
@@ -629,7 +653,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'pro-naive',
       i18nKey: 'route.pro-naive',
       order: 7,
-      icon: 'material-symbols-light:demography-outline-rounded'
+      icon: 'material-symbols-light:demography-outline-rounded',
+      hideInMenu: true
     },
     children: [
       {

@@ -17,7 +17,8 @@ const customRoutes: CustomRoute[] = [
       title: 'exception',
       i18nKey: 'route.exception',
       icon: 'ant-design:exception-outlined',
-      order: 7
+      order: 7,
+      hideInMenu: true
     },
     children: [
       {
@@ -60,7 +61,8 @@ const customRoutes: CustomRoute[] = [
       title: 'document',
       i18nKey: 'route.document',
       order: 2,
-      icon: 'mdi:file-document-multiple-outline'
+      icon: 'mdi:file-document-multiple-outline',
+      hideInMenu: true
     },
     children: [
       {

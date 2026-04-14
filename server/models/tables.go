@@ -41,7 +41,7 @@ type (
 		gorm.Model
 		SessionID          uint        `gorm:"not null;index"`              // Associated chat session ID
 		Content            string      `gorm:"type:text;not null"`          // Message content
-		IsAnswer           bool        `gorm:"not null;default:false"`      // true if this is an AI answer, false if user question
+		Role               string      `gorm:"not null;default:'user'"`     // Message role: 'user', 'assistant', 'system'
 		RetrievedDocuments []Chunk     `gorm:"many2many:memory_documents;"` // Retrieved chunks for RAG
 		ChatSession        ChatSession `gorm:"foreignKey:SessionID;constraint:OnDelete:CASCADE"`
 	}

@@ -48,14 +48,6 @@ func (this *chatSessionApi) createChatSession(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	// Check if chat session with same title already exists
-	if exist, err := chatSessionService.CheckChatSessionExistsByTitle(ctx.Request().Context(), currentUser.ID, args.Title); err != nil {
-		Logger.Error(err)
-		return response.ErrUnknownError()
-	} else if exist {
-		return response.ErrChatSessionTitleAlreadyExists()
-	}
-
 	if err := chatSessionService.CreateNewChatSession(ctx.Request().Context(),
 		args.Title,
 		currentUser.ID); err != nil {

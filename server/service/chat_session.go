@@ -12,14 +12,6 @@ var ChatSessionServiceApp = new(ChatSessionService)
 
 type ChatSessionService struct{}
 
-// CheckChatSessionExistsByTitle checks if a chat session with the given title exists for the owner
-func (this *ChatSessionService) CheckChatSessionExistsByTitle(ctx context.Context, ownerID uint, title string) (exists bool, err error) {
-	cnt, err := gorm.G[models.ChatSession](db.PgSqlDB).
-		Where("title = ? AND owner_id = ?", title, ownerID).
-		Count(ctx, "*")
-	return cnt > 0, err
-}
-
 // CreateNewChatSession creates a new chat session
 func (this *ChatSessionService) CreateNewChatSession(ctx context.Context, title string, ownerID uint) error {
 	dbChatSession := models.ChatSession{
@@ -82,4 +74,12 @@ func (this *ChatSessionService) DeleteChatSession(ctx context.Context, id uint, 
 		return gorm.ErrRecordNotFound
 	}
 	return err
+}
+
+// CheckChatSessionOwnership checks if a chat session belongs to a user
+func (this *ChatSessionService) CheckChatSessionOwnership(ctx context.Context, id uint, ownerID uint) (exists bool, err error) {
+	cnt, err := gorm.G[models.ChatSession](db.PgSqlDB).
+		Where("id = ? AND owner_id = ?", id, ownerID).
+		Count(ctx, "*")
+	return cnt > 0, err
 }

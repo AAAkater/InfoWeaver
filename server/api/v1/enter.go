@@ -7,8 +7,10 @@ import (
 
 var Logger = utils.Logger
 var (
-	userService     = service.UserServiceApp
-	fileService     = service.FileServiceApp
-	datasetService  = service.DatasetServiceApp
-	providerService = service.ProviderServiceApp
+	userService        = service.UserServiceApp
+	fileService        = service.FileServiceApp
+	datasetService     = service.DatasetServiceApp
+	providerService    = service.ProviderServiceApp
+	chatSessionService = service.ChatSessionServiceApp
+	chatService        = service.ChatServiceApp
 )

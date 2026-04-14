@@ -110,3 +110,31 @@ func ErrFileNotFound() error {
 		Message: "File not found",
 	}
 }
+
+func ErrChatSessionTitleAlreadyExists() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: "chat session with the same title already exists",
+	}
+}
+
+func ErrChatSessionNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "Chat session not found",
+	}
+}
+
+func ErrChatMessageNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "Chat message not found",
+	}
+}
+
+func ErrChatMessageNotOwned() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: "Chat message does not belong to the user",
+	}
+}

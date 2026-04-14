@@ -36,13 +36,14 @@ type (
 		FileID   uint           `gorm:"not null"`           // Source file ID
 		File     File           `gorm:"foreignKey:FileID;constraint:OnDelete:CASCADE"`
 	}
-	// Memory stores user interaction history and retrieval results
+	// Memory stores a single chat message within a session
 	Memory struct {
 		gorm.Model
-		Question string `gorm:"type:text;not null"`
-		Answer   string `gorm:"type:text"` // Generated answer
-		// Many-to-Many relationship with RetrievedDocuments
-		RetrievedDocuments []Chunk `gorm:"many2many:memory_documents;"`
+		SessionID          uint        `gorm:"not null;index"`              // Associated chat session ID
+		Content            string      `gorm:"type:text;not null"`          // Message content
+		IsAnswer           bool        `gorm:"not null;default:false"`      // true if this is an AI answer, false if user question
+		RetrievedDocuments []Chunk     `gorm:"many2many:memory_documents;"` // Retrieved chunks for RAG
+		ChatSession        ChatSession `gorm:"foreignKey:SessionID;constraint:OnDelete:CASCADE"`
 	}
 
 	// Dataset represents a collection of files owned by a user
@@ -66,6 +67,14 @@ type (
 		BaseURL string `gorm:"not null"`  // Base URL for API requests
 		APIKey  string `gorm:"not null"`  // API key for authentication
 		OwnerID uint   `gorm:"not null"`
+		User    User   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
+	}
+
+	// ChatSession represents a conversation session with an AI model
+	ChatSession struct {
+		gorm.Model
+		Title   string `gorm:"not null"` // Session title
+		OwnerID uint   `gorm:"not null"` // Owner user ID
 		User    User   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
 	}
 )

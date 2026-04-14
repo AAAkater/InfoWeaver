@@ -12,4 +12,6 @@ func InitRouter(e *echo.Echo) {
 	v1.SetFileRouter(e)
 	v1.SetDatasetRouter(e)
 	v1.SetProviderRouter(e)
+	v1.SetChatSessionRouter(e)
+	v1.SetChatRouter(e)
 }

@@ -1,0 +1,28 @@
+{
+  "code_review": {
+    "model": "glm-5",
+    "max_file_size_kb": 100,
+    "supported_extensions": [
+      ".js", ".jsx", ".ts", ".tsx", ".vue",
+      ".py", ".java", ".kt", ".go",
+      ".cpp", ".c", ".h",
+      ".php", ".rb", ".rs", ".swift"
+    ],
+    "review_criteria": {
+      "frontend": [
+        "代码规范检查",
+        "性能优化建议",
+        "安全性检查",
+        "可访问性评估",
+        "浏览器兼容性"
+      ],
+      "backend": [
+        "代码逻辑分析",
+        "异常处理评估",
+        "数据库查询优化",
+        "API设计规范",
+        "安全性检查"
+      ]
+    }
+  }
+}

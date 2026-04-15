@@ -2,8 +2,11 @@ declare namespace Api {
   namespace Dataset {
     interface FormModel {
       icon: string;
-      description: string;
       name: string;
+      description: string;
+      search_type: 'sparse' | 'dense' | 'hybrid';
+      embedding_model: string;
+      provider_id: number;
       id?: number;
     }
     interface DatasetItem {
@@ -14,6 +17,9 @@ declare namespace Api {
       name: string;
       owner_id: number;
       updated_at: string;
+      search_type: 'sparse' | 'dense' | 'hybrid';
+      embedding_model: string;
+      provider_id: number;
     }
     interface GetDatasetResponse {
       datasets: DatasetItem[];

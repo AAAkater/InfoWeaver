@@ -225,6 +225,7 @@ const local: App.I18n.Schema = {
     500: '服务器错误',
     'iframe-page': '外链页面',
     home: '首页',
+    chat: '对话',
     document: '文档',
     dataset: '知识库',
     document_project: '项目文档',

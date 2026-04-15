@@ -48,19 +48,23 @@ type (
 	// Dataset represents a collection of files owned by a user
 	Dataset struct {
 		gorm.Model
-		Name        string `gorm:"not null;unique"`
-		Icon        string // Icon is an emoji (e.g., 🚀, ❤️).
-		Description string
-		OwnerID     uint `gorm:"not null"`
-		User        User `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
+		Name           string `gorm:"not null"`
+		Icon           string // Icon is an emoji (e.g., 🚀, ❤️).
+		Description    string
+		SearchType     string   `gorm:"not null;default:'dense'"` // "sparse", "dense", "hybrid"
+		EmbeddingModel string   `gorm:"not null"`                 // Embedding model name (required)
+		ProviderID     uint     `gorm:"not null"`                 // Associated provider ID for API access
+		OwnerID        uint     `gorm:"not null"`
+		User           User     `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
+		Provider       Provider `gorm:"foreignKey:ProviderID;constraint:OnDelete:CASCADE"`
 	}
 	// Provider represents an AI model provider (OpenAI, Gemini, Anthropic, Ollama, etc.)
 	Provider struct {
 		gorm.Model
-		Name    string `gorm:"not null;unique"` // Provider Name: "openai","deepseek","qwen",  "gemini", "anthropic", "ollama"
-		Mode    string `gorm:"not null"`        // Provider mode: "openai","openai response", "gemini", "anthropic", "ollama"
-		BaseURL string `gorm:"not null"`        // Base URL for API requests
-		APIKey  string `gorm:"not null"`        // API key for authentication
+		Name    string `gorm:"not null;"` // Provider Name
+		Mode    string `gorm:"not null"`  // Provider mode: "openai","openai response", "gemini", "anthropic", "ollama"
+		BaseURL string `gorm:"not null"`  // Base URL for API requests
+		APIKey  string `gorm:"not null"`  // API key for authentication
 		OwnerID uint   `gorm:"not null"`
 		User    User   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
 	}

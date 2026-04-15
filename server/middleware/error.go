@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func CustomHTTPErrorHandler(exposeError bool) echo.HTTPErrorHandler {
+func CustomHTTPErrorHandler() echo.HTTPErrorHandler {
 	return func(c *echo.Context, err error) {
 		if r, _ := echo.UnwrapResponse(c.Response()); r != nil && r.Committed {
 			return
@@ -36,20 +36,12 @@ func CustomHTTPErrorHandler(exposeError bool) echo.HTTPErrorHandler {
 				"msg":  sText,
 				"data": nil,
 			}
-			if exposeError {
-				if wrappedErr := m.Unwrap(); wrappedErr != nil {
-					msg["error"] = wrappedErr.Error()
-				}
-			}
 			result = msg
 		default:
 			msg := map[string]any{
 				"code": 1,
 				"msg":  http.StatusText(code),
 				"data": nil,
-			}
-			if exposeError {
-				msg["error"] = err.Error()
 			}
 			result = msg
 		}

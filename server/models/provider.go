@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 const (
 	PROVIDER_MODE_OPENAI      = "openai"
 	PROVIDER_MODE_OPENAI_RESP = "openai_response"
@@ -10,10 +12,11 @@ const (
 
 // ProviderInfo represents the configuration for a provider
 type ProviderInfo struct {
-	Name    string `json:"name"`
-	Mode    string `json:"mode"`
-	BaseURL string `json:"base_url"`
-	APIKey  string `json:"api_key"`
+	ID        uint      `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Name      string    `json:"name"`
+	Mode      string    `json:"mode"`
+	BaseURL   string    `json:"base_url"`
 }
 
 type ProviderInfoReq struct {
@@ -41,4 +44,21 @@ type ProviderUpdateReq struct {
 	BaseURL string `json:"base_url" validate:"required,url"`
 	APIKey  string `json:"api_key" validate:"required,min=1"`
 	Mode    string `json:"mode" validate:"required,oneof=openai openai_response gemini anthropic ollama"`
+}
+
+// ProviderModelsReq represents a request to list models from a provider
+type ProviderModelsReq struct {
+	ID uint `param:"provider_id" validate:"required"`
+}
+
+// ModelInfo represents a model from a provider
+type ModelInfo struct {
+	ID      string `json:"id"`       // Model identifier (e.g., "gpt-4", "text-embedding-3-small")
+	Object  string `json:"object"`   // Object type (usually "model")
+	OwnedBy string `json:"owned_by"` // Owner of the model (e.g., "openai")
+}
+
+// ProviderModelsResp represents a list of models from a provider
+type ProviderModelsResp struct {
+	Models []ModelInfo `json:"models"`
 }

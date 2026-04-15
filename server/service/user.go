@@ -59,3 +59,10 @@ func (this *UserService) UpdateUserInfo(ctx context.Context, userID uint, newUse
 		Updates(ctx, new_user_info)
 	return err
 }
+
+func (this *UserService) CheckUserExistsByEmail(ctx context.Context, ownerID uint, email string) (bool, error) {
+	cnt, err := gorm.G[models.User](db.PgSqlDB).
+		Where("email = ? AND id != ?", email, ownerID).
+		Count(ctx, "*")
+	return cnt > 0, err
+}

@@ -8,16 +8,13 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var Logger *zap.SugaredLogger
+var Logger = InitLogger()
 
-func InitLogger(isDev bool) *zap.SugaredLogger {
+func InitLogger() *zap.SugaredLogger {
 	var config zap.Config
-	if isDev {
-		config = zap.NewDevelopmentConfig()
-		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	} else {
-		config = zap.NewProductionConfig()
-	}
+
+	config = zap.NewDevelopmentConfig()
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
 	// Customize time format to YYYY-MM-DD HH:MM:SS.mmm
 	config.EncoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {

@@ -5,7 +5,7 @@ import (
 	"server/config"
 	"server/middleware"
 	"server/models"
-	"server/models/response"
+	"server/models/common/response"
 	"server/service"
 	"server/utils"
 
@@ -27,60 +27,79 @@ func SetDatasetRouter(e *echo.Echo) {
 type datasetApi struct{}
 
 // createDataset godoc
-// @Summary      Create Dataset
-// @Description  Create a new dataset for the authenticated user
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset body models.DatasetCreateReq true "Dataset creation request"
-// @Success      200 {object} response.ResponseBase[any] "Dataset created successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
-// @Router       /dataset/create [post]
+//
+//	@Summary		Create Dataset
+//	@Description	Create a new dataset for the authenticated user
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset	body		models.DatasetCreateReq		true	"Dataset creation request"
+//	@Success		200		{object}	response.ResponseBase[any]	"Dataset created successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]	"Dataset name already exists or provider not owned"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/dataset/create [post]
 func (this *datasetApi) createDataset(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
-	req, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetCreateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
-
-	switch err := datasetService.CreateNewDataset(ctx.Request().Context(), req.Icon, req.Name, req.Description, currentUser.ID); {
-	case err == nil:
-		return response.Ok(ctx)
-	case errors.Is(err, service.ErrDuplicatedKey):
-		utils.Logger.Error(err)
-		return response.ForbiddenWithMsg("dataset with the same name already exists")
-	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+	if exist, err := datasetService.CheckDatasetExistsByName(ctx.Request().Context(), currentUser.ID, args.Name); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	} else if exist {
+		return response.ErrDatasetNameAlreadyExists()
 	}
+
+	// Verify provider belongs to the user
+	if belongs, err := providerService.CheckProviderOwnership(ctx.Request().Context(), args.ProviderID, currentUser.ID); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	} else if !belongs {
+		return response.ErrProviderNotOwned()
+	}
+
+	if err := datasetService.CreateNewDataset(ctx.Request().Context(),
+		args.Icon,
+		args.Name,
+		args.Description,
+		args.SearchType,
+		args.EmbeddingModel,
+		args.ProviderID,
+		currentUser.ID); err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+	return response.Ok(ctx)
 }
 
 // listDatasets godoc
-// @Summary      List Datasets
-// @Description  List all datasets owned by the authenticated user. If name query parameter is provided, filter datasets by name.
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        name query string false "Dataset name to filter by"
-// @Success      200 {object} response.ResponseBase[models.DatasetListResp] "List of datasets"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
-// @Router       /dataset [get]
+//
+//	@Summary		List Datasets
+//	@Description	List all datasets owned by the authenticated user. If name query parameter is provided, filter datasets by name.
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			name	query		string											false	"Dataset name to filter by"
+//	@Success		200		{object}	response.ResponseBase[models.DatasetListResp]	"List of datasets"
+//	@Failure		400		{object}	response.ResponseBase[any]						"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]						"Invalid or expired token"
+//	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error"
+//	@Router			/dataset [get]
 func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
 
 	// Parse optional name query parameter
-	req, err := utils.BindAndValidate[models.DatasetListReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetListReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -88,125 +107,136 @@ func (this *datasetApi) listDatasets(ctx *echo.Context) error {
 	var total int64
 	var datasets []models.DatasetInfo
 
-	if req.Name != "" {
-		total, datasets, err = datasetService.ListDatasetsByName(ctx.Request().Context(), currentUser.ID, req.Name)
+	if args.Name != "" {
+		total, datasets, err = datasetService.ListDatasetsByName(ctx.Request().Context(), currentUser.ID, args.Name)
 	} else {
 		total, datasets, err = datasetService.ListDatasetsByOwnerID(ctx.Request().Context(), currentUser.ID)
 	}
-
-	switch err {
-	case nil:
-		return response.OkWithData(ctx, models.DatasetListResp{
-			Total:    total,
-			Datasets: datasets,
-		})
-	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+	if err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
+	return response.OkWithData(ctx, models.DatasetListResp{
+		Total:    total,
+		Datasets: datasets,
+	})
 }
 
 // getDatasetInfo godoc
-// @Summary      Get Dataset
-// @Description  Get a specific dataset by ID
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset_id path int true "Dataset ID"
-// @Success      200 {object} response.ResponseBase[models.DatasetInfo] "Dataset details"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      403 {object} response.ResponseBase[any] "Forbidden, insufficient permissions"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Router       /dataset/{dataset_id} [get]
+//
+//	@Summary		Get Dataset
+//	@Description	Get a specific dataset by ID
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset_id	path		int											true	"Dataset ID"
+//	@Success		200			{object}	response.ResponseBase[models.DatasetInfo]	"Dataset details"
+//	@Failure		400			{object}	response.ResponseBase[any]					"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		404			{object}	response.ResponseBase[any]					"Dataset not found"
+//	@Failure		500			{object}	response.ResponseBase[any]					"Internal server error"
+//	@Router			/dataset/{dataset_id} [get]
 func (this *datasetApi) getDatasetInfo(ctx *echo.Context) error {
-	req, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
-	if err != nil {
-		return response.BadRequestWithMsg(err.Error())
-	}
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
+	}
+	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch dbDataset, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), req.ID, currentUser.ID); {
+	switch dbDataset, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), args.ID, currentUser.ID); {
 	case err == nil:
 		return response.OkWithData(ctx, dbDataset)
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
-		return response.NotFoundWithMsg("Dataset not found")
+		return response.ErrDatasetNotFound()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }
 
 // updateDatasetInfo godoc
-// @Summary      Update Dataset
-// @Description  Update an existing dataset
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset body models.DatasetUpdateReq true "Dataset update request"
-// @Success      200 {object} response.ResponseBase[any] "Dataset updated successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid request data"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Router       /dataset/update [post]
+//
+//	@Summary		Update Dataset
+//	@Description	Update an existing dataset
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset	body		models.DatasetUpdateReq		true	"Dataset update request"
+//	@Success		200		{object}	response.ResponseBase[any]	"Dataset updated successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]	"Provider not owned"
+//	@Failure		404		{object}	response.ResponseBase[any]	"Dataset not found"
+//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/dataset/update [post]
 func (this *datasetApi) updateDatasetInfo(ctx *echo.Context) error {
 	// Get user ID from token context
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
+		return response.ErrInvalidToken()
 	}
-	req, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
+	args, err := utils.BindAndValidate[models.DatasetUpdateReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := datasetService.UpdateDataset(ctx.Request().Context(), req.ID, currentUser.ID, req.Icon, req.Name, req.Description); {
+	// Verify provider belongs to the user (if provider_id is provided)
+	if args.ProviderID != 0 {
+		if belongs, err := providerService.CheckProviderOwnership(ctx.Request().Context(), args.ProviderID, currentUser.ID); err != nil {
+			Logger.Error(err)
+			return response.ErrUnknownError()
+		} else if !belongs {
+			return response.ErrProviderNotOwned()
+		}
+	}
+
+	switch err := datasetService.UpdateDataset(ctx.Request().Context(), args.ID, currentUser.ID, args.Icon, args.Name, args.Description, args.SearchType, args.EmbeddingModel, args.ProviderID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
-		return response.NotFoundWithMsg("Dataset not found")
+		return response.ErrDatasetNotFound()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }
 
 // deleteDataset godoc
-// @Summary      Delete Dataset
-// @Description  Delete a dataset by ID
-// @Tags         Dataset
-// @Accept       json
-// @Produce      json
-// @Param        dataset_id path int true "Dataset ID"
-// @Success      200 {object} response.ResponseBase[any] "Dataset deleted successfully"
-// @Failure      400 {object} response.ResponseBase[any] "Invalid dataset ID"
-// @Failure      401 {object} response.ResponseBase[any] "Unauthorized, authentication token required"
-// @Failure      404 {object} response.ResponseBase[any] "Dataset not found"
-// @Router       /dataset/delete/{dataset_id} [post]
+//
+//	@Summary		Delete Dataset
+//	@Description	Delete a dataset by ID
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset_id	path		int							true	"Dataset ID"
+//	@Success		200			{object}	response.ResponseBase[any]	"Dataset deleted successfully"
+//	@Failure		400			{object}	response.ResponseBase[any]	"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]	"Invalid or expired token"
+//	@Failure		404			{object}	response.ResponseBase[any]	"Dataset not found"
+//	@Failure		500			{object}	response.ResponseBase[any]	"Internal server error"
+//	@Router			/dataset/delete/{dataset_id} [post]
 func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
-	req, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.ErrInvalidToken()
+	}
+	args, err := utils.BindAndValidate[models.DatasetInfoReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	currentUser, err := utils.GetCurrentUser(ctx)
-	if err != nil {
-		return response.NoAuthWithMsg(err.Error())
-	}
-	switch err := datasetService.DeleteDataset(ctx.Request().Context(), req.ID, currentUser.ID); {
+	switch err := datasetService.DeleteDataset(ctx.Request().Context(), args.ID, currentUser.ID); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
-		utils.Logger.Error(err)
-		return response.NotFoundWithMsg("Dataset not found")
+		Logger.Error(err)
+		return response.ErrDatasetNotFound()
 	default:
-		utils.Logger.Error(err)
-		return response.FailWithMsg(ctx, "Unknown error")
+		Logger.Error(err)
+		return response.ErrUnknownError()
 	}
 }

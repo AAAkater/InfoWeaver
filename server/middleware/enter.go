@@ -6,7 +6,7 @@ import (
 )
 
 func InitMiddleWares(e *echo.Echo) {
-	e.HTTPErrorHandler = CustomHTTPErrorHandler(false)
+	e.HTTPErrorHandler = CustomHTTPErrorHandler()
 	e.Use(LoggerMiddleware())
 	e.Use(middleware.Recover())
 }

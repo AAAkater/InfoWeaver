@@ -115,6 +115,18 @@ func (this *ProviderService) DeleteProvider(ctx context.Context, providerID uint
 	return err
 }
 
+// AddModels adds available models to a provider
+func (this *ProviderService) AddModels(ctx context.Context, providerID uint, ownerID uint, availableModels []string) error {
+	// Update available models
+	rows, err := gorm.G[models.Provider](db.PgSqlDB).
+		Where("id = ? AND owner_id = ?", providerID, ownerID).
+		Updates(ctx, models.Provider{AvailableModels: availableModels})
+	if rows == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return err
+}
+
 // GetProviderRawByID retrieves the full provider record (including encrypted API key)
 func (this *ProviderService) GetProviderRawByID(ctx context.Context, providerID uint, ownerID uint) (*models.Provider, error) {
 	var provider models.Provider

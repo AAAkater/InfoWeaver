@@ -51,6 +51,12 @@ type ProviderModelsReq struct {
 	ID uint `param:"provider_id" validate:"required"`
 }
 
+// ProviderAddModelsReq represents a request to add models to a provider
+type ProviderAddModelsReq struct {
+	ID              uint     `json:"id" validate:"required"`
+	AvailableModels []string `json:"available_models" validate:"required,min=1,dive,min=1"`
+}
+
 // ModelInfo represents a model from a provider
 type ModelInfo struct {
 	ID      string `json:"id"`       // Model identifier (e.g., "gpt-4", "text-embedding-3-small")

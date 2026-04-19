@@ -40,17 +40,6 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
-    name: 'chat',
-    path: '/chat',
-    component: 'layout.base$view.chat',
-    meta: {
-      title: 'chat',
-      i18nKey: 'route.chat',
-      icon: 'fluent:chat-bubbles-multiple-24-filled',
-      order: 2
-    }
-  },
-  {
     name: 'about',
     path: '/about',
     component: 'layout.base$view.about',
@@ -97,12 +86,25 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'home',
+    path: '/home',
+    component: 'layout.base$view.home',
+    meta: {
+      title: 'home',
+      i18nKey: 'route.home',
+      icon: 'mdi:monitor-dashboard',
+      order: 1
+    }
+  },
+  {
     name: 'chat',
     path: '/chat',
     component: 'layout.base$view.chat',
     meta: {
       title: 'chat',
-      i18nKey: 'route.chat'
+      i18nKey: 'route.chat',
+      icon: 'mdi:chat-plus',
+      order: 2
     }
   },
   {
@@ -112,7 +114,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'dataset',
       i18nKey: 'route.dataset',
-      icon: 'material-symbols-light:book-4-spark-rounded'
+      icon: 'material-symbols-light:book-4-spark-rounded',
+      order: 3
     }
   },
   {
@@ -234,17 +237,7 @@ export const generatedRoutes: GeneratedRoute[] = [
       }
     ]
   },
-  {
-    name: 'home',
-    path: '/home',
-    component: 'layout.base$view.home',
-    meta: {
-      title: 'home',
-      i18nKey: 'route.home',
-      icon: 'mdi:monitor-dashboard',
-      order: 1
-    }
-  },
+
   {
     name: 'iframe-page',
     path: '/iframe-page/:url',
@@ -725,6 +718,17 @@ export const generatedRoutes: GeneratedRoute[] = [
         ]
       }
     ]
+  },
+  {
+    name: 'provider',
+    path: '/provider',
+    component: 'layout.base$view.provider',
+    meta: {
+      title: 'provider',
+      i18nKey: 'route.provider',
+      icon: 'healthicons:provider-fst-24px',
+      order: 4
+    }
   },
   {
     name: 'user-center',

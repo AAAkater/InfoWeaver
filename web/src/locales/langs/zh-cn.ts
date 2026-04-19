@@ -240,6 +240,7 @@ const local: App.I18n.Schema = {
     document_alova: 'Alova文档',
     'user-center': '个人中心',
     about: '关于',
+    provider: '提供商',
     function: '系统功能',
     alova: 'alova示例',
     alova_request: 'alova请求',

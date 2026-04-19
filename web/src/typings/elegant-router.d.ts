@@ -97,6 +97,7 @@ declare module "@elegant-router/types" {
     "pro-naive_table": "/pro-naive/table";
     "pro-naive_table_remote": "/pro-naive/table/remote";
     "pro-naive_table_row-edit": "/pro-naive/table/row-edit";
+    "provider": "/provider";
     "user-center": "/user-center";
   };
 
@@ -159,6 +160,7 @@ declare module "@elegant-router/types" {
     | "multi-menu"
     | "plugin"
     | "pro-naive"
+    | "provider"
     | "user-center"
   >;
 
@@ -227,6 +229,7 @@ declare module "@elegant-router/types" {
     | "pro-naive_form_step"
     | "pro-naive_table_remote"
     | "pro-naive_table_row-edit"
+    | "provider"
     | "user-center"
   >;
 

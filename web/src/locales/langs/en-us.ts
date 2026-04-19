@@ -242,6 +242,8 @@ const local: App.I18n.Schema = {
     document_alova: 'Alova Document',
     'user-center': 'User Center',
     about: 'About',
+    provider: 'Provider',
+    chat: 'Chat',
     dataset: 'Dataset',
     function: 'System Function',
     alova: 'Alova Example',

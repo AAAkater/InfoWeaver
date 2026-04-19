@@ -191,8 +191,15 @@ onMounted(() => {
 <template>
   <NSpace vertical :size="16">
     <NSpace>
-      <NInput v-model:value="searchKey" round placeholder="请输入关键字" clearable :loading="loading" @blur="fetchDatasets()"
-        @keyup.enter="fetchDatasets()">
+      <NInput
+        v-model:value="searchKey"
+        round
+        placeholder="请输入关键字"
+        clearable
+        :loading="loading"
+        @blur="fetchDatasets()"
+        @keyup.enter="fetchDatasets()"
+      >
         <template #prefix>
           <NIcon :component="Search48Filled" />
         </template>
@@ -207,49 +214,90 @@ onMounted(() => {
               <NIcon :component="Add12Filled" class="mr-2" />
               创建知识库
             </NButton>
-            <NModal v-model:show="showModal" :mask-closable="false" preset="dialog" :show-icon="false"
-              :style="bodyStyle" positive-text="确认" negative-text="取消" title="知识库设置" @positive-click="handleSubmit">
+            <NModal
+              v-model:show="showModal"
+              :mask-closable="false"
+              preset="dialog"
+              :show-icon="false"
+              :style="bodyStyle"
+              positive-text="确认"
+              negative-text="取消"
+              title="知识库设置"
+              @positive-click="handleSubmit"
+            >
               <NSpace :size="10" vertical>
                 <NCard title="知识库名称" :bordered="false" size="small" content-style="display:flex;gap: 8px;">
                   <NPopover trigger="click" placement="bottom-start">
                     <template #trigger>
-                      <NAvatar :style="{
-                        color: 'black',
-                        backgroundColor: '#FFEAD5',
-                        cursor: 'pointer'
-                      }">
+                      <NAvatar
+                        :style="{
+                          color: 'black',
+                          backgroundColor: '#FFEAD5',
+                          cursor: 'pointer'
+                        }"
+                      >
                         {{ model.icon }}
                       </NAvatar>
                     </template>
                     <!-- Popover 内容：Emoji 选择器 -->
                     <div style="display: flex; gap: 8px; padding: 5px; flex-wrap: wrap">
-                      <span v-for="emoji in emojiList" :key="emoji"
-                        style="font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px" :style="{
+                      <span
+                        v-for="emoji in emojiList"
+                        :key="emoji"
+                        style="font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px"
+                        :style="{
                           backgroundColor: hovered === emoji ? '#e0e0e0' : 'transparent'
-                        }" @click="selectEmoji(emoji)" @mouseenter="hovered = emoji" @mouseleave="hovered = null">
+                        }"
+                        @click="selectEmoji(emoji)"
+                        @mouseenter="hovered = emoji"
+                        @mouseleave="hovered = null"
+                      >
                         {{ emoji }}
                       </span>
                     </div>
                   </NPopover>
 
-                  <NInput v-model:value="model.name" type="text" style="background-color: #f1f3f6" size="tiny"
-                    placeholder="请输入知识库名称" />
+                  <NInput
+                    v-model:value="model.name"
+                    type="text"
+                    style="background-color: #f1f3f6"
+                    size="tiny"
+                    placeholder="请输入知识库名称"
+                  />
                 </NCard>
                 <NCard title="描述" :bordered="false" size="small">
-                  <NInput v-model:value="model.description" type="textarea" size="tiny"
-                    style="background-color: #f1f3f6" placeholder="描述该数据集的内容。详细描述可以让AI更快地访问数据集的内容。如果为空，将使用默认的命中策略。" />
+                  <NInput
+                    v-model:value="model.description"
+                    type="textarea"
+                    size="tiny"
+                    style="background-color: #f1f3f6"
+                    placeholder="描述该数据集的内容。详细描述可以让AI更快地访问数据集的内容。如果为空，将使用默认的命中策略。"
+                  />
                 </NCard>
                 <NCard title="检索方式" :bordered="false" size="small">
-                  <NSelect v-model:value="model.search_type" :options="searchTypeOptions" size="tiny"
-                    style="background-color: #f1f3f6" />
+                  <NSelect
+                    v-model:value="model.search_type"
+                    :options="searchTypeOptions"
+                    size="tiny"
+                    style="background-color: #f1f3f6"
+                  />
                 </NCard>
                 <NCard title="Embedding模型" :bordered="false" size="small">
-                  <NInput v-model:value="model.embedding_model" type="text" size="tiny"
-                    style="background-color: #f1f3f6" placeholder="请输入Embedding模型名称" />
+                  <NInput
+                    v-model:value="model.embedding_model"
+                    type="text"
+                    size="tiny"
+                    style="background-color: #f1f3f6"
+                    placeholder="请输入Embedding模型名称"
+                  />
                 </NCard>
                 <NCard title="Provider ID" :bordered="false" size="small">
-                  <NInputNumber v-model:value="model.provider_id" size="tiny" style="background-color: #f1f3f6"
-                    placeholder="请输入Provider ID" />
+                  <NInputNumber
+                    v-model:value="model.provider_id"
+                    size="tiny"
+                    style="background-color: #f1f3f6"
+                    placeholder="请输入Provider ID"
+                  />
                 </NCard>
               </NSpace>
               <NSpace></NSpace>
@@ -260,11 +308,14 @@ onMounted(() => {
           <NCard hoverable size="huge" style="cursor: pointer" @click="handleViewDetail(dataset.id)">
             <NSpace vertical>
               <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%">
-                <NAvatar size="large" :style="{
-                  color: 'black',
-                  backgroundColor: '#E0F2FE',
-                  cursor: 'pointer'
-                }">
+                <NAvatar
+                  size="large"
+                  :style="{
+                    color: 'black',
+                    backgroundColor: '#E0F2FE',
+                    cursor: 'pointer'
+                  }"
+                >
                   {{ dataset.icon || '🤖' }}
                 </NAvatar>
 
@@ -275,8 +326,12 @@ onMounted(() => {
                   </div>
                 </div>
 
-                <NDropdown :options="dropdownOptions" trigger="click" size="small"
-                  @select="key => handleSelect(key, dataset)">
+                <NDropdown
+                  :options="dropdownOptions"
+                  trigger="click"
+                  size="small"
+                  @select="key => handleSelect(key, dataset)"
+                >
                   <NButton size="small" secondary @click.stop>
                     <NIcon>
                       <MoreHorizontal28Regular />
@@ -297,23 +352,32 @@ onMounted(() => {
     </NSpin>
 
     <!-- Detail Modal -->
-    <NModal v-model:show="showDetailModal" :mask-closable="true" :show-icon="false"
-      style="width: 700px; max-width: 90vw">
+    <NModal
+      v-model:show="showDetailModal"
+      :mask-closable="true"
+      :show-icon="false"
+      style="width: 700px; max-width: 90vw"
+    >
       <NCard :bordered="false" size="large" style="border-radius: 12px">
         <NSpace vertical :size="20">
           <!-- Header Section -->
-          <div style="
+          <div
+            style="
               display: flex;
               align-items: center;
               gap: 16px;
               padding-bottom: 16px;
               border-bottom: 1px solid #e8e8e8;
-            ">
-            <NAvatar :size="64" :style="{
-              color: '#333',
-              backgroundColor: '#f5f5f5',
-              fontSize: '32px'
-            }">
+            "
+          >
+            <NAvatar
+              :size="64"
+              :style="{
+                color: '#333',
+                backgroundColor: '#f5f5f5',
+                fontSize: '32px'
+              }"
+            >
               {{ detailDataset?.icon || '🤖' }}
             </NAvatar>
             <div style="flex: 1">
@@ -327,7 +391,8 @@ onMounted(() => {
                 <NIcon size="24">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path
-                      d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                      d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                    />
                   </svg>
                 </NIcon>
               </template>
@@ -346,12 +411,16 @@ onMounted(() => {
               <div class="info-card">
                 <div class="info-label">检索方式</div>
                 <div class="info-value">
-                  <NTag :type="detailDataset?.search_type === 'hybrid'
-                      ? 'success'
-                      : detailDataset?.search_type === 'dense'
-                        ? 'info'
-                        : 'warning'
-                    " size="small">
+                  <NTag
+                    :type="
+                      detailDataset?.search_type === 'hybrid'
+                        ? 'success'
+                        : detailDataset?.search_type === 'dense'
+                          ? 'info'
+                          : 'warning'
+                    "
+                    size="small"
+                  >
                     {{
                       searchTypeOptions.find(o => o.value === detailDataset?.search_type)?.label ||
                       detailDataset?.search_type
@@ -381,13 +450,15 @@ onMounted(() => {
           </NGrid>
 
           <!-- Footer -->
-          <div style="
+          <div
+            style="
               display: flex;
               justify-content: space-between;
               align-items: center;
               padding-top: 16px;
               border-top: 1px solid #e8e8e8;
-            ">
+            "
+          >
             <div style="color: #999; font-size: 12px">ID: {{ detailDataset?.id }}</div>
             <div style="color: #999; font-size: 12px">更新于 {{ formatTime(detailDataset?.updated_at || '') }}</div>
           </div>

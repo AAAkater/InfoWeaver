@@ -7,13 +7,19 @@ import { useAuthStore } from '@/store/modules/auth';
 const authStore = useAuthStore();
 const message = useMessage();
 
-// 用户信息编辑
-const isEditingProfile = ref(false);
-const profileForm = reactive({
-  username: authStore.userInfo.username,
+// 用户名编辑
+const isEditingUsername = ref(false);
+const usernameForm = reactive({
+  username: authStore.userInfo.username
+});
+const isLoadingUsername = ref(false);
+
+// 邮箱编辑
+const isEditingEmail = ref(false);
+const emailForm = reactive({
   email: authStore.userInfo.email
 });
-const isLoadingProfile = ref(false);
+const isLoadingEmail = ref(false);
 
 // 密码修改
 const isEditingPassword = ref(false);
@@ -23,33 +29,52 @@ const passwordForm = reactive({
 });
 const isLoadingPassword = ref(false);
 
-async function handleUpdateProfile() {
-  if (!profileForm.username.trim()) {
+async function handleUpdateUsername() {
+  if (!usernameForm.username.trim()) {
     message.error('用户名不能为空');
     return;
   }
-  if (!profileForm.email.trim()) {
-    message.error('邮箱不能为空');
-    return;
-  }
 
-  isLoadingProfile.value = true;
+  isLoadingUsername.value = true;
 
   const { response: res } = await updateUserProfile({
-    username: profileForm.username,
-    email: profileForm.email
+    username: usernameForm.username,
+    email: authStore.userInfo.email
   });
 
   if (res.data.code === 0) {
-    message.success('用户信息更新成功');
-    authStore.userInfo.username = profileForm.username;
-    authStore.userInfo.email = profileForm.email;
-    isEditingProfile.value = false;
+    message.success('用户名更新成功');
+    authStore.userInfo.username = usernameForm.username;
+    isEditingUsername.value = false;
   } else {
     message.error(res.data.msg || '更新失败');
   }
 
-  isLoadingProfile.value = false;
+  isLoadingUsername.value = false;
+}
+
+async function handleUpdateEmail() {
+  if (!emailForm.email.trim()) {
+    message.error('邮箱不能为空');
+    return;
+  }
+
+  isLoadingEmail.value = true;
+
+  const { response: res } = await updateUserProfile({
+    username: authStore.userInfo.username,
+    email: emailForm.email
+  });
+
+  if (res.data.code === 0) {
+    message.success('邮箱更新成功');
+    authStore.userInfo.email = emailForm.email;
+    isEditingEmail.value = false;
+  } else {
+    message.error(res.data.msg || '更新失败');
+  }
+
+  isLoadingEmail.value = false;
 }
 
 async function handleUpdatePassword() {
@@ -85,10 +110,14 @@ async function handleUpdatePassword() {
   isLoadingPassword.value = false;
 }
 
-function cancelEditProfile() {
-  isEditingProfile.value = false;
-  profileForm.username = authStore.userInfo.username;
-  profileForm.email = authStore.userInfo.email;
+function cancelEditUsername() {
+  isEditingUsername.value = false;
+  usernameForm.username = authStore.userInfo.username;
+}
+
+function cancelEditEmail() {
+  isEditingEmail.value = false;
+  emailForm.email = authStore.userInfo.email;
 }
 
 function cancelEditPassword() {
@@ -127,17 +156,17 @@ function cancelEditPassword() {
             <span class="label-title">用户名</span>
             <span class="label-desc">用于登录和识别身份</span>
           </div>
-          <div v-if="!isEditingProfile" class="setting-value">
+          <div v-if="!isEditingUsername" class="setting-value">
             <span class="value-text">{{ authStore.userInfo.username }}</span>
-            <NButton text type="primary" class="edit-btn" @click="isEditingProfile = true">修改</NButton>
+            <NButton text type="primary" class="edit-btn" @click="isEditingUsername = true">修改</NButton>
           </div>
           <div v-else class="setting-form">
-            <NInput v-model:value="profileForm.username" placeholder="请输入新用户名" clearable class="form-input" />
+            <NInput v-model:value="usernameForm.username" placeholder="请输入新用户名" clearable class="form-input" />
             <div class="form-actions">
-              <NButton type="primary" :loading="isLoadingProfile" size="small" @click="handleUpdateProfile">
+              <NButton type="primary" :loading="isLoadingUsername" size="small" @click="handleUpdateUsername">
                 保存
               </NButton>
-              <NButton size="small" @click="cancelEditProfile">取消</NButton>
+              <NButton size="small" @click="cancelEditUsername">取消</NButton>
             </div>
           </div>
         </div>
@@ -150,12 +179,17 @@ function cancelEditPassword() {
             <span class="label-title">邮箱地址</span>
             <span class="label-desc">用于账户恢复和通知</span>
           </div>
-          <div v-if="!isEditingProfile" class="setting-value">
+          <div v-if="!isEditingEmail" class="setting-value">
             <span class="value-text">{{ authStore.userInfo.email }}</span>
+            <NButton text type="primary" class="edit-btn" @click="isEditingEmail = true">修改</NButton>
           </div>
           <div v-else class="setting-form">
-            <NInput v-model:value="profileForm.email" type="text" placeholder="请输入新邮箱" clearable />
+            <NInput v-model:value="emailForm.email" type="text" placeholder="请输入新邮箱" clearable class="form-input" />
             <span class="form-tip">邮箱修改会在下次登录时需要验证</span>
+            <div class="form-actions">
+              <NButton type="primary" :loading="isLoadingEmail" size="small" @click="handleUpdateEmail">保存</NButton>
+              <NButton size="small" @click="cancelEditEmail">取消</NButton>
+            </div>
           </div>
         </div>
       </NCard>
@@ -172,22 +206,10 @@ function cancelEditPassword() {
             <NButton text type="primary" class="edit-btn" @click="isEditingPassword = true">修改</NButton>
           </div>
           <div v-else class="setting-form">
-            <NInput
-              v-model:value="passwordForm.first_password"
-              type="password"
-              placeholder="请输入新密码（至少6位）"
-              clearable
-              show-password-on="click"
-              class="form-input"
-            />
-            <NInput
-              v-model:value="passwordForm.second_password"
-              type="password"
-              placeholder="请确认新密码"
-              clearable
-              show-password-on="click"
-              class="form-input"
-            />
+            <NInput v-model:value="passwordForm.first_password" type="password" placeholder="请输入新密码（至少6位）" clearable
+              show-password-on="click" class="form-input" />
+            <NInput v-model:value="passwordForm.second_password" type="password" placeholder="请确认新密码" clearable
+              show-password-on="click" class="form-input" />
             <div class="form-actions">
               <NButton type="primary" :loading="isLoadingPassword" size="small" @click="handleUpdatePassword">
                 保存

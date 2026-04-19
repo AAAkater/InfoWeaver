@@ -50,15 +50,6 @@ export function updateProvider(data: Api.Provider.ProviderUpdateReq) {
   });
 }
 
-/** Add available models to a provider */
-export function addProviderModels(data: Api.Provider.ProviderAddModelsReq) {
-  return request<Api.Provider.Response>({
-    url: '/provider/models/add',
-    method: 'post',
-    data
-  });
-}
-
 /** Set model enable status */
 export function setProviderModelEnable(data: Api.Provider.ProviderSetModelEnableReq) {
   return request<Api.Provider.Response>({

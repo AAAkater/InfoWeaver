@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { h, onMounted, reactive, ref, watch } from 'vue';
+import { computed, h, onMounted, reactive, ref, watch } from 'vue';
 import type { Component } from 'vue';
-import { NDynamicTags, NIcon, NSwitch, useDialog, useMessage } from 'naive-ui';
+import { NIcon, NSwitch, useDialog, useMessage } from 'naive-ui';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
@@ -14,7 +14,6 @@ import {
   Server24Regular
 } from '@vicons/fluent';
 import {
-  addProviderModels,
   createProvider,
   deleteProvider,
   getProviderList,
@@ -36,12 +35,19 @@ const searchKey = ref('');
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showModelsModal = ref(false);
-const showAddModelsModal = ref(false);
+const showAddModelModal = ref(false);
 
 // Current provider for operations
 const currentProvider = ref<Api.Provider.ProviderInfo | null>(null);
 const providerModels = ref<Api.Provider.ModelInfo[]>([]);
-const selectedModels = ref<string[]>([]);
+const newModelName = ref('');
+
+// Pagination
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+// Filter state
+const modelFilter = ref<'all' | 'enabled' | 'disabled'>('all');
 
 // Form model
 const formModel = reactive<Api.Provider.ProviderCreateReq>({
@@ -81,14 +87,9 @@ const dropdownOptions = [
     icon: renderIcon(EditIcon)
   },
   {
-    label: '查看模型',
+    label: '模型列表',
     key: 'models',
     icon: renderIcon(Server24Regular)
-  },
-  {
-    label: '添加模型',
-    key: 'addModels',
-    icon: renderIcon(Add12Filled)
   },
   {
     label: '删除',
@@ -149,11 +150,45 @@ async function handleGetModels(providerId: number) {
   const { response: res } = await getProviderModels(providerId);
   if (res.data.code === 0) {
     providerModels.value = res.data.data?.models ?? [];
+    currentPage.value = 1; // Reset to first page
   } else {
     message.error(res.data.msg || '获取模型列表失败');
     providerModels.value = [];
   }
 }
+
+// Computed paginated models with sorting (enabled models first) and filtering
+const paginatedModels = computed(() => {
+  // Filter models based on filter state
+  let filteredModels = providerModels.value;
+  if (modelFilter.value === 'enabled') {
+    filteredModels = providerModels.value.filter(m => m.enabled);
+  } else if (modelFilter.value === 'disabled') {
+    filteredModels = providerModels.value.filter(m => !m.enabled);
+  }
+
+  // Sort models: enabled models first, then disabled models
+  const sortedModels = [...filteredModels].sort((a, b) => {
+    // If both are enabled or both are disabled, keep original order
+    if (a.enabled === b.enabled) return 0;
+    // Enabled models come first
+    return a.enabled ? -1 : 1;
+  });
+
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return sortedModels.slice(start, end);
+});
+
+// Computed total count for pagination
+const totalModelsCount = computed(() => {
+  if (modelFilter.value === 'enabled') {
+    return providerModels.value.filter(m => m.enabled).length;
+  } else if (modelFilter.value === 'disabled') {
+    return providerModels.value.filter(m => !m.enabled).length;
+  }
+  return providerModels.value.length;
+});
 
 // Set model enable status
 async function handleSetModelEnable(modelId: string, enabled: boolean) {
@@ -173,23 +208,32 @@ async function handleSetModelEnable(modelId: string, enabled: boolean) {
   }
 }
 
-// Add models to provider
-async function handleAddModels() {
-  if (!currentProvider.value || selectedModels.value.length === 0) {
-    message.warning('请选择要添加的模型');
+// Add single model to provider
+async function handleAddModel() {
+  if (!currentProvider.value || !newModelName.value.trim()) {
+    message.warning('请输入模型名称');
     return;
   }
-  const { response: res } = await addProviderModels({
+  const { response: res } = await setProviderModelEnable({
     id: currentProvider.value.id,
-    available_models: selectedModels.value
+    model_id: newModelName.value.trim(),
+    enabled: true // 默认启用
   });
   if (res.data.code === 0) {
     message.success('添加模型成功');
-    showAddModelsModal.value = false;
-    selectedModels.value = [];
+    newModelName.value = '';
+    showAddModelModal.value = false;
+    // Refresh models list
+    handleGetModels(currentProvider.value.id);
   } else {
     message.error(res.data.msg || '添加模型失败');
   }
+}
+
+// Open add model modal
+function openAddModelModal() {
+  newModelName.value = '';
+  showAddModelModal.value = true;
 }
 
 // Reset create form
@@ -219,12 +263,9 @@ function handleSelect(key: string, provider: Api.Provider.ProviderInfo) {
       showEditModal.value = true;
       break;
     case 'models':
+      modelFilter.value = 'all'; // Reset filter
       handleGetModels(provider.id);
       showModelsModal.value = true;
-      break;
-    case 'addModels':
-      selectedModels.value = [];
-      showAddModelsModal.value = true;
       break;
     case 'delete':
       dialog.warning({
@@ -258,6 +299,11 @@ watch(
   { immediate: true }
 );
 
+// Watch modelFilter to reset pagination
+watch(modelFilter, () => {
+  currentPage.value = 1;
+});
+
 onMounted(() => {
   fetchProviders();
 });
@@ -284,10 +330,13 @@ onMounted(() => {
         <NCard hoverable size="huge" style="cursor: pointer">
           <NSpace vertical>
             <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%">
-              <NAvatar size="large" :style="{
-                color: 'black',
-                backgroundColor: '#E0F2FE'
-              }">
+              <NAvatar
+                size="large"
+                :style="{
+                  color: 'black',
+                  backgroundColor: '#E0F2FE'
+                }"
+              >
                 <NIcon :component="Server24Regular" />
               </NAvatar>
 
@@ -296,8 +345,12 @@ onMounted(() => {
                 <div style="color: #949494; font-size: 12px">{{ provider.mode }}</div>
               </div>
 
-              <NDropdown :options="dropdownOptions" trigger="click" size="small"
-                @select="key => handleSelect(key, provider)">
+              <NDropdown
+                :options="dropdownOptions"
+                trigger="click"
+                size="small"
+                @select="key => handleSelect(key, provider)"
+              >
                 <NButton size="small" secondary>
                   <NIcon>
                     <MoreHorizontal28Regular />
@@ -317,8 +370,13 @@ onMounted(() => {
     </NGrid>
 
     <!-- Create Modal -->
-    <NModal v-model:show="showCreateModal" :mask-closable="false" preset="dialog" :show-icon="false"
-      style="width: 500px">
+    <NModal
+      v-model:show="showCreateModal"
+      :mask-closable="false"
+      preset="dialog"
+      :show-icon="false"
+      style="width: 500px"
+    >
       <template #header>
         <div style="font-weight: bold">创建 Provider</div>
       </template>
@@ -330,8 +388,12 @@ onMounted(() => {
           <NInput v-model:value="formModel.base_url" placeholder="请输入 API Base URL" />
         </NFormItem>
         <NFormItem label="API Key" required>
-          <NInput v-model:value="formModel.api_key" type="password" placeholder="请输入 API Key"
-            show-password-on="click" />
+          <NInput
+            v-model:value="formModel.api_key"
+            type="password"
+            placeholder="请输入 API Key"
+            show-password-on="click"
+          />
         </NFormItem>
         <NFormItem label="模式" required>
           <NSelect v-model:value="formModel.mode" :options="modeOptions" />
@@ -358,8 +420,12 @@ onMounted(() => {
           <NInput v-model:value="editModel.base_url" placeholder="请输入 API Base URL" />
         </NFormItem>
         <NFormItem label="API Key" required>
-          <NInput v-model:value="editModel.api_key" type="password" placeholder="请输入新的 API Key（如不修改可留空）"
-            show-password-on="click" />
+          <NInput
+            v-model:value="editModel.api_key"
+            type="password"
+            placeholder="请输入新的 API Key（如不修改可留空）"
+            show-password-on="click"
+          />
         </NFormItem>
         <NFormItem label="模式" required>
           <NSelect v-model:value="editModel.mode" :options="modeOptions" />
@@ -374,46 +440,96 @@ onMounted(() => {
     </NModal>
 
     <!-- Models Modal -->
-    <NModal v-model:show="showModelsModal" :mask-closable="true" preset="dialog" :show-icon="false"
-      style="width: 600px">
+    <NModal
+      v-model:show="showModelsModal"
+      :mask-closable="true"
+      preset="dialog"
+      :show-icon="false"
+      style="width: 600px"
+    >
       <template #header>
-        <div style="font-weight: bold">{{ currentProvider?.name }} - 可用模型</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%">
+          <div style="font-weight: bold">{{ currentProvider?.name }} - 模型列表</div>
+          <NSpace :size="8">
+            <NSelect
+              v-model:value="modelFilter"
+              :options="[
+                { label: '全部', value: 'all' },
+                { label: '已启用', value: 'enabled' },
+                { label: '已禁用', value: 'disabled' }
+              ]"
+              size="small"
+              style="width: 100px"
+            />
+            <NButton type="primary" size="small" @click="openAddModelModal">
+              <template #icon>
+                <NIcon :component="Add12Filled" />
+              </template>
+              添加模型
+            </NButton>
+          </NSpace>
+        </div>
       </template>
-      <NDataTable :columns="[
-        { title: '模型名', key: 'id' },
-        { title: '类型', key: 'object' },
-        { title: '所属', key: 'owned_by' },
-        {
-          title: '状态',
-          key: 'enabled',
-          render(row: Api.Provider.ModelInfo) {
-            return h(NSwitch, {
-              value: row.enabled,
-              onUpdateValue: (value: boolean) => handleSetModelEnable(row.id, value)
-            });
+      <NDataTable
+        :columns="[
+          { title: '模型名', key: 'id' },
+          { title: '类型', key: 'object' },
+          { title: '所属', key: 'owned_by' },
+          {
+            title: '状态',
+            key: 'enabled',
+            render(row) {
+              return h(NSwitch, {
+                value: row.enabled,
+                onUpdateValue: (value: boolean) => handleSetModelEnable(row.id, value)
+              });
+            }
           }
-        }
-      ]" :data="providerModels" :bordered="false" size="small" />
+        ]"
+        :data="paginatedModels"
+        :bordered="false"
+        size="small"
+      />
       <template #action>
-        <NButton @click="showModelsModal = false">关闭</NButton>
+        <NSpace justify="space-between" align="center">
+          <NPagination
+            v-model:page="currentPage"
+            :page-count="Math.ceil(totalModelsCount / pageSize)"
+            :page-size="pageSize"
+            show-size-picker
+            :page-sizes="[10, 20, 50]"
+            @update:page-size="
+              (size: number) => {
+                pageSize = size;
+                currentPage = 1;
+              }
+            "
+          />
+          <NButton @click="showModelsModal = false">关闭</NButton>
+        </NSpace>
       </template>
     </NModal>
 
-    <!-- Add Models Modal -->
-    <NModal v-model:show="showAddModelsModal" :mask-closable="false" preset="dialog" :show-icon="false"
-      style="width: 500px">
+    <!-- Add Model Modal -->
+    <NModal
+      v-model:show="showAddModelModal"
+      :mask-closable="false"
+      preset="dialog"
+      :show-icon="false"
+      style="width: 400px"
+    >
       <template #header>
-        <div style="font-weight: bold">{{ currentProvider?.name }} - 添加可用模型</div>
+        <div style="font-weight: bold">添加模型</div>
       </template>
       <NSpace :size="16" vertical>
-        <NFormItem label="模型列表">
-          <NDynamicTags v-model:value="selectedModels" />
+        <NFormItem label="模型名称" required>
+          <NInput v-model:value="newModelName" placeholder="请输入模型名称" />
         </NFormItem>
       </NSpace>
       <template #action>
         <NSpace justify="end">
-          <NButton @click="showAddModelsModal = false">取消</NButton>
-          <NButton type="primary" @click="handleAddModels">添加</NButton>
+          <NButton @click="showAddModelModal = false">取消</NButton>
+          <NButton type="primary" @click="handleAddModel">添加</NButton>
         </NSpace>
       </template>
     </NModal>

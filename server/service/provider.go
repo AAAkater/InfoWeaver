@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"server/db"
 	"server/models"
@@ -153,6 +154,46 @@ func (this *ProviderService) GetProviderRawByID(ctx context.Context, providerID 
 	return &provider, nil
 }
 
+// mergeModels merges API models with database models, prioritizing database enable status
+// Models in database but not in API response will still be returned
+func mergeModels(apiModelMap map[string]models.ModelInfo, availableModels models.ModelEnableMap, defaultOwner string) []models.ModelInfo {
+	result := make(map[string]models.ModelInfo)
+
+	// First, add all models from API response
+	for id, model := range apiModelMap {
+		enabled := false
+		if availableModels != nil {
+			enabled = availableModels[id]
+		}
+		result[id] = models.ModelInfo{
+			ID:      model.ID,
+			Object:  model.Object,
+			OwnedBy: model.OwnedBy,
+			Enabled: enabled,
+		}
+	}
+
+	// Then, add models from database that are not in API response
+	for id, enabled := range availableModels {
+		if _, exists := result[id]; !exists {
+			result[id] = models.ModelInfo{
+				ID:      id,
+				Object:  "model",
+				OwnedBy: defaultOwner,
+				Enabled: enabled,
+			}
+		}
+	}
+
+	// Convert map to slice
+	allModels := make([]models.ModelInfo, 0, len(result))
+	for _, model := range result {
+		allModels = append(allModels, model)
+	}
+
+	return allModels
+}
+
 // ListModels fetches available embedding models from the provider's API
 func (this *ProviderService) ListModels(ctx context.Context, providerID uint, ownerID uint) (*models.ProviderModelsResp, error) {
 	// Get provider with encrypted API key
@@ -199,23 +240,27 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 	// List all models
 	modelsList, err := client.Models.List(ctx)
 	if err != nil {
+		// Check if it's a 404 error from the provider API
+		if openaiErr, ok := err.(*openai.Error); ok && openaiErr.StatusCode == http.StatusNotFound {
+			apiModelMap := make(map[string]models.ModelInfo)
+			allModels := mergeModels(apiModelMap, availableModels, "openai")
+			return &models.ProviderModelsResp{Models: allModels}, nil
+		}
 		return nil, fmt.Errorf("failed to list OpenAI models: %w", err)
 	}
 
-	// Return all models with enable status
-	allModels := []models.ModelInfo{}
+	// Build model map from API response
+	apiModelMap := make(map[string]models.ModelInfo)
 	for _, model := range modelsList.Data {
-		enabled := false
-		if availableModels != nil {
-			enabled = availableModels[model.ID]
-		}
-		allModels = append(allModels, models.ModelInfo{
+		apiModelMap[model.ID] = models.ModelInfo{
 			ID:      model.ID,
 			Object:  string(model.Object),
 			OwnedBy: model.OwnedBy,
-			Enabled: enabled,
-		})
+		}
 	}
+
+	// Merge API models with database models, prioritize database enable status
+	allModels := mergeModels(apiModelMap, availableModels, "openai")
 
 	return &models.ProviderModelsResp{Models: allModels}, nil
 }
@@ -229,23 +274,27 @@ func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL st
 	// List models
 	page, err := client.Models.List(ctx, anthropic.ModelListParams{})
 	if err != nil {
+		// Check if it's a 404 error from the provider API
+		if anthropicErr, ok := err.(*anthropic.Error); ok && anthropicErr.StatusCode == http.StatusNotFound {
+			apiModelMap := make(map[string]models.ModelInfo)
+			allModels := mergeModels(apiModelMap, availableModels, "anthropic")
+			return &models.ProviderModelsResp{Models: allModels}, nil
+		}
 		return nil, fmt.Errorf("failed to list Anthropic models: %w", err)
 	}
 
-	// Return all models with enable status
-	allModels := []models.ModelInfo{}
+	// Build model map from API response
+	apiModelMap := make(map[string]models.ModelInfo)
 	for _, model := range page.Data {
-		enabled := false
-		if availableModels != nil {
-			enabled = availableModels[model.ID]
-		}
-		allModels = append(allModels, models.ModelInfo{
+		apiModelMap[model.ID] = models.ModelInfo{
 			ID:      model.ID,
 			Object:  string(model.Type),
 			OwnedBy: "anthropic",
-			Enabled: enabled,
-		})
+		}
 	}
+
+	// Merge API models with database models, prioritize database enable status
+	allModels := mergeModels(apiModelMap, availableModels, "anthropic")
 
 	return &models.ProviderModelsResp{Models: allModels}, nil
 }
@@ -266,25 +315,27 @@ func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiK
 	// List models - returns Page[Model] with Items array
 	modelsPage, err := client.Models.List(ctx, &genai.ListModelsConfig{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list Gemini models: %w", err)
+		// Gemini SDK errors may not have StatusCode directly accessible,
+		// return empty apiModelMap and let mergeModels handle database models
+		apiModelMap := make(map[string]models.ModelInfo)
+		allModels := mergeModels(apiModelMap, availableModels, "google")
+		return &models.ProviderModelsResp{Models: allModels}, nil
 	}
 
-	// Return all models with enable status
-	allModels := []models.ModelInfo{}
+	// Build model map from API response
+	apiModelMap := make(map[string]models.ModelInfo)
 	for _, model := range modelsPage.Items {
 		// Extract model name from full path (e.g., "models/gemini-pro")
 		name := strings.TrimPrefix(model.Name, "models/")
-		enabled := false
-		if availableModels != nil {
-			enabled = availableModels[name]
-		}
-		allModels = append(allModels, models.ModelInfo{
+		apiModelMap[name] = models.ModelInfo{
 			ID:      name,
 			Object:  "model",
 			OwnedBy: "google",
-			Enabled: enabled,
-		})
+		}
 	}
+
+	// Merge API models with database models, prioritize database enable status
+	allModels := mergeModels(apiModelMap, availableModels, "google")
 
 	return &models.ProviderModelsResp{Models: allModels}, nil
 }
@@ -303,23 +354,27 @@ func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL strin
 	// List models
 	modelsList, err := client.List(ctx)
 	if err != nil {
+		// Check if it's a 404 error from the provider API
+		if statusErr, ok := err.(api.StatusError); ok && statusErr.StatusCode == http.StatusNotFound {
+			apiModelMap := make(map[string]models.ModelInfo)
+			allModels := mergeModels(apiModelMap, availableModels, "ollama")
+			return &models.ProviderModelsResp{Models: allModels}, nil
+		}
 		return nil, fmt.Errorf("failed to list Ollama models: %w", err)
 	}
 
-	// Return all models with enable status
-	allModels := []models.ModelInfo{}
+	// Build model map from API response
+	apiModelMap := make(map[string]models.ModelInfo)
 	for _, model := range modelsList.Models {
-		enabled := false
-		if availableModels != nil {
-			enabled = availableModels[model.Name]
-		}
-		allModels = append(allModels, models.ModelInfo{
+		apiModelMap[model.Name] = models.ModelInfo{
 			ID:      model.Name,
 			Object:  "model",
 			OwnedBy: "ollama",
-			Enabled: enabled,
-		})
+		}
 	}
+
+	// Merge API models with database models, prioritize database enable status
+	allModels := mergeModels(apiModelMap, availableModels, "ollama")
 
 	return &models.ProviderModelsResp{Models: allModels}, nil
 }

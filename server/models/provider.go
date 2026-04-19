@@ -1,6 +1,35 @@
 package models
 
-import "time"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"time"
+)
+
+// ModelEnableMap is a custom type for storing model enable status as jsonb
+type ModelEnableMap map[string]bool
+
+// Value implements driver.Valuer interface for database storage
+func (m ModelEnableMap) Value() (driver.Value, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return json.Marshal(m)
+}
+
+// Scan implements sql.Scanner interface for database retrieval
+func (m *ModelEnableMap) Scan(value any) error {
+	if value == nil {
+		*m = nil
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed to scan ModelEnableMap: expected []byte")
+	}
+	return json.Unmarshal(bytes, m)
+}
 
 const (
 	PROVIDER_MODE_OPENAI      = "openai"
@@ -51,10 +80,11 @@ type ProviderModelsReq struct {
 	ID uint `param:"provider_id" validate:"required"`
 }
 
-// ProviderAddModelsReq represents a request to add models to a provider
-type ProviderAddModelsReq struct {
-	ID              uint     `json:"id" validate:"required"`
-	AvailableModels []string `json:"available_models" validate:"required,min=1,dive,min=1"`
+// ProviderSetModelEnableReq represents a request to set enable status for a single model
+type ProviderSetModelEnableReq struct {
+	ID      uint   `json:"id" validate:"required"`       // Provider ID
+	ModelID string `json:"model_id" validate:"required"` // Model ID to enable/disable
+	Enabled bool   `json:"enabled" validate:"required"`  // Enable status
 }
 
 // ModelInfo represents a model from a provider
@@ -62,6 +92,7 @@ type ModelInfo struct {
 	ID      string `json:"id"`       // Model identifier (e.g., "gpt-4", "text-embedding-3-small")
 	Object  string `json:"object"`   // Object type (usually "model")
 	OwnedBy string `json:"owned_by"` // Owner of the model (e.g., "openai")
+	Enabled bool   `json:"enabled"`  // Enable status for this model
 }
 
 // ProviderModelsResp represents a list of models from a provider

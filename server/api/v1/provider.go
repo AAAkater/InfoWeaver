@@ -19,7 +19,7 @@ func SetProviderRouter(e *echo.Echo) {
 	providerRouterGroup.GET("/list", providerHandler.getAllProviders)
 	providerRouterGroup.GET("/info/:provider_id", providerHandler.getProviderInfoByID)
 	providerRouterGroup.GET("/models/:provider_id", providerHandler.listModels)
-	providerRouterGroup.POST("/models/add", providerHandler.addModels)
+	providerRouterGroup.POST("/models/enable", providerHandler.setModelEnable)
 	providerRouterGroup.POST("/update", providerHandler.updateProviderInfo)
 	providerRouterGroup.POST("/delete/:provider_id", providerHandler.deleteProvider)
 }
@@ -253,38 +253,38 @@ func (this *providerApi) listModels(ctx *echo.Context) error {
 	}
 }
 
-// addModels godoc
+// setModelEnable godoc
 //
-//	@Summary		Add Models to Provider
-//	@Description	Add available models to a provider
+//	@Summary		Set Model Enable Status
+//	@Description	Enable or disable a single model for a provider
 //	@Tags			Provider
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body		models.ProviderAddModelsReq	true	"Add Models Request Body"
-//	@Success		200		{object}	response.ResponseBase[any]	"Models added successfully"
-//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
-//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
-//	@Failure		404		{object}	response.ResponseBase[any]	"Provider not found"
-//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
-//	@Router			/provider/models/add [post]
-func (this *providerApi) addModels(ctx *echo.Context) error {
+//	@Param			body	body		models.ProviderSetModelEnableReq	true	"Set Model Enable Request Body"
+//	@Success		200		{object}	response.ResponseBase[any]			"Model enable status set successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]			"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]			"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]			"Provider not found"
+//	@Failure		500		{object}	response.ResponseBase[any]			"Internal server error"
+//	@Router			/provider/models/enable [post]
+func (this *providerApi) setModelEnable(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
 	if err != nil {
 		return response.ErrInvalidToken()
 	}
 
-	args, err := utils.BindAndValidate[models.ProviderAddModelsReq](ctx)
+	args, err := utils.BindAndValidate[models.ProviderSetModelEnableReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := providerService.AddModels(ctx.Request().Context(), args.ID, currentUser.ID, args.AvailableModels); {
+	switch err := providerService.SetModelEnable(ctx.Request().Context(), args.ID, currentUser.ID, args.ModelID, args.Enabled); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
 		return response.ErrProviderNotFound()
 	default:
-		Logger.Errorf("Failed to add models to provider %d: %v", args.ID, err)
+		Logger.Errorf("Failed to set model enable status for provider %d: %v", args.ID, err)
 		return response.ErrUnknownError()
 	}
 }

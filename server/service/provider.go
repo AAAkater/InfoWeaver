@@ -115,12 +115,26 @@ func (this *ProviderService) DeleteProvider(ctx context.Context, providerID uint
 	return err
 }
 
-// AddModels adds available models to a provider
-func (this *ProviderService) AddModels(ctx context.Context, providerID uint, ownerID uint, availableModels []string) error {
-	// Update available models
+// SetModelEnable sets the enable status for a single model
+func (this *ProviderService) SetModelEnable(ctx context.Context, providerID uint, ownerID uint, modelID string, enabled bool) error {
+	// Get current provider to retrieve existing AvailableModels
+	provider, err := this.GetProviderRawByID(ctx, providerID, ownerID)
+	if err != nil {
+		return err
+	}
+
+	// Initialize map if nil
+	if provider.AvailableModels == nil {
+		provider.AvailableModels = models.ModelEnableMap{}
+	}
+
+	// Update the specific model's enable status
+	provider.AvailableModels[modelID] = enabled
+
+	// Save updated AvailableModels
 	rows, err := gorm.G[models.Provider](db.PgSqlDB).
 		Where("id = ? AND owner_id = ?", providerID, ownerID).
-		Updates(ctx, models.Provider{AvailableModels: availableModels})
+		Updates(ctx, models.Provider{AvailableModels: provider.AvailableModels})
 	if rows == 0 {
 		return gorm.ErrRecordNotFound
 	}
@@ -156,20 +170,20 @@ func (this *ProviderService) ListModels(ctx context.Context, providerID uint, ow
 	// Call external API based on provider mode
 	switch provider.Mode {
 	case models.PROVIDER_MODE_OPENAI, models.PROVIDER_MODE_OPENAI_RESP:
-		return this.listOpenAIModels(ctx, provider.BaseURL, apiKey)
+		return this.listOpenAIModels(ctx, provider.BaseURL, apiKey, provider.AvailableModels)
 	case models.PROVIDER_MODE_ANTHROPIC:
-		return this.listAnthropicModels(ctx, provider.BaseURL, apiKey)
+		return this.listAnthropicModels(ctx, provider.BaseURL, apiKey, provider.AvailableModels)
 	case models.PROVIDER_MODE_GEMINI:
-		return this.listGeminiModels(ctx, provider.BaseURL, apiKey)
+		return this.listGeminiModels(ctx, provider.BaseURL, apiKey, provider.AvailableModels)
 	case models.PROVIDER_MODE_OLLAMA:
-		return this.listOllamaModels(ctx, provider.BaseURL)
+		return this.listOllamaModels(ctx, provider.BaseURL, provider.AvailableModels)
 	default:
 		return nil, fmt.Errorf("unsupported provider mode: %s", provider.Mode)
 	}
 }
 
 // listOpenAIModels uses OpenAI SDK to list embedding models
-func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL string, apiKey string) (*models.ProviderModelsResp, error) {
+func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL string, apiKey string, availableModels models.ModelEnableMap) (*models.ProviderModelsResp, error) {
 	// Validate that baseURL ends with /v1
 	baseURL = strings.TrimSuffix(baseURL, "/")
 	if !strings.HasSuffix(baseURL, "/v1") {
@@ -188,13 +202,18 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 		return nil, fmt.Errorf("failed to list OpenAI models: %w", err)
 	}
 
-	// Return all models
+	// Return all models with enable status
 	allModels := []models.ModelInfo{}
 	for _, model := range modelsList.Data {
+		enabled := false
+		if availableModels != nil {
+			enabled = availableModels[model.ID]
+		}
 		allModels = append(allModels, models.ModelInfo{
 			ID:      model.ID,
 			Object:  string(model.Object),
 			OwnedBy: model.OwnedBy,
+			Enabled: enabled,
 		})
 	}
 
@@ -202,7 +221,7 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 }
 
 // listAnthropicModels uses Anthropic SDK to list available models
-func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL string, apiKey string) (*models.ProviderModelsResp, error) {
+func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL string, apiKey string, availableModels models.ModelEnableMap) (*models.ProviderModelsResp, error) {
 	client := anthropic.NewClient(
 		anthropicOption.WithAPIKey(apiKey),
 		anthropicOption.WithBaseURL(baseURL))
@@ -213,13 +232,18 @@ func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL st
 		return nil, fmt.Errorf("failed to list Anthropic models: %w", err)
 	}
 
-	// Return all models
+	// Return all models with enable status
 	allModels := []models.ModelInfo{}
 	for _, model := range page.Data {
+		enabled := false
+		if availableModels != nil {
+			enabled = availableModels[model.ID]
+		}
 		allModels = append(allModels, models.ModelInfo{
 			ID:      model.ID,
 			Object:  string(model.Type),
 			OwnedBy: "anthropic",
+			Enabled: enabled,
 		})
 	}
 
@@ -227,7 +251,7 @@ func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL st
 }
 
 // listGeminiModels uses Google Genai SDK to list embedding models
-func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiKey string) (*models.ProviderModelsResp, error) {
+func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiKey string, availableModels models.ModelEnableMap) (*models.ProviderModelsResp, error) {
 	// Create Gemini client
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: apiKey,
@@ -245,15 +269,20 @@ func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiK
 		return nil, fmt.Errorf("failed to list Gemini models: %w", err)
 	}
 
-	// Return all models
+	// Return all models with enable status
 	allModels := []models.ModelInfo{}
 	for _, model := range modelsPage.Items {
 		// Extract model name from full path (e.g., "models/gemini-pro")
 		name := strings.TrimPrefix(model.Name, "models/")
+		enabled := false
+		if availableModels != nil {
+			enabled = availableModels[name]
+		}
 		allModels = append(allModels, models.ModelInfo{
 			ID:      name,
 			Object:  "model",
 			OwnedBy: "google",
+			Enabled: enabled,
 		})
 	}
 
@@ -261,7 +290,7 @@ func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiK
 }
 
 // listOllamaModels uses Ollama SDK to list embedding models
-func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL string) (*models.ProviderModelsResp, error) {
+func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL string, availableModels models.ModelEnableMap) (*models.ProviderModelsResp, error) {
 	// Parse base URL
 	ollamaURL, err := url.Parse(baseURL)
 	if err != nil {
@@ -277,13 +306,18 @@ func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL strin
 		return nil, fmt.Errorf("failed to list Ollama models: %w", err)
 	}
 
-	// Return all models
+	// Return all models with enable status
 	allModels := []models.ModelInfo{}
 	for _, model := range modelsList.Models {
+		enabled := false
+		if availableModels != nil {
+			enabled = availableModels[model.Name]
+		}
 		allModels = append(allModels, models.ModelInfo{
 			ID:      model.Name,
 			Object:  "model",
 			OwnedBy: "ollama",
+			Enabled: enabled,
 		})
 	}
 

@@ -44,89 +44,89 @@ async def process_document_from_minio(request: ProcessDocumentRequest) -> Proces
     suffix = Path(request.minio_path).suffix
 
     tmp_path: Path | None = None
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+    try:
+        # Step 1: Download file from MinIO and save to temporary file
+        logger.info(f"Downloading file from MinIO: {request.minio_path}")
         try:
-            # Step 1: Download file from MinIO
-            logger.info(f"Downloading file from MinIO: {request.minio_path}")
-            try:
-                file_data = minio_client.download_file(request.minio_path)
+            file_data = minio_client.download_file(request.minio_path)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
                 tmp_file.write(file_data)
                 tmp_file.flush()
                 tmp_path = Path(tmp_file.name)
-            except Exception as e:
-                logger.error(f"Failed to download file from MinIO: {e}")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Failed to download file from MinIO: {e}",
-                )
-
-            # Step 2: Load and split document
-            logger.info(f"Loading and splitting document: {file_name}")
-            try:
-                chunks = load_and_split_document(
-                    file_path=tmp_path,
-                    chunk_size=512,
-                    chunk_overlap=50,
-                )
-
-                if not chunks:
-                    logger.warning(f"No chunks extracted from document: {file_name}")
-                    return ProcessDocumentResponse(
-                        file_id=request.file_id,
-                        dataset_id=request.dataset_id,
-                        file_name=file_name,
-                        chunks_count=0,
-                        message="No chunks extracted from document",
-                    )
-
-                logger.info(f"Extracted {len(chunks)} chunks from document: {file_name}")
-            except Exception as e:
-                logger.error(f"Failed to load and split document: {e}")
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Failed to process document: {e}",
-                )
-
-            # Step 3: Store chunks with embeddings in Milvus
-            logger.info(f"Storing {len(chunks)} chunks in Milvus")
-            try:
-                from core.rag.doc_store.document_store import add_document_chunks
-
-                doc_entities = [
-                    DocumentChunk(
-                        content=chunk,
-                        dataset_id=request.dataset_id,
-                    )
-                    for chunk in chunks
-                ]
-
-                await add_document_chunks(doc_entities)
-            except Exception as e:
-                logger.error(f"Failed to store chunks in Milvus: {e}")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to store chunks in vector database: {e}",
-                )
-
-            logger.success(f"Successfully processed document: {file_name} with {len(chunks)} chunks")
-
-            return ProcessDocumentResponse(
-                file_id=request.file_id,
-                dataset_id=request.dataset_id,
-                file_name=file_name,
-                chunks_count=len(chunks),
-                message="Document processed successfully",
+        except Exception as e:
+            logger.error(f"Failed to download file from MinIO: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Failed to download file from MinIO: {e}",
             )
 
-        except HTTPException:
-            raise
+        # Step 2: Load and split document
+        logger.info(f"Loading and splitting document: {file_name}")
+        try:
+            chunks = load_and_split_document(
+                file_path=tmp_path,
+                chunk_size=512,
+                chunk_overlap=50,
+            )
+
+            if not chunks:
+                logger.warning(f"No chunks extracted from document: {file_name}")
+                return ProcessDocumentResponse(
+                    file_id=request.file_id,
+                    dataset_id=request.dataset_id,
+                    file_name=file_name,
+                    chunks_count=0,
+                    message="No chunks extracted from document",
+                )
+
+            logger.info(f"Extracted {len(chunks)} chunks from document: {file_name}")
         except Exception as e:
-            logger.error(f"Error processing document {request.minio_path}: {e}")
+            logger.error(f"Failed to load and split document: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Failed to process document: {e}",
+            )
+
+        # Step 3: Store chunks with embeddings in Milvus
+        logger.info(f"Storing {len(chunks)} chunks in Milvus")
+        try:
+            from core.rag.doc_store.document_store import add_document_chunks
+
+            doc_entities = [
+                DocumentChunk(
+                    content=chunk,
+                    dataset_id=request.dataset_id,
+                )
+                for chunk in chunks
+            ]
+
+            await add_document_chunks(doc_entities, request.embedding_config)
+        except Exception as e:
+            logger.error(f"Failed to store chunks in Milvus: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error processing document: {e}",
+                detail=f"Failed to store chunks in vector database: {e}",
             )
-        finally:
-            # Clean up temporary file
-            if tmp_path:
-                tmp_path.unlink(missing_ok=True)
+
+        logger.success(f"Successfully processed document: {file_name} with {len(chunks)} chunks")
+
+        return ProcessDocumentResponse(
+            file_id=request.file_id,
+            dataset_id=request.dataset_id,
+            file_name=file_name,
+            chunks_count=len(chunks),
+            message="Document processed successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing document {request.minio_path}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error processing document: {e}",
+        )
+    finally:
+        # Clean up temporary file
+        if tmp_path:
+            tmp_path.unlink(missing_ok=True)

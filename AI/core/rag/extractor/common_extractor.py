@@ -1,12 +1,13 @@
 from llama_index.core import SimpleDirectoryReader
 
-from utils import logger
 
-documents = SimpleDirectoryReader(input_dir="./data").load_data()
+def extractor(input_files: str) -> SimpleDirectoryReader:
+    """Load documents from files or directory.
 
+    Args:
+        input_files: List of file paths to load.
+    Returns:
+        List of loaded documents.
+    """
 
-if __name__ == "__main__":
-    logger.info(f"Loaded {len(documents)} documents.")
-    for doc in documents:
-        content = doc.get_content()
-        logger.info(f"Document content preview: \n{content[:100]}")
+    return SimpleDirectoryReader(input_files=[input_files])

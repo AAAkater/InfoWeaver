@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from core.rag.embedding import OAICompatibleEmbedding, OllamaDenseEmbeddingModel
 from core.rag.embedding.sparse_embedding_model import SparseEmbeddingModel
 from db.milvus_db import VectorEntity, client
-from models.document import EmbeddingConfig
+from models.document import EmbeddingModelConfig
 from utils import logger
 
 
@@ -14,7 +14,7 @@ class DocumentChunk(BaseModel):
     dataset_id: int
 
 
-async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: EmbeddingConfig) -> None:
+async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: EmbeddingModelConfig) -> None:
     """Add document chunks to the Milvus database with custom embedding model."""
     if not chunks:
         logger.warning("No document chunks to add")
@@ -32,6 +32,7 @@ async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: Emb
         dense_embedding_model = OAICompatibleEmbedding(
             model_name=embedding_config.model_name,
             base_url=embedding_config.base_url,
+            api_key=embedding_config.api_key or "",
         )
 
     sparse_embeddings = await sparse_embedding_model.get_embeddings([chunk.content for chunk in chunks])
@@ -60,7 +61,7 @@ def delete_document_chunks_by_ids(entity_ids: list[int]) -> None:
 
 
 async def update_document_chunks(
-    chunks: list[DocumentChunk], entity_ids: list[int], embedding_config: EmbeddingConfig
+    chunks: list[DocumentChunk], entity_ids: list[int], embedding_config: EmbeddingModelConfig
 ) -> None:
     """Update document chunks in the Milvus database by their IDs with custom embedding model."""
     if not chunks or not entity_ids or len(chunks) != len(entity_ids):
@@ -79,6 +80,7 @@ async def update_document_chunks(
         dense_embedding_model = OAICompatibleEmbedding(
             model_name=embedding_config.model_name,
             base_url=embedding_config.base_url,
+            api_key=embedding_config.api_key or "",
         )
 
     sparse_embeddings = await sparse_embedding_model.get_embeddings([chunk.content for chunk in chunks])

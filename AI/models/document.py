@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 
 
-class EmbeddingConfig(BaseModel):
+class EmbeddingModelConfig(BaseModel):
     """Configuration for embedding model."""
 
     model_name: str = Field(..., description="Embedding model name")
@@ -18,7 +18,7 @@ class ProcessDocumentRequest(BaseModel):
     file_id: int = Field(..., description="Unique file identifier")
     dataset_id: int = Field(..., description="Dataset identifier for grouping files")
     minio_path: str = Field(..., description="Path to file in MinIO storage")
-    embedding_config: EmbeddingConfig = Field(..., description="Embedding model configuration")
+    embedding_config: EmbeddingModelConfig = Field(..., description="Embedding model configuration")
     chunk_size: int = Field(default=512, description="Maximum size of each chunk in tokens")
     chunk_overlap: int = Field(default=50, description="Number of tokens to overlap between chunks")
 

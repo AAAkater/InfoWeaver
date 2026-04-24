@@ -8,7 +8,7 @@ from llama_index.llms.openai_like import OpenAILike
 
 from core.tools import create_retrieval_tool
 from models.chat import ModelConfig, RetrievalConfig
-from models.document import EmbeddingConfig
+from models.document import EmbeddingModelConfig
 from utils import logger
 
 
@@ -22,7 +22,7 @@ def create_llm(llm_config: ModelConfig) -> OpenAILike:
     Returns:
         OpenAILike LLM instance
     """
-    sampling = llm_config.sampling_config
+    sampling = llm_config.sampling_params
     return OpenAILike(
         model=llm_config.model_name,
         api_base=llm_config.base_url,
@@ -129,7 +129,7 @@ class AgenticRAG:
     agent: FunctionAgent
     llm_config: ModelConfig
     dataset_id: int
-    embedding_config: EmbeddingConfig
+    embedding_config: EmbeddingModelConfig
     retrieval_config: RetrievalConfig
     system_prompt: str | None
 
@@ -137,7 +137,7 @@ class AgenticRAG:
         self,
         llm_config: ModelConfig,
         dataset_id: int,
-        embedding_config: EmbeddingConfig,
+        embedding_config: EmbeddingModelConfig,
         retrieval_config: RetrievalConfig | None = None,
         system_prompt: str | None = None,
     ) -> None:

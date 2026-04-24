@@ -4,13 +4,13 @@ from llama_index.core.tools import FunctionTool, ToolMetadata
 
 from core.rag.embedding import OAICompatibleEmbedding, OllamaDenseEmbeddingModel, SparseEmbeddingModel
 from core.rag.retrieval.search import hybrid_search
-from models.document import EmbeddingConfig
+from models.document import EmbeddingModelConfig
 from utils import logger
 
 
 def create_retrieval_tool(
     dataset_id: int,
-    embedding_config: EmbeddingConfig,
+    embedding_config: EmbeddingModelConfig,
     top_k: int = 10,
 ) -> FunctionTool:
     """
@@ -49,6 +49,7 @@ def create_retrieval_tool(
             dense_embedding_model = OAICompatibleEmbedding(
                 model_name=embedding_config.model_name,
                 base_url=embedding_config.base_url,
+                api_key=embedding_config.api_key or "",
             )
 
         # Generate embeddings

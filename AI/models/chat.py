@@ -2,10 +2,10 @@
 
 from pydantic import BaseModel, Field
 
-from models.document import EmbeddingConfig
+from models.document import EmbeddingModelConfig
 
 
-class SamplingConfig(BaseModel):
+class SamplingParams(BaseModel):
     """Configuration for LLM sampling/generation parameters."""
 
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature (0.0-2.0)")
@@ -28,8 +28,8 @@ class ModelConfig(BaseModel):
     api_key: str = Field(..., description="API key for the model provider")
     base_url: str = Field(..., description="Base URL for the model API")
     provider_type: str = Field(..., description="Provider type: 'openai', 'anthropic', 'ollama', etc")
-    sampling_config: SamplingConfig = Field(
-        default_factory=SamplingConfig, description="Sampling/generation parameters"
+    sampling_params: SamplingParams = Field(
+        default_factory=SamplingParams, description="Sampling/generation parameters"
     )
 
 
@@ -40,7 +40,7 @@ class ChatRequest(BaseModel):
     dataset_id: int = Field(..., description="Dataset ID to search in")
     session_id: int | None = Field(None, description="Chat session ID (optional for new session)")
     llm_config: ModelConfig = Field(..., description="LLM model configuration")
-    embedding_config: EmbeddingConfig = Field(..., description="Embedding model configuration")
+    embedding_config: EmbeddingModelConfig = Field(..., description="Embedding model configuration")
     retrieval_config: RetrievalConfig = Field(
         default_factory=RetrievalConfig, description="Retrieval/search parameters"
     )

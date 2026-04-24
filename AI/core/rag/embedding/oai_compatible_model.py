@@ -6,10 +6,10 @@ from utils import logger
 class OAICompatibleEmbedding:
     """Wrapper class for OpenAI-compatible embedding models to provide a consistent interface."""
 
-    def __init__(self, model_name: str, base_url: str):
+    def __init__(self, model_name: str, base_url: str, api_key: str):
         self.model_name = model_name
         self.base_url = base_url
-        self.embedding_model = OpenAIEmbedding(model=model_name, api_base=base_url)
+        self.embedding_model = OpenAIEmbedding(model=model_name, api_base=base_url, api_key=api_key)
 
     async def get_embedding(self, text: str) -> list[float]:
         """Get embedding for a single text."""

@@ -2,11 +2,10 @@
 
 from contextlib import asynccontextmanager
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.document_routes import router as document_router
+from api import v1_router
 from configs.app_config import settings
 from utils import logger
 
@@ -36,26 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(document_router, prefix="/api/v1/documents", tags=["documents"])
+app.include_router(v1_router)
 
 
 @app.get("/health", tags=["health"])
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "document-processing"}
-
-
-def main() -> None:
-    """Start the FastAPI server."""
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level=settings.LOG_LEVEL.lower(),
-    )
-
-
-if __name__ == "__main__":
-    main()

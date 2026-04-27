@@ -11,7 +11,7 @@ from db.postgresql_db import get_db_session
 from models.chat import ChatRequest
 from utils import logger
 
-router = APIRouter()
+router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 @router.post(

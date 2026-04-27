@@ -115,6 +115,9 @@ class Chunk(Base):
     chunk_metadata: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, nullable=True
     )  # Additional metadata (source, type, etc.)
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending", server_default="pending", nullable=False
+    )  # pending | embedding | completed | failed
     vector_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
     file_id: Mapped[int] = mapped_column(Integer, ForeignKey("files.id", ondelete="CASCADE"), nullable=False)
     file: Mapped["File"] = relationship("File", backref="chunks", lazy="select")

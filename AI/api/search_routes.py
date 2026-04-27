@@ -1,15 +1,10 @@
 """Search API routes for RAG retrieval and generation."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, status
 
-from core.rag.embedding import OAICompatibleEmbedding, OllamaDenseEmbeddingModel, SparseEmbeddingModel
+from core.rag.embedding import OllamaDenseEmbeddingModel, SparseEmbeddingModel
 from core.rag.retrieval.search import hybrid_search
-from db.postgresql_db import get_db_session
 from models.search import SearchRequest, SearchResponse, SearchResult
-from models.tables import Provider
 from utils import logger
 
 router = APIRouter(prefix="/search", tags=["search"])

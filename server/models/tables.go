@@ -30,11 +30,12 @@ type (
 	// Chunk represents a knowledge document for RAG system
 	Chunk struct {
 		gorm.Model
-		Content  string         `gorm:"type:text;not null"` // Document content
-		Metadata map[string]any `gorm:"type:jsonb"`         // Additional metadata (source, type, etc.)
-		VectorID string         `gorm:"unique;not null"`    // Reference to Milvus vector ID
-		FileID   uint           `gorm:"not null"`           // Source file ID
-		File     File           `gorm:"foreignKey:FileID;constraint:OnDelete:CASCADE"`
+		Content       string         `gorm:"type:text;not null"`                        // Document content
+		ChunkMetadata map[string]any `gorm:"type:jsonb"`                                // Additional metadata (source, type, etc.)
+		Status        string         `gorm:"type:varchar(20);not null;default:pending"` // pending | embedding | completed | failed
+		VectorID      string         `gorm:"type:varchar(255);uniqueIndex;index"`       // Reference to Milvus vector ID (nullable until embedding completes)
+		FileID        uint           `gorm:"not null"`                                  // Source file ID
+		File          File           `gorm:"foreignKey:FileID;constraint:OnDelete:CASCADE"`
 	}
 	// Memory stores a single chat message within a session
 	Memory struct {

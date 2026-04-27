@@ -249,9 +249,9 @@ func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 //	@Tags			Dataset
 //	@Accept			json
 //	@Produce		json
-//	@Param			dataset_id	path		int												true	"Dataset ID"
-//	@Param			page		query		int												false	"Page number (default: 1)"
-//	@Param			page_size	query		int												false	"Page size (default: 20, max: 100)"
+//	@Param			dataset_id	path		int													true	"Dataset ID"
+//	@Param			page		query		int													false	"Page number (default: 1)"
+//	@Param			page_size	query		int													false	"Page size (default: 20, max: 100)"
 //	@Success		200			{object}	response.ResponseBase[models.DatasetChunkListResp]	"Paginated list of chunks"
 //	@Failure		400			{object}	response.ResponseBase[any]							"Invalid request parameters"
 //	@Failure		401			{object}	response.ResponseBase[any]							"Invalid or expired token"

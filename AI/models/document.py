@@ -12,6 +12,10 @@ class EmbeddingModelConfig(BaseModel):
     base_url: str = Field(..., description="Base URL for embedding API")
     api_key: str | None = Field(None, description="API key for embedding (optional for Ollama)")
     provider_type: str = Field(..., description="Embedding provider type: 'openai' or 'ollama'")
+    embed_type: str = Field(
+        default="hybrid",
+        description="Embedding type: 'dense' (dense only), 'sparse' (sparse only), 'hybrid' (both)",
+    )
 
 
 # ---- Request models ----

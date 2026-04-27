@@ -90,11 +90,98 @@ datasetService.GetDatasetInfoByID(ctx, datasetID, currentUser.ID)
 fileService.CreateFileInfo(ctx, currentUser.ID, datasetID, filename, fileType, fileReader, fileSize)
 ```
 
-### Database Operations
+### Database Operations (GORM Patterns)
 
-- Use GORM context methods: `gorm.G[Model](db.PgSqlDB).Create(ctx, &model)`
-- Pagination pattern: `Offset((page-1)*pageSize).Limit(pageSize)`
-- Ownership validation: Always include `user_id = ?` in WHERE clauses
+The service layer uses **two GORM APIs**: the modern `gorm.G[T]` generic API (preferred for most operations) and the legacy `db.PgSqlDB.Model()` API (used when Joins or projection-struct scanning is needed).
+
+#### gorm.G[T] Generic API (preferred)
+
+Use for: Create / First / Updates / Delete / Count. Return types are explicit — `(T, error)` or `(int64, error)`.
+
+```go
+// Create — insert a single record
+dbRecord := models.Dataset{Name: "abc", OwnerID: ownerID}
+return gorm.G[models.Dataset](db.PgSqlDB).Create(ctx, &dbRecord)
+
+// First — query a single record, returns gorm.ErrRecordNotFound if not found
+dbUser, err := gorm.G[models.User](db.PgSqlDB).
+    Where("email = ?", email).
+    First(ctx)
+return &dbUser, err
+
+// First with Select — query specific columns only
+dbFile, err := gorm.G[models.File](db.PgSqlDB).
+    Select("minio_path").
+    Where("id = ? AND user_id = ?", fileID, ownerID).
+    First(ctx)
+
+// Updates — update records, returns (rowsAffected, error)
+rowsAffected, err := gorm.G[models.Dataset](db.PgSqlDB).
+    Where("id = ? AND owner_id = ?", id, ownerID).
+    Updates(ctx, newDatasetInfo)
+if rowsAffected == 0 {
+    return gorm.ErrRecordNotFound  // zero affected rows = record not found
+}
+
+// Delete — delete records, returns (rowsAffected, error)
+rowsAffected, err := gorm.G[models.Provider](db.PgSqlDB).
+    Where("id = ? AND owner_id = ?", providerID, ownerID).
+    Delete(ctx)
+if rowsAffected == 0 {
+    return gorm.ErrRecordNotFound
+}
+
+// Count — existence / count check
+cnt, err := gorm.G[models.Dataset](db.PgSqlDB).
+    Where("name = ? AND owner_id = ?", name, ownerID).
+    Count(ctx, "*")
+return cnt > 0, err
+
+// Update single column
+_, err := gorm.G[models.User](db.PgSqlDB).
+    Where("id = ?", userID).
+    Update(ctx, "password", hashedPassword)
+```
+
+#### db.PgSqlDB.Model() Legacy API
+
+Use for: JOIN queries, scanning into projection structs (e.g. `ChunkInfo`).
+
+```go
+// Joins + Smart Select — Model declares the source table; Find's target struct
+// automatically determines the SELECT columns
+err = db.PgSqlDB.Model(&models.Chunk{}).
+    Joins("JOIN files ON files.id = chunks.file_id").
+    Where("files.dataset_id = ? AND files.user_id = ?", datasetID, ownerID).
+    Order("chunks.id DESC").
+    Offset((page - 1) * pageSize).
+    Limit(pageSize).
+    Find(&chunks).Error  // chunks is []ChunkInfo — GORM auto-selects only matching columns
+
+// First with projection struct
+result := db.PgSqlDB.Model(&models.Dataset{}).
+    Where("id = ? AND owner_id = ?", id, ownerID).
+    First(&dbDataset)  // dbDataset is *DatasetInfo — only selects matching fields
+
+// Count with Joins
+countResult := db.PgSqlDB.Model(&models.Chunk{}).
+    Joins("JOIN files ON files.id = chunks.file_id").
+    Where("files.dataset_id = ? AND files.user_id = ?", datasetID, ownerID).
+    Count(&total)
+if countResult.Error != nil { ... }
+```
+
+#### General Conventions
+
+| Convention                | Description                                                                                                            |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Ownership validation**  | All queries must include `user_id = ?` / `owner_id = ?` in WHERE                                                       |
+| **Pagination**            | `Offset((page-1)*pageSize).Limit(pageSize)`, paired with `Order("id DESC")`                                            |
+| **Zero-row detection**    | Check `rowsAffected == 0` after Updates/Delete → `ErrNotFound`                                                         |
+| **Existence check**       | Use `Count(ctx, "*") > 0`, not `First` + ignoring `ErrRecordNotFound`                                                  |
+| **Context passing**       | Generic API's first argument is ctx; legacy API uses `ctx.Request().Context()` in handlers                             |
+| **Smart field selection** | `Model(&Source{}).Find(&Projection{})` auto-selects only fields present in the target struct — no manual Select needed |
+| **Return value handling** | Generic API returns `(result, error)` directly; Model API uses `result.Error`                                          |
 
 ### Service Initialization
 

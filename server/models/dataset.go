@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type DatasetCreateReq struct {
 	Icon           string `json:"icon" validate:"required,emoji"`
 	Name           string `json:"name" validate:"required,min=1,max=100"`
@@ -43,4 +45,28 @@ type DatasetInfoReq struct {
 
 type DatasetListReq struct {
 	Name string `query:"name" validate:"omitempty,min=1,max=100"`
+}
+
+// --- Chunk list under a dataset ---
+
+type DatasetChunkListReq struct {
+	DatasetID uint `param:"dataset_id" validate:"required"`
+	Page      int  `query:"page" validate:"omitempty,min=1"`
+	PageSize  int  `query:"page_size" validate:"omitempty,min=1,max=100"`
+}
+
+type ChunkInfo struct {
+	ID            uint           `json:"id"`
+	Content       string         `json:"content"`
+	ChunkMetadata map[string]any `json:"chunk_metadata"`
+	Status        string         `json:"status"`
+	VectorID      string         `json:"vector_id"`
+	FileID        uint           `json:"file_id"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+}
+
+type DatasetChunkListResp struct {
+	Total  int64       `json:"total"`
+	Chunks []ChunkInfo `json:"chunks"`
 }

@@ -20,6 +20,7 @@ func SetDatasetRouter(e *echo.Echo) {
 	datasetRouterGroup.POST("/create", datasetHandler.createDataset)
 	datasetRouterGroup.GET("", datasetHandler.listDatasets)
 	datasetRouterGroup.GET("/:dataset_id", datasetHandler.getDatasetInfo)
+	datasetRouterGroup.GET("/:dataset_id/chunk", datasetHandler.listDatasetChunks)
 	datasetRouterGroup.POST("/update", datasetHandler.updateDatasetInfo)
 	datasetRouterGroup.POST("/delete/:dataset_id", datasetHandler.deleteDataset)
 }
@@ -239,4 +240,60 @@ func (this *datasetApi) deleteDataset(ctx *echo.Context) error {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
+}
+
+// listDatasetChunks godoc
+//
+//	@Summary		List Dataset Chunks
+//	@Description	List chunks belonging to a dataset with pagination. Requires dataset ownership.
+//	@Tags			Dataset
+//	@Accept			json
+//	@Produce		json
+//	@Param			dataset_id	path		int												true	"Dataset ID"
+//	@Param			page		query		int												false	"Page number (default: 1)"
+//	@Param			page_size	query		int												false	"Page size (default: 20, max: 100)"
+//	@Success		200			{object}	response.ResponseBase[models.DatasetChunkListResp]	"Paginated list of chunks"
+//	@Failure		400			{object}	response.ResponseBase[any]							"Invalid request parameters"
+//	@Failure		401			{object}	response.ResponseBase[any]							"Invalid or expired token"
+//	@Failure		404			{object}	response.ResponseBase[any]							"Dataset not found"
+//	@Failure		500			{object}	response.ResponseBase[any]							"Internal server error"
+//	@Router			/dataset/{dataset_id}/chunk [get]
+func (this *datasetApi) listDatasetChunks(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.ErrInvalidToken()
+	}
+
+	args, err := utils.BindAndValidate[models.DatasetChunkListReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	// Set defaults
+	if args.Page <= 0 {
+		args.Page = 1
+	}
+	if args.PageSize <= 0 {
+		args.PageSize = 20
+	}
+
+	// Verify dataset exists and belongs to the user
+	if _, err := datasetService.GetDatasetInfoByID(ctx.Request().Context(), args.DatasetID, currentUser.ID); err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return response.ErrDatasetNotFound()
+		}
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+
+	total, chunks, err := datasetService.ListChunksByDatasetID(ctx.Request().Context(), args.DatasetID, currentUser.ID, args.Page, args.PageSize)
+	if err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+
+	return response.OkWithData(ctx, models.DatasetChunkListResp{
+		Total:  total,
+		Chunks: chunks,
+	})
 }

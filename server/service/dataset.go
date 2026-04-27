@@ -93,3 +93,30 @@ func (this *DatasetService) ListDatasetsByName(ctx context.Context, ownerID uint
 		Find(&dbDataset)
 	return result.RowsAffected, dbDataset, result.Error
 }
+
+// ListChunksByDatasetID retrieves chunks belonging to a dataset with pagination and ownership validation.
+// It joins through the File table since Chunk → File → Dataset.
+func (this *DatasetService) ListChunksByDatasetID(ctx context.Context, datasetID uint, ownerID uint, page int, pageSize int) (total int64, chunks []models.ChunkInfo, err error) {
+	// Count total matching chunks
+	countResult := db.PgSqlDB.Model(&models.Chunk{}).
+		Joins("JOIN files ON files.id = chunks.file_id").
+		Where("files.dataset_id = ? AND files.user_id = ?", datasetID, ownerID).
+		Count(&total)
+	if countResult.Error != nil {
+		return 0, nil, countResult.Error
+	}
+
+	// Fetch paginated chunks — GORM auto-selects only fields present in ChunkInfo
+	err = db.PgSqlDB.Model(&models.Chunk{}).
+		Joins("JOIN files ON files.id = chunks.file_id").
+		Where("files.dataset_id = ? AND files.user_id = ?", datasetID, ownerID).
+		Order("chunks.id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&chunks).Error
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, chunks, nil
+}

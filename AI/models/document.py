@@ -2,8 +2,6 @@
 
 from pydantic import BaseModel, Field
 
-from models import APIResponse
-
 
 class EmbeddingModelConfig(BaseModel):
     """Configuration for embedding model."""
@@ -77,8 +75,5 @@ class ProcessDocumentData(BaseModel):
     chunks_count: int
 
 
-# ---- Typed response aliases ----
-
-SplitDocumentResponse = APIResponse[SplitDocumentData]
-EmbedChunksResponse = APIResponse[EmbedChunksData]
-ProcessDocumentResponse = APIResponse[ProcessDocumentData]
+# Response types are formed as APIResponse[PayloadData] at call sites.
+# Example: APIResponse[SplitDocumentData], APIResponse[ProcessDocumentData]

@@ -12,11 +12,10 @@ from db.postgresql_db import get_db_session
 from models.document import (
     EmbedChunksData,
     EmbedChunksRequest,
-    EmbedChunksResponse,
     SplitDocumentData,
     SplitDocumentRequest,
-    SplitDocumentResponse,
 )
+from models.response import APIResponse
 from services import document_service
 from services.document_service import background_embed_chunks
 from utils import logger
@@ -26,12 +25,14 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 @router.post(
     "/split",
-    response_model=SplitDocumentResponse,
+    response_model=APIResponse[SplitDocumentData],
     status_code=status.HTTP_200_OK,
     summary="Split document from MinIO into chunks",
     description="Download a document from MinIO and split it into text chunks",
 )
-async def split_document(req: SplitDocumentRequest, db: Session = Depends(get_db_session)) -> SplitDocumentResponse:
+async def split_document(
+    req: SplitDocumentRequest, db: Session = Depends(get_db_session)
+) -> APIResponse[SplitDocumentData]:
     """
     Split a document stored in MinIO into chunks.
 
@@ -45,7 +46,7 @@ async def split_document(req: SplitDocumentRequest, db: Session = Depends(get_db
         req: SplitDocumentRequest containing file metadata and MinIO path
 
     Returns:
-        SplitDocumentResponse with chunk IDs
+        APIResponse[SplitDocumentData] with chunk IDs
     """
     file_name = Path(req.minio_path).stem
     suffix = Path(req.minio_path).suffix
@@ -74,7 +75,7 @@ async def split_document(req: SplitDocumentRequest, db: Session = Depends(get_db
 
         if not chunk_contents:
             logger.warning(f"No chunks extracted from document: {file_name}")
-            return SplitDocumentResponse(
+            return APIResponse(
                 data=SplitDocumentData(
                     file_id=req.file_id,
                     dataset_id=req.dataset_id,
@@ -91,7 +92,7 @@ async def split_document(req: SplitDocumentRequest, db: Session = Depends(get_db
             f"Successfully split document: {file_name} into {len(chunk_ids)} chunks, "
             f"persisted to PostgreSQL with IDs: {chunk_ids}"
         )
-        return SplitDocumentResponse(
+        return APIResponse(
             data=SplitDocumentData(
                 file_id=req.file_id,
                 dataset_id=req.dataset_id,
@@ -116,7 +117,7 @@ async def split_document(req: SplitDocumentRequest, db: Session = Depends(get_db
 
 @router.post(
     "/embedding",
-    response_model=EmbedChunksResponse,
+    response_model=APIResponse[EmbedChunksData],
     status_code=status.HTTP_202_ACCEPTED,
     summary="Embed and store document chunks (background task)",
     description="Enqueue chunk embedding as a background task. Status can be queried via chunk status field.",
@@ -125,7 +126,7 @@ async def embed_chunks(
     req: EmbedChunksRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db_session),
-) -> EmbedChunksResponse:
+) -> APIResponse[EmbedChunksData]:
     """
     Enqueue chunk embedding as a background task.
 
@@ -139,10 +140,10 @@ async def embed_chunks(
         req: EmbedChunksRequest containing chunk IDs and embedding config
 
     Returns:
-        EmbedChunksResponse acknowledging the request
+        APIResponse[EmbedChunksData] acknowledging the request
     """
     if not req.chunk_ids:
-        return EmbedChunksResponse(
+        return APIResponse(
             data=EmbedChunksData(chunk_ids=[], chunks_count=0),
             msg="No chunk IDs provided for embedding",
         )
@@ -151,7 +152,7 @@ async def embed_chunks(
     pg_chunks = document_service.fetch_chunks_by_ids(db, req.chunk_ids)
     if not pg_chunks:
         logger.warning(f"No chunks found in PostgreSQL for IDs: {req.chunk_ids}")
-        return EmbedChunksResponse(
+        return APIResponse(
             data=EmbedChunksData(chunk_ids=[], chunks_count=0),
             msg="No chunks found for the given IDs",
         )
@@ -160,7 +161,7 @@ async def embed_chunks(
     background_tasks.add_task(background_embed_chunks, req.chunk_ids, req.embedding_config)
 
     logger.info(f"Enqueued background embedding for {len(req.chunk_ids)} chunks")
-    return EmbedChunksResponse(
+    return APIResponse(
         data=EmbedChunksData(chunk_ids=req.chunk_ids, chunks_count=len(pg_chunks)),
         msg="Chunk embedding enqueued as background task",
     )

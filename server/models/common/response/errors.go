@@ -138,3 +138,17 @@ func ErrChatMessageNotOwned() error {
 		Message: "Chat message does not belong to the user",
 	}
 }
+
+func ErrMcpNameAlreadyExists() error {
+	return &echo.HTTPError{
+		Code:    http.StatusForbidden,
+		Message: "MCP server with the same name already exists",
+	}
+}
+
+func ErrMcpNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "MCP server not found",
+	}
+}

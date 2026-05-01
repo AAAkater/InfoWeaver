@@ -14,4 +14,5 @@ func InitRouter(e *echo.Echo) {
 	v1.SetProviderRouter(e)
 	v1.SetChatSessionRouter(e)
 	v1.SetChatRouter(e)
+	v1.SetMcpRouter(e)
 }

@@ -79,4 +79,19 @@ type (
 		OwnerID uint   `gorm:"not null"` // Owner user ID
 		User    User   `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
 	}
+
+	// Mcp represents a Model Context Protocol server configuration
+	Mcp struct {
+		gorm.Model
+		Name      string         `gorm:"not null"`                 // Display name for this MCP server
+		Transport string         `gorm:"not null;default:'stdio'"` // Transport type: "stdio", "sse", "streamable_http"
+		Command   string         // Command to run (for stdio transport)
+		Args      string         `gorm:"type:text"` // JSON-encoded array of command arguments
+		URL       string         // Server URL (for sse/streamable_http transport)
+		Headers   map[string]any `gorm:"type:jsonb"`   // Custom HTTP headers
+		EnvVars   map[string]any `gorm:"type:jsonb"`   // Environment variables for the command
+		Enabled   bool           `gorm:"default:true"` // Whether this MCP server is active
+		OwnerID   uint           `gorm:"not null"`     // Owner user ID
+		User      User           `gorm:"foreignKey:OwnerID;constraint:OnDelete:CASCADE"`
+	}
 )

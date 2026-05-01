@@ -13,4 +13,5 @@ var (
 	providerService    = service.ProviderServiceApp
 	chatSessionService = service.ChatSessionServiceApp
 	chatService        = service.ChatServiceApp
+	mcpService         = service.McpServiceApp
 )

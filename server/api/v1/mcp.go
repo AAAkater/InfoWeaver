@@ -83,13 +83,15 @@ func (a *mcpApi) createMcp(ctx *echo.Context) error {
 // getAllMcps godoc
 //
 //	@Summary		Get All MCP Servers
-//	@Description	Get a list of all MCP server configurations
+//	@Description	Get a paginated list of all MCP server configurations
 //	@Tags			MCP
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	response.ResponseBase[models.McpListResp]	"MCP servers retrieved successfully"
-//	@Failure		401	{object}	response.ResponseBase[any]					"Invalid or expired token"
-//	@Failure		500	{object}	response.ResponseBase[any]					"Internal server error"
+//	@Param			page		query		int											false	"Page number (default: 1)"
+//	@Param			page_size	query		int											false	"Page size (default: 20, max: 100)"
+//	@Success		200			{object}	response.ResponseBase[models.McpListResp]	"MCP servers retrieved successfully"
+//	@Failure		401			{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		500			{object}	response.ResponseBase[any]					"Internal server error"
 //	@Router			/mcp/list [get]
 func (a *mcpApi) getAllMcps(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -97,13 +99,27 @@ func (a *mcpApi) getAllMcps(ctx *echo.Context) error {
 		return response.ErrInvalidToken()
 	}
 
-	total, mcps, err := mcpService.GetAllMcps(ctx.Request().Context(), currentUser.ID)
+	args, err := utils.BindAndValidate[models.McpListReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	// Set defaults
+	if args.Page <= 0 {
+		args.Page = 1
+	}
+	if args.PageSize <= 0 {
+		args.PageSize = 20
+	}
+
+	total, mcps, err := mcpService.ListMcps(ctx.Request().Context(), currentUser.ID, args.Page, args.PageSize)
 	if err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
 	return response.OkWithData(ctx, models.McpListResp{
 		Total: total,
+		Page:  args.Page,
 		Mcps:  mcps,
 	})
 }

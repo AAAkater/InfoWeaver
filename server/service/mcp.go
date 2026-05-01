@@ -13,7 +13,7 @@ var McpServiceApp = new(McpService)
 type McpService struct{}
 
 // CreateMcp creates a new MCP server configuration
-func (s *McpService) CreateMcp(ctx context.Context, ownerID uint, name string, transport string, command string, args string, url string, headers map[string]any, envVars map[string]any, enabled bool) error {
+func (s *McpService) CreateMcp(ctx context.Context, ownerID uint, name string, transport string, command string, args string, url string, headers models.JsonMap, envVars models.JsonMap, enabled bool) error {
 	dbMcp := &models.Mcp{
 		OwnerID:   ownerID,
 		Name:      name,
@@ -29,7 +29,7 @@ func (s *McpService) CreateMcp(ctx context.Context, ownerID uint, name string, t
 }
 
 // UpdateMcp updates an existing MCP server configuration
-func (s *McpService) UpdateMcp(ctx context.Context, mcpID uint, ownerID uint, name string, transport string, command string, args string, url string, headers map[string]any, envVars map[string]any, enabled bool) error {
+func (s *McpService) UpdateMcp(ctx context.Context, mcpID uint, ownerID uint, name string, transport string, command string, args string, url string, headers models.JsonMap, envVars models.JsonMap, enabled bool) error {
 	newMcp := models.Mcp{
 		Name:      name,
 		Transport: transport,
@@ -77,7 +77,32 @@ func (s *McpService) CheckMcpOwnership(ctx context.Context, mcpID uint, ownerID 
 	return cnt > 0, err
 }
 
-// GetAllMcps retrieves all MCP servers for a specific owner
+// ListMcps retrieves MCP servers for a specific owner with pagination.
+// page: page number (1-indexed), pageSize: number of items per page
+func (s *McpService) ListMcps(ctx context.Context, ownerID uint, page int, pageSize int) (total int64, mcps []models.McpInfo, err error) {
+	// Count total matching records
+	countResult := db.PgSqlDB.Model(&models.Mcp{}).
+		Where("owner_id = ?", ownerID).
+		Count(&total)
+	if countResult.Error != nil {
+		return 0, nil, countResult.Error
+	}
+
+	// Fetch paginated records
+	err = db.PgSqlDB.Model(&models.Mcp{}).
+		Where("owner_id = ?", ownerID).
+		Order("id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&mcps).Error
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return total, mcps, nil
+}
+
+// GetAllMcps retrieves all MCP servers for a specific owner (unpaginated, for backward compatibility)
 func (s *McpService) GetAllMcps(ctx context.Context, ownerID uint) (total int64, mcps []models.McpInfo, err error) {
 	result := db.PgSqlDB.Model(&models.Mcp{}).
 		Where("owner_id = ?", ownerID).

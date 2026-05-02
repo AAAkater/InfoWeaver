@@ -3,8 +3,8 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
+import middlewares
 from api import v1_router
 from configs.app_config import settings
 from utils import logger
@@ -27,13 +27,7 @@ app = FastAPI(
 )
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+middlewares.register_middlewares(app)
 
 app.include_router(v1_router)
 

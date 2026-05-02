@@ -31,13 +31,6 @@ middlewares.register_middlewares(app)
 
 app.include_router(v1_router)
 
-
-@app.get("/health", tags=["health"])
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "document-processing"}
-
-
 if __name__ == "__main__":
     import uvicorn
 

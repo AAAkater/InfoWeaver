@@ -13,4 +13,4 @@ logger.add(
     level="DEBUG",
     enqueue=True,
 )
-logger.add(sys.stderr, level=settings.LOG_LEVEL)
+logger.add(sys.stderr, level=settings.SERVER_LOG_LEVEL)

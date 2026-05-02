@@ -14,7 +14,7 @@ from utils import logger
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting document processing API service...")
-    logger.info(f"Service running with log level: {settings.LOG_LEVEL}")
+    logger.info(f"Service running with log level: {settings.SERVER_LOG_LEVEL}")
     yield
     logger.info("Shutting down document processing API service...")
 
@@ -42,3 +42,14 @@ app.include_router(v1_router)
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "document-processing"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host=settings.SERVER_HOST,
+        port=settings.SERVER_PORT,
+        log_level=settings.SERVER_LOG_LEVEL.lower(),
+    )

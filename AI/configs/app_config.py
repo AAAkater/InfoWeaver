@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     )
     PYTHONPATH: str | None = None
 
-    LOG_LEVEL: Literal["INFO", "DEBUG", "WARNING", "ERROR"] = "INFO"
+    # SERVER
+    SERVER_HOST: str = "0.0.0.0"
+    SERVER_PORT: int = 8000
+    SERVER_LOG_LEVEL: Literal["INFO", "DEBUG", "WARNING", "ERROR"] = "INFO"
 
     # POSTGRESQL
     POSTGRES_HOST: str = "localhost"

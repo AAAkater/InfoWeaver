@@ -89,3 +89,24 @@ type SplitDocumentResp struct {
 	FileName    string `json:"file_name"`
 	ChunksCount int    `json:"chunks_count"`
 }
+
+// EmbeddingConfig represents the embedding model configuration
+type EmbeddingConfig struct {
+	ModelName    string `json:"model_name" validate:"required"`
+	BaseURL      string `json:"base_url" validate:"required"`
+	APIKey       string `json:"api_key" validate:"required"`
+	ProviderType string `json:"provider_type" validate:"required"`
+	EmbedType    string `json:"embed_type" validate:"required"`
+}
+
+// EmbeddingReq represents the request body for the document embedding API
+type EmbeddingReq struct {
+	ChunkIDs        []uint          `json:"chunk_ids" validate:"required,min=1"`
+	EmbeddingConfig EmbeddingConfig `json:"embedding_config" validate:"required"`
+}
+
+// EmbeddingResp represents the data returned by the document embedding API
+type EmbeddingResp struct {
+	ChunkIDs    []uint `json:"chunk_ids"`
+	ChunksCount int    `json:"chunks_count"`
+}

@@ -23,6 +23,7 @@ func SetFileRouter(e *echo.Echo) {
 	fileRouterGroup.GET("/download/:file_id", fileHandler.getDownloadFileURL)
 	fileRouterGroup.POST("/delete/:file_id", fileHandler.deleteFile)
 	fileRouterGroup.POST("/split", fileHandler.splitDocument)
+	fileRouterGroup.POST("/embedding", fileHandler.embedDocument)
 
 }
 
@@ -272,11 +273,11 @@ func (this *fileApi) deleteFile(ctx *echo.Context) error {
 //	@Tags			File
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body		models.SplitDocumentReq					true	"Split request parameters"
+//	@Param			body	body		models.SplitDocumentReq							true	"Split request parameters"
 //	@Success		200		{object}	response.ResponseBase[models.SplitDocumentResp]	"Document split successfully"
-//	@Failure		400		{object}	response.ResponseBase[any]					"Invalid request parameters"
-//	@Failure		401		{object}	response.ResponseBase[any]					"Invalid or expired token"
-//	@Failure		500		{object}	response.ResponseBase[any]					"Internal server error or split service failure"
+//	@Failure		400		{object}	response.ResponseBase[any]						"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]						"Invalid or expired token"
+//	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error or split service failure"
 //	@Router			/file/split [post]
 func (this *fileApi) splitDocument(ctx *echo.Context) error {
 	// Validate token
@@ -306,6 +307,52 @@ func (this *fileApi) splitDocument(ctx *echo.Context) error {
 		FileID:      result.FileID,
 		DatasetID:   result.DatasetID,
 		FileName:    result.FileName,
+		ChunksCount: result.ChunksCount,
+	})
+}
+
+// embedDocument godoc
+//
+//	@Summary		Embed Document Chunks
+//	@Description	Call the AI document service to compute embeddings for document chunks
+//	@Tags			File
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		models.EmbeddingReq							true	"Embedding request parameters"
+//	@Success		200		{object}	response.ResponseBase[models.EmbeddingResp]	"Embedding completed successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]					"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		500		{object}	response.ResponseBase[any]					"Internal server error or embedding service failure"
+//	@Router			/file/embedding [post]
+func (this *fileApi) embedDocument(ctx *echo.Context) error {
+	// Validate token
+	if _, err := utils.GetCurrentUser(ctx); err != nil {
+		return response.ErrInvalidToken()
+	}
+
+	args, err := utils.BindAndValidate[models.EmbeddingReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	result, err := aiDocService.EmbedDocument(
+		ctx.Request().Context(),
+		args.ChunkIDs,
+		service.EmbeddingConfigInput{
+			ModelName:    args.EmbeddingConfig.ModelName,
+			BaseURL:      args.EmbeddingConfig.BaseURL,
+			APIKey:       args.EmbeddingConfig.APIKey,
+			ProviderType: args.EmbeddingConfig.ProviderType,
+			EmbedType:    args.EmbeddingConfig.EmbedType,
+		},
+	)
+	if err != nil {
+		Logger.Errorf("Document embedding failed: %v", err)
+		return response.ErrUnknownError()
+	}
+
+	return response.OkWithData(ctx, models.EmbeddingResp{
+		ChunkIDs:    result.ChunkIDs,
 		ChunksCount: result.ChunksCount,
 	})
 }

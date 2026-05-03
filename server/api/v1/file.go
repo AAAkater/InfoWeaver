@@ -22,6 +22,7 @@ func SetFileRouter(e *echo.Echo) {
 	fileRouterGroup.GET("/info/:file_id", fileHandler.getSingleDetailedFileInfo)
 	fileRouterGroup.GET("/download/:file_id", fileHandler.getDownloadFileURL)
 	fileRouterGroup.POST("/delete/:file_id", fileHandler.deleteFile)
+	fileRouterGroup.POST("/split", fileHandler.splitDocument)
 
 }
 
@@ -262,4 +263,49 @@ func (this *fileApi) deleteFile(ctx *echo.Context) error {
 	}
 
 	return response.Ok(ctx)
+}
+
+// splitDocument godoc
+//
+//	@Summary		Split Document
+//	@Description	Call the AI document service to split a file into chunks for RAG processing
+//	@Tags			File
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		models.SplitDocumentReq					true	"Split request parameters"
+//	@Success		200		{object}	response.ResponseBase[models.SplitDocumentResp]	"Document split successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]					"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		500		{object}	response.ResponseBase[any]					"Internal server error or split service failure"
+//	@Router			/file/split [post]
+func (this *fileApi) splitDocument(ctx *echo.Context) error {
+	// Validate token
+	if _, err := utils.GetCurrentUser(ctx); err != nil {
+		return response.ErrInvalidToken()
+	}
+
+	args, err := utils.BindAndValidate[models.SplitDocumentReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	result, err := aiDocService.SplitDocument(
+		ctx.Request().Context(),
+		args.FileID,
+		args.DatasetID,
+		args.MinioPath,
+		args.ChunkSize,
+		args.ChunkOverlap,
+	)
+	if err != nil {
+		Logger.Errorf("Document split failed: %v", err)
+		return response.ErrUnknownError()
+	}
+
+	return response.OkWithData(ctx, models.SplitDocumentResp{
+		FileID:      result.FileID,
+		DatasetID:   result.DatasetID,
+		FileName:    result.FileName,
+		ChunksCount: result.ChunksCount,
+	})
 }

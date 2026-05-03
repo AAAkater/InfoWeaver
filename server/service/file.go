@@ -100,11 +100,13 @@ func (this *FileService) UploadFile(ctx context.Context, fileHeaders []*multipar
 
 			utils.Logger.Infof("File uploaded successfully: %s", fh.Filename)
 			resultChan <- models.FileUploadInfo{
+				ID:        dbRes.file.ID,
 				OwnerID:   ownerID,
 				DatasetID: datasetID,
 				Name:      fh.Filename,
 				Type:      fileType,
 				Size:      fh.Size,
+				MinioPath: dbRes.file.MinioPath,
 			}
 		})
 	}

@@ -55,6 +55,8 @@ type Config struct {
 	RABBITMQ_VHOST               string `mapstructure:"RABBITMQ_VHOST"`
 	RABBITMQ_EXCHANGE            string `mapstructure:"RABBITMQ_EXCHANGE"`
 	RABBITMQ_QUEUE               string `mapstructure:"RABBITMQ_QUEUE"`
+	AI_SERVER_HOST               string `mapstructure:"AI_SERVER_HOST"`
+	AI_SERVER_PORT               int    `mapstructure:"AI_SERVER_PORT"`
 }
 
 func (this *Config) GetServerPort() string {
@@ -81,6 +83,10 @@ func (this *Config) GetMinioDSN() string {
 
 func (this *Config) GetRabbitMQDSN() string {
 	return fmt.Sprintf("amqp://%s:%s@%s:%d/%s", this.RABBITMQ_USERNAME, this.RABBITMQ_PASSWORD, this.RABBITMQ_HOST, this.RABBITMQ_PORT, this.RABBITMQ_VHOST)
+}
+
+func (this *Config) GetAIServerDSN() string {
+	return fmt.Sprintf("http://%s:%d", this.AI_SERVER_HOST, this.AI_SERVER_PORT)
 }
 
 func (this *Config) GetJWTExpireTime() time.Duration {

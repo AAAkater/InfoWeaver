@@ -14,4 +14,5 @@ var (
 	chatSessionService = service.ChatSessionServiceApp
 	chatService        = service.ChatServiceApp
 	mcpService         = service.McpServiceApp
+	aiDocService       = service.AIDocServiceApp
 )

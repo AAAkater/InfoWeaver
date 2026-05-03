@@ -10,11 +10,13 @@ type FileUploadReq struct {
 }
 
 type FileUploadInfo struct {
+	ID        uint   `json:"id"`
 	OwnerID   uint   `json:"owner_id"`
 	DatasetID uint   `json:"dataset_id"`
 	Name      string `json:"name"`
 	Type      string `json:"type"`
 	Size      int64  `json:"size"`
+	MinioPath string `json:"-"`
 }
 
 type MultiFileUploadResp struct {
@@ -69,4 +71,21 @@ type FileUploadMessage struct {
 	MinioPath string    `json:"minio_path"`
 	Timestamp time.Time `json:"timestamp"`
 	DatasetID uint      `json:"dataset_id"`
+}
+
+// SplitDocumentReq represents the request body for the document split API
+type SplitDocumentReq struct {
+	FileID       uint   `json:"file_id" validate:"required"`
+	DatasetID    uint   `json:"dataset_id" validate:"required"`
+	MinioPath    string `json:"minio_path" validate:"required"`
+	ChunkSize    int    `json:"chunk_size" validate:"required,min=64,max=4096"`
+	ChunkOverlap int    `json:"chunk_overlap" validate:"required,min=0,max=2048"`
+}
+
+// SplitDocumentResp represents the data returned by the document split API
+type SplitDocumentResp struct {
+	FileID      uint   `json:"file_id"`
+	DatasetID   uint   `json:"dataset_id"`
+	FileName    string `json:"file_name"`
+	ChunksCount int    `json:"chunks_count"`
 }

@@ -2,16 +2,13 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
-	"server/config"
 	"server/db"
 	"server/models"
 	"server/utils"
 	"sync"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -90,12 +87,6 @@ func (this *FileService) UploadFile(ctx context.Context, fileHeaders []*multipar
 			if dbRes.err != nil {
 				errChan <- dbRes.err
 				return
-			}
-
-			// Publish file upload event
-			if err := this.PublishFileUploadEvent(ctx, dbRes.file); err != nil {
-				utils.Logger.Errorf("Failed to publish file upload event for %s: %v", fh.Filename, err)
-				// Continue even if event publishing fails
 			}
 
 			utils.Logger.Infof("File uploaded successfully: %s", fh.Filename)
@@ -280,41 +271,4 @@ func (this *FileService) CheckFileExistsByFileID(ctx context.Context, fileID uin
 	}
 
 	return exists, nil
-}
-
-// PublishFileUploadEvent publishes a file upload event to RabbitMQ
-// This function is designed to be called in a goroutine for concurrent execution
-func (this *FileService) PublishFileUploadEvent(ctx context.Context, fileInfo *models.File) error {
-	// Create the message payload
-	message := models.FileUploadMessage{
-		Event:     "file.uploaded",
-		FileID:    fileInfo.ID,
-		MinioPath: fileInfo.MinioPath,
-		Timestamp: time.Now(),
-		DatasetID: fileInfo.DatasetID,
-	}
-
-	// Marshal the message to JSON
-	messageBytes, err := json.Marshal(message)
-	if err != nil {
-		utils.Logger.Errorf("Failed to marshal file upload message: %v", err)
-		return err
-	}
-
-	// Create a work queue for file upload events
-	fileUploadQueue, err := db.NewWorkQueue(config.Settings.RABBITMQ_QUEUE)
-	if err != nil {
-		utils.Logger.Errorf("Failed to create file upload queue: %v", err)
-		return err
-	}
-	defer fileUploadQueue.Close()
-
-	// Publish the message
-	if err := fileUploadQueue.Publish(messageBytes); err != nil {
-		utils.Logger.Errorf("Failed to publish file upload event: %v", err)
-		return err
-	}
-
-	utils.Logger.Infof("File upload event published to RabbitMQ: %s (ID: %d)", fileInfo.MinioPath, fileInfo.ID)
-	return nil
 }

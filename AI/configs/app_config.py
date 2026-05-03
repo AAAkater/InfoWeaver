@@ -80,19 +80,6 @@ class Settings(BaseSettings):
     def MINIO_ENDPOINT(self) -> str:
         return f"{self.MINIO_HOST}:{self.MINIO_PORT}"
 
-    # RABBITMQ
-    RABBITMQ_HOST: str = "localhost"
-    RABBITMQ_PORT: int = 5672
-    RABBITMQ_USER: str = "guest"
-    RABBITMQ_PASSWORD: str = "guest"
-    RABBITMQ_VHOST: str = "/"
-    RABBITMQ_QUEUE: str = "info-weaver-file-queue"
-
-    @computed_field
-    @property
-    def RABBITMQ_URL(self) -> str:
-        return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}{self.RABBITMQ_VHOST}"
-
     # OLLAMA
     OLLAMA_HOST: str = "localhost"
     OLLAMA_PORT: int = 11434

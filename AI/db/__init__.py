@@ -44,7 +44,7 @@ def check_redis() -> bool:
         return False
 
 
-async def check_milvus() -> bool:
+def check_milvus() -> bool:
     """Test Milvus connection by listing collections."""
     from pymilvus import MilvusClient
 
@@ -77,31 +77,15 @@ def check_minio() -> bool:
         return False
 
 
-def check_rabbitmq() -> bool:
-    """Test RabbitMQ connection by opening and closing a connection."""
-    from pika import BlockingConnection, URLParameters
-
-    try:
-        url = f"amqp://{settings.RABBITMQ_USER}:{settings.RABBITMQ_PASSWORD}@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}{settings.RABBITMQ_VHOST}"
-        conn = BlockingConnection(URLParameters(url))
-        conn.close()
-        logger.info("✓ RabbitMQ connected successfully")
-        return True
-    except Exception as e:
-        logger.error(f"✗ RabbitMQ connection failed: {e}")
-        return False
-
-
-async def check_all_db_connections() -> None:
+def check_all_db_connections() -> None:
     """Run all database connection health checks and log a summary."""
     logger.info("Checking database connections...")
 
     results = {
         "PostgreSQL": check_postgresql(),
         "Redis": check_redis(),
-        "Milvus": await check_milvus(),
+        "Milvus": check_milvus(),
         "MinIO": check_minio(),
-        "RabbitMQ": check_rabbitmq(),
     }
 
     success = sum(1 for v in results.values() if v)
@@ -141,8 +125,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan: check DB connections on startup, clean up on shutdown."""
     logger.info("Starting document processing API service...")
     logger.info(f"Service running with log level: {settings.SERVER_LOG_LEVEL}")
-
-    await check_all_db_connections()
+    check_all_db_connections()
 
     yield
 

@@ -1,23 +1,10 @@
 """FastAPI application for document processing service."""
 
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 
 import middlewares
 from api import v1_router
-from configs.app_config import settings
-from utils import logger
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
-    logger.info("Starting document processing API service...")
-    logger.info(f"Service running with log level: {settings.SERVER_LOG_LEVEL}")
-    yield
-    logger.info("Shutting down document processing API service...")
-
+from db import lifespan
 
 app = FastAPI(
     title="InfoWeaver Document Processing API",
@@ -33,6 +20,8 @@ app.include_router(v1_router)
 
 if __name__ == "__main__":
     import uvicorn
+
+    from configs.app_config import settings
 
     uvicorn.run(
         "main:app",

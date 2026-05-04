@@ -84,17 +84,22 @@ class MilvusDB:
         result = self.client.get_collection_stats(collection_name=self.collection_name)
         logger.info(f"Collection '{self.collection_name}' created successfully. Stats: {result}")
 
-    def insert_entities(self, entities: list[VectorEntity]) -> None:
+    def insert_entities(self, entities: list[VectorEntity]) -> list[int]:
         """Insert vector entities into the collection.
 
         Args:
             entities: List of VectorEntity objects to insert.
+
+        Returns:
+            List of auto-generated entity IDs from Milvus.
         """
-        self.client.insert(
+        result = self.client.insert(
             collection_name=self.collection_name,
             data=[data.model_dump() for data in entities],
         )
-        logger.info(f"Inserted {len(entities)} records into collection '{self.collection_name}'")
+        ids = result["ids"]
+        logger.info(f"Inserted {len(ids)} records into collection '{self.collection_name}', IDs: {ids}")
+        return ids
 
     def delete_entities_by_ids(self, entity_ids: list[int]) -> None:
         """Delete entities by their IDs.

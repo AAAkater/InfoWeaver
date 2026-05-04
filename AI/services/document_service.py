@@ -106,7 +106,12 @@ async def background_embed_chunks(chunk_ids: list[int], embedding_config: Embedd
 
             # Step 2: Generate embeddings and store in Milvus
             doc_entities = [DocumentChunk(content=content, dataset_id=dataset_id) for content in contents]
-            await add_document_chunks(doc_entities, embedding_config)
+            entity_ids = await add_document_chunks(doc_entities, embedding_config)
+
+            # Step 2b: Persist vector_id back to PostgreSQL chunks
+            for pg_chunk, entity_id in zip(pg_chunks, entity_ids):
+                pg_chunk.vector_id = str(entity_id)
+            db.commit()
 
             # Step 3: Mark as completed
             update_chunk_status(db, chunk_ids, "completed")

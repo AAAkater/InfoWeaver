@@ -15,17 +15,20 @@ class DocumentChunk(BaseModel):
     dataset_id: int
 
 
-async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: EmbeddingModelConfig) -> None:
+async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: EmbeddingModelConfig) -> list[int]:
     """Add document chunks to the Milvus database with configurable embedding type.
 
     Supports three embed_type values:
     - "dense": Generate dense embeddings only (sparse set to empty dict)
     - "sparse": Generate sparse embeddings only (dense set to zero vector)
     - "hybrid": Generate both dense and sparse embeddings (default)
+
+    Returns:
+        List of auto-generated Milvus entity IDs, one per chunk (same order as input).
     """
     if not chunks:
         logger.warning("No document chunks to add")
-        return
+        return []
 
     embed_type = embedding_config.embed_type
     logger.info(f"Adding {len(chunks)} document chunks with embed_type='{embed_type}'")
@@ -69,8 +72,9 @@ async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: Emb
             )
         )
 
-    client.insert_entities(new_entities)
-    logger.success(f"Inserted {len(new_entities)} chunks into Milvus (embed_type='{embed_type}')")
+    entity_ids = client.insert_entities(new_entities)
+    logger.success(f"Inserted {len(entity_ids)} chunks into Milvus (embed_type='{embed_type}'), IDs: {entity_ids}")
+    return entity_ids
 
 
 def delete_document_chunks_by_ids(entity_ids: list[int]) -> None:

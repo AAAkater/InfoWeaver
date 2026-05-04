@@ -53,7 +53,7 @@ class MilvusDB:
             dim=settings.MILVUS_DIM,
         )
         schema.add_field(field_name="sparse_vector", datatype=DataType.SPARSE_FLOAT_VECTOR)
-        schema.add_field(field_name="content", datatype=DataType.VARCHAR, max_length=512)
+        schema.add_field(field_name="content", datatype=DataType.VARCHAR, max_length=65535)
         schema.add_field(field_name="dataset_id", datatype=DataType.INT64)
         # Create indexes for both dense and sparse vectors, and dataset_id for efficient querying
         index_params = self.client.prepare_index_params()

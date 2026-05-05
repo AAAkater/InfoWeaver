@@ -1,18 +1,12 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
 	"io"
-	"net/http"
-	"server/config"
 	"server/db"
 	"server/models"
-	"time"
-
-	"gorm.io/gorm"
 )
 
 var ChatServiceApp = new(ChatService)
@@ -80,36 +74,12 @@ func (this *ChatService) DeleteAllChatMessagesBySessionID(ctx context.Context, s
 	return err
 }
 
-// chatStreamHTTPClient is a dedicated HTTP client for chat streaming requests.
-// It uses a longer timeout than the default AIDocService client because SSE streams can be long-lived.
-var chatStreamHTTPClient = &http.Client{
-	Timeout: 5 * time.Minute,
-}
-
 // SendChatStreamToAIServer sends a chat streaming request to the AI server and returns the response body reader.
 // The caller is responsible for closing the response body.
 func (this *ChatService) SendChatStreamToAIServer(ctx context.Context, req models.SendChatStreamReq) (io.ReadCloser, error) {
-	bodyBytes, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal chat stream request: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/ai/v1/chat/chat/stream", config.Settings.GetAIServerDSN())
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create chat stream request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := chatStreamHTTPClient.Do(httpReq)
+	stream, err := aiServerPostStream(ctx, aiPathChatStream, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call chat stream service: %w", err)
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		return nil, fmt.Errorf("chat stream service returned status %d", resp.StatusCode)
-	}
-
-	return resp.Body, nil
+	return stream, nil
 }

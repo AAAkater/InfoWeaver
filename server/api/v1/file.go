@@ -338,13 +338,7 @@ func (this *fileApi) embedDocument(ctx *echo.Context) error {
 	result, err := aiDocService.EmbedDocument(
 		ctx.Request().Context(),
 		args.ChunkIDs,
-		service.EmbeddingConfigInput{
-			ModelName:    args.EmbeddingConfig.ModelName,
-			BaseURL:      args.EmbeddingConfig.BaseURL,
-			APIKey:       args.EmbeddingConfig.APIKey,
-			ProviderType: args.EmbeddingConfig.ProviderType,
-			EmbedType:    args.EmbeddingConfig.EmbedType,
-		},
+		args.EmbeddingConfig,
 	)
 	if err != nil {
 		Logger.Errorf("Document embedding failed: %v", err)

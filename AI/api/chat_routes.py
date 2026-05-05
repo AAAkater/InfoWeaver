@@ -20,7 +20,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
     description="Chat with an AI agent that can retrieve documents, with streaming response",
 )
 async def agentic_rag_chat_stream(
-    request: ChatRequest,
+    req: ChatRequest,
     db: Session = Depends(get_db_session),
 ) -> StreamingResponse:
     """
@@ -44,29 +44,26 @@ async def agentic_rag_chat_stream(
     try:
         # Create AgenticRAG instance
         agentic_rag = AgenticRAG(
-            llm_config=request.llm_config,
-            dataset_id=request.dataset_id,
-            embedding_config=request.embedding_config,
-            retrieval_config=request.retrieval_config,
-            system_prompt=request.system_prompt,
+            llm_config=req.llm_config,
+            dataset_id=req.dataset_id,
+            embedding_config=req.embedding_config,
+            retrieval_config=req.retrieval_config,
+            system_prompt=req.system_prompt,
         )
 
-        # Stream agent response
         async def generate_stream() -> AsyncGenerator[bytes, None]:
             """Generate streaming response from agent."""
-            async for chunk in agentic_rag.stream(request.query):
+            async for chunk in agentic_rag.stream(req.query):
                 yield chunk.encode("utf-8")
-
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/plain",
-        )
-
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Agentic RAG chat stream failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chat failed: {e}",
         )
+        # Stream agent response
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/plain",
+    )

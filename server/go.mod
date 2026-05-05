@@ -7,6 +7,7 @@ require (
 	go.uber.org/zap v1.28.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
+	resty.dev/v3 v3.0.0-beta.6
 )
 
 require (
@@ -20,7 +21,6 @@ require (
 	github.com/minio/minio-go/v7 v7.1.0
 	github.com/ollama/ollama v0.23.0
 	github.com/openai/openai-go/v3 v3.34.0
-	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.19.0
 	github.com/sony/sonyflake v1.3.0
 	github.com/stretchr/testify v1.11.1
@@ -51,7 +51,6 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect

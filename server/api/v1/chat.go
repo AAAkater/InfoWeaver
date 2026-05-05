@@ -1,13 +1,19 @@
 package v1
 
 import (
+	"bufio"
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"server/config"
 	"server/middleware"
 	"server/models"
 	"server/models/common/response"
 	"server/service"
 	"server/utils"
+	"strings"
 
 	"github.com/labstack/echo/v5"
 )
@@ -27,13 +33,13 @@ type chatApi struct{}
 
 // sendChatMessage godoc
 //
-//	@Summary		Send Chat Message
-//	@Description	Send a new chat message in a session
+//	@Summary		Send Chat Message (Streaming)
+//	@Description	Send a new chat message in a session with streaming LLM response via SSE
 //	@Tags			Chat
 //	@Accept			json
-//	@Produce		json
-//	@Param			message	body		models.ChatMessageCreateReq	true	"Chat message creation request"
-//	@Success		200		{object}	response.ResponseBase[any]	"Message sent successfully"
+//	@Produce		text/event-stream
+//	@Param			message	body		models.SendChatStreamReq	true	"Chat stream request with LLM/RAG config"
+//	@Success		200		{object}	response.ResponseBase[any]	"SSE streaming response"
 //	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
 //	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
 //	@Failure		403		{object}	response.ResponseBase[any]	"Session not owned by user"
@@ -45,7 +51,7 @@ func (this *chatApi) sendChatMessage(ctx *echo.Context) error {
 	if err != nil {
 		return response.ErrInvalidToken()
 	}
-	args, err := utils.BindAndValidate[models.ChatMessageCreateReq](ctx)
+	args, err := utils.BindAndValidate[models.SendChatStreamReq](ctx)
 	if err != nil {
 		return response.BadRequestWithMsg(err.Error())
 	}
@@ -59,12 +65,81 @@ func (this *chatApi) sendChatMessage(ctx *echo.Context) error {
 		return response.ErrChatSessionNotFound()
 	}
 
-	// Create the chat message
-	if err := chatService.CreateChatMessage(ctx.Request().Context(), args.SessionID, args.Content, args.Role); err != nil {
+	// Save the user message first
+	if err := chatService.CreateChatMessage(ctx.Request().Context(), args.SessionID, args.Query, models.ROLE_USER); err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
-	return response.Ok(ctx)
+
+	// Call the AI streaming service
+	streamBody, err := chatService.SendChatStreamToAIServer(ctx.Request().Context(), *args)
+	if err != nil {
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+	defer streamBody.Close()
+
+	// Set up SSE response headers
+	w := ctx.Response()
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	// Stream chunks from AI server to client, accumulating the full response text
+	flusher, _ := w.(http.Flusher)
+	scanner := bufio.NewScanner(streamBody)
+	var fullResponse strings.Builder
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Forward the SSE line to the client
+		fmt.Fprintf(w, "%s\n", line)
+		if flusher != nil {
+			flusher.Flush()
+		}
+
+		// Check if the client has disconnected — save partial response and exit
+		select {
+		case <-ctx.Request().Context().Done():
+			assistantContent := fullResponse.String()
+			if assistantContent != "" {
+				if saveErr := chatService.CreateChatMessage(context.Background(), args.SessionID, assistantContent, models.ROLE_ASSISTANT); saveErr != nil {
+					Logger.Error("failed to save assistant message on disconnect: ", saveErr)
+				}
+			}
+			return nil
+		default:
+		}
+
+		// Parse SSE data lines to accumulate the assistant's response content
+		if after, ok := strings.CutPrefix(line, "data:"); ok {
+			data := after
+			data = strings.TrimSpace(data)
+			if data == "[DONE]" {
+				break
+			}
+			var chunk models.ChatStreamChunk
+			if err := json.Unmarshal([]byte(data), &chunk); err == nil {
+				fullResponse.WriteString(chunk.Content)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		Logger.Error("error reading chat stream: ", err)
+	}
+
+	// Save the assistant message to the database
+	assistantContent := fullResponse.String()
+	if assistantContent != "" {
+		if err := chatService.CreateChatMessage(ctx.Request().Context(), args.SessionID, assistantContent, models.ROLE_ASSISTANT); err != nil {
+			Logger.Error("failed to save assistant message: ", err)
+		}
+	}
+
+	return nil
 }
 
 // listSessionMessages godoc

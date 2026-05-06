@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"gorm.io/gorm"
 	"io"
 	"server/db"
 	"server/models"
+
+	"gorm.io/gorm"
 )
 
 var ChatServiceApp = new(ChatService)

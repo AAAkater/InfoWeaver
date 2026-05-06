@@ -278,13 +278,13 @@ func (this *providerApi) setModelEnable(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	switch err := providerService.SetModelEnable(ctx.Request().Context(), args.ID, currentUser.ID, args.ModelID, args.Enabled); {
+	switch err := providerService.SetModelEnable(ctx.Request().Context(), args.ProviderID, currentUser.ID, args.ModelID, args.Enabled); {
 	case err == nil:
 		return response.Ok(ctx)
 	case errors.Is(err, service.ErrNotFound):
 		return response.ErrProviderNotFound()
 	default:
-		Logger.Errorf("Failed to set model enable status for provider %d: %v", args.ID, err)
+		Logger.Errorf("Failed to set model enable status for provider %d: %v", args.ProviderID, err)
 		return response.ErrUnknownError()
 	}
 }

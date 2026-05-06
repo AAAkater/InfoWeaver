@@ -82,9 +82,9 @@ type ProviderModelsReq struct {
 
 // ProviderSetModelEnableReq represents a request to set enable status for a single model
 type ProviderSetModelEnableReq struct {
-	ID      uint   `json:"id" validate:"required"`       // Provider ID
-	ModelID string `json:"model_id" validate:"required"` // Model ID to enable/disable
-	Enabled bool   `json:"enabled" validate:"required"`  // Enable status
+	ProviderID uint   `json:"provider_id" validate:"required"` // Provider ID
+	ModelID    string `json:"model_id" validate:"required"`    // Model ID to enable/disable
+	Enabled    bool   `json:"enabled" validate:"required"`     // Enable status
 }
 
 // ModelInfo represents a model from a provider

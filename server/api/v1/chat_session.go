@@ -31,12 +31,12 @@ type chatSessionApi struct{}
 //	@Tags			ChatSession
 //	@Accept			json
 //	@Produce		json
-//	@Param			session	body		models.ChatSessionCreateReq	true	"Chat session creation request"
-//	@Success		200		{object}	response.ResponseBase[any]	"Chat session created successfully"
-//	@Failure		400		{object}	response.ResponseBase[any]	"Invalid request parameters"
-//	@Failure		401		{object}	response.ResponseBase[any]	"Invalid or expired token"
-//	@Failure		403		{object}	response.ResponseBase[any]	"Chat session title already exists"
-//	@Failure		500		{object}	response.ResponseBase[any]	"Internal server error"
+//	@Param			session	body		models.ChatSessionCreateReq				true	"Chat session creation request"
+//	@Success		200		{object}	response.ResponseBase[map[string]uint]	"Chat session created successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]				"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]				"Invalid or expired token"
+//	@Failure		403		{object}	response.ResponseBase[any]				"Chat session title already exists"
+//	@Failure		500		{object}	response.ResponseBase[any]				"Internal server error"
 //	@Router			/chat-session/create [post]
 func (this *chatSessionApi) createChatSession(ctx *echo.Context) error {
 	currentUser, err := utils.GetCurrentUser(ctx)
@@ -48,13 +48,14 @@ func (this *chatSessionApi) createChatSession(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
-	if err := chatSessionService.CreateNewChatSession(ctx.Request().Context(),
+	newID, err := chatSessionService.CreateNewChatSession(ctx.Request().Context(),
 		args.Title,
-		currentUser.ID); err != nil {
+		currentUser.ID)
+	if err != nil {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
-	return response.Ok(ctx)
+	return response.OkWithData(ctx, map[string]uint{"id": newID})
 }
 
 // listChatSessions godoc

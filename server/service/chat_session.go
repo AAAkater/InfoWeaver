@@ -12,13 +12,16 @@ var ChatSessionServiceApp = new(ChatSessionService)
 
 type ChatSessionService struct{}
 
-// CreateNewChatSession creates a new chat session
-func (this *ChatSessionService) CreateNewChatSession(ctx context.Context, title string, ownerID uint) error {
+// CreateNewChatSession creates a new chat session and returns its ID
+func (this *ChatSessionService) CreateNewChatSession(ctx context.Context, title string, ownerID uint) (uint, error) {
 	dbChatSession := models.ChatSession{
 		Title:   title,
 		OwnerID: ownerID,
 	}
-	return gorm.G[models.ChatSession](db.PgSqlDB).Create(ctx, &dbChatSession)
+	if err := gorm.G[models.ChatSession](db.PgSqlDB).Create(ctx, &dbChatSession); err != nil {
+		return 0, err
+	}
+	return dbChatSession.ID, nil
 }
 
 // GetChatSessionInfoByID retrieves a chat session by ID and owner ID

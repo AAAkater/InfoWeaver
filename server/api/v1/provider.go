@@ -247,6 +247,8 @@ func (this *providerApi) listModels(ctx *echo.Context) error {
 		return response.OkWithData(ctx, modelsResp)
 	case service.ErrNotFound:
 		return response.ErrProviderNotFound()
+	case service.ErrProviderAPIUnauthorized:
+		return response.ErrProviderAPIUnauthorized()
 	default:
 		Logger.Errorf("Failed to list models for provider %d: %v", args.ID, err)
 		return response.ErrUnknownError()

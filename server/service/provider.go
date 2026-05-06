@@ -240,6 +240,10 @@ func (this *ProviderService) listOpenAIModels(ctx context.Context, baseURL strin
 	// List all models
 	modelsList, err := client.Models.List(ctx)
 	if err != nil {
+		// Check if it's a 401 error (invalid API key or insufficient quota)
+		if openaiErr, ok := err.(*openai.Error); ok && openaiErr.StatusCode == http.StatusUnauthorized {
+			return nil, ErrProviderAPIUnauthorized
+		}
 		// Check if it's a 404 error from the provider API
 		if openaiErr, ok := err.(*openai.Error); ok && openaiErr.StatusCode == http.StatusNotFound {
 			apiModelMap := make(map[string]models.ModelInfo)
@@ -274,6 +278,10 @@ func (this *ProviderService) listAnthropicModels(ctx context.Context, baseURL st
 	// List models
 	page, err := client.Models.List(ctx, anthropic.ModelListParams{})
 	if err != nil {
+		// Check if it's a 401 error (invalid API key or insufficient quota)
+		if anthropicErr, ok := err.(*anthropic.Error); ok && anthropicErr.StatusCode == http.StatusUnauthorized {
+			return nil, ErrProviderAPIUnauthorized
+		}
 		// Check if it's a 404 error from the provider API
 		if anthropicErr, ok := err.(*anthropic.Error); ok && anthropicErr.StatusCode == http.StatusNotFound {
 			apiModelMap := make(map[string]models.ModelInfo)
@@ -315,6 +323,10 @@ func (this *ProviderService) listGeminiModels(ctx context.Context, baseURL, apiK
 	// List models - returns Page[Model] with Items array
 	modelsPage, err := client.Models.List(ctx, &genai.ListModelsConfig{})
 	if err != nil {
+		// Check if it's a 401 error (invalid API key or insufficient quota)
+		if genaiErr, ok := err.(*genai.APIError); ok && genaiErr.Code == http.StatusUnauthorized {
+			return nil, ErrProviderAPIUnauthorized
+		}
 		// Gemini SDK errors may not have StatusCode directly accessible,
 		// return empty apiModelMap and let mergeModels handle database models
 		apiModelMap := make(map[string]models.ModelInfo)
@@ -354,6 +366,10 @@ func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL strin
 	// List models
 	modelsList, err := client.List(ctx)
 	if err != nil {
+		// Check if it's a 401 error (invalid API key or insufficient quota)
+		if statusErr, ok := err.(api.StatusError); ok && statusErr.StatusCode == http.StatusUnauthorized {
+			return nil, ErrProviderAPIUnauthorized
+		}
 		// Check if it's a 404 error from the provider API
 		if statusErr, ok := err.(api.StatusError); ok && statusErr.StatusCode == http.StatusNotFound {
 			apiModelMap := make(map[string]models.ModelInfo)

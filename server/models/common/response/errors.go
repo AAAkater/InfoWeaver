@@ -69,6 +69,13 @@ func ErrProviderNotFound() error {
 	}
 }
 
+func ErrProviderAPIUnauthorized() error {
+	return &echo.HTTPError{
+		Code:    http.StatusUnauthorized,
+		Message: "Provider API key is invalid or has insufficient quota",
+	}
+}
+
 func ErrProviderNotOwned() error {
 	return &echo.HTTPError{
 		Code:    http.StatusForbidden,

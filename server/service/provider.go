@@ -349,7 +349,7 @@ func (this *ProviderService) listOllamaModels(ctx context.Context, baseURL strin
 	}
 
 	// Create Ollama client
-	client := api.NewClient(ollamaURL, nil)
+	client := api.NewClient(ollamaURL, http.DefaultClient)
 
 	// List models
 	modelsList, err := client.List(ctx)

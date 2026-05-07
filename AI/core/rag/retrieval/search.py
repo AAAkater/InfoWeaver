@@ -131,9 +131,11 @@ def hybrid_search(
         limit=limit,
         expr=final_expr,
     )
-    results = milvus_db.client.search(
+    ranker = WeightedRanker(sparse_weight, dense_weight)
+    results = milvus_db.client.hybrid_search(
         collection_name=settings.MILVUS_COLLECTION_NAME,
         reqs=[sparse_req, dense_req],
+        ranker=ranker,
         limit=limit,
         output_fields=["id", "content"],
     )

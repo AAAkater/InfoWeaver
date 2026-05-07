@@ -1,5 +1,7 @@
 """Pydantic models for document processing API."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -9,8 +11,8 @@ class EmbeddingModelConfig(BaseModel):
     model_name: str = Field(..., description="Embedding model name")
     base_url: str = Field(..., description="Base URL for embedding API")
     api_key: str | None = Field(None, description="API key for embedding (optional for Ollama)")
-    provider_type: str = Field(..., description="Embedding provider type: 'openai' or 'ollama'")
-    embed_type: str = Field(
+    provider_type: Literal["openai", "ollama"] = Field(..., description="Embedding provider type")
+    embed_type: Literal["dense", "sparse", "hybrid"] = Field(
         default="hybrid",
         description="Embedding type: 'dense' (dense only), 'sparse' (sparse only), 'hybrid' (both)",
     )

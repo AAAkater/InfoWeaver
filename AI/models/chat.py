@@ -28,8 +28,8 @@ class ModelConfig(BaseModel):
     api_key: str = Field(..., description="API key for the model provider")
     base_url: str = Field(..., description="Base URL for the model API")
     provider_type: str = Field(..., description="Provider type: 'openai', 'anthropic', 'ollama', etc")
-    sampling_params: SamplingParams = Field(
-        default_factory=SamplingParams, description="Sampling/generation parameters"
+    sampling_params: SamplingParams | None = Field(
+        default=None, description="Sampling/generation parameters (optional, uses defaults if not provided)"
     )
 
 

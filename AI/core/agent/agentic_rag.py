@@ -1,11 +1,14 @@
-"""Agentic RAG module using llama-index AgentWorkflow."""
+"""Agentic RAG module using llama-index FunctionAgent."""
 
 from typing import AsyncGenerator
 
 from llama_index.core.agent import FunctionAgent
-from llama_index.core.agent.workflow import AgentWorkflow
-from llama_index.core.tools import FunctionTool
+from llama_index.core.agent.workflow.workflow_events import (
+    AgentOutput,
+    AgentStream,
+)
 from llama_index.llms.openai_like import OpenAILike
+from workflows.events import StopEvent
 
 from core.tools import create_retrieval_tool
 from models.chat import ModelConfig, RetrievalConfig, SamplingParams
@@ -90,44 +93,97 @@ When answering questions, you should:
         )
 
     async def query(self, query: str) -> str:
-        """
-        Run agent query and return response content.
+        """Run agent query and return the full response content.
 
         Args:
-            query: User query string
+            query: User query string.
 
         Returns:
-            Response content string
+            The complete agent response as a string.
         """
         logger.info(f"Running agent for query: {query}")
-        response = await self.workflow.run(user_msg=query)
+        handler = self.workflow.run(user_msg=query)
 
-        # Extract response content
-        return str(response.response) if hasattr(response, "response") else str(response)
+        # Collect all streamed content and final result.
+        final_text_parts: list[str] = []
+        result = None
+        async for event in handler.stream_events():
+            if isinstance(event, AgentStream):
+                # Prefer the accumulated response content (agent may switch
+                # between thinking and regular text across chunks).
+                if event.response:
+                    final_text_parts = [event.response]
+                elif event.delta:
+                    final_text_parts.append(event.delta)
+            elif isinstance(event, StopEvent):
+                # Extract final answer from the terminal event.
+                result = event.result
+                if isinstance(result, AgentOutput):
+                    final_text_parts = [_extract_agent_text(result)]
+
+        if final_text_parts:
+            return "".join(final_text_parts)
+        if result is not None:
+            return str(result)
+        return ""
 
     async def stream(self, query: str) -> AsyncGenerator[str, None]:
-        """
-        Stream agent response for query.
+        """Stream agent response delta-by-delta.
+
+        Yields token-level deltas as they are generated, including thinking
+        content for models that support extended thinking (e.g. DeepSeek-R1,
+        Qwen3).
 
         Args:
-            query: User query string
+            query: User query string.
 
         Yields:
-            Response chunks as strings
+            Text chunks (deltas, thinking_deltas, or final response text).
         """
         logger.info(f"Streaming agent response for query: {query}")
 
         try:
-            response_stream = await self.workflow.run(user_msg=query)
-
-            for response in response_stream:
-                if hasattr(response, "delta") and response.delta:
-                    yield response.delta
-                elif hasattr(response, "response"):
-                    content = str(response.response)
-                    if content:
-                        yield content
+            handler = self.workflow.run(user_msg=query)
+            async for event in handler.stream_events():
+                if isinstance(event, AgentStream):
+                    # Yield regular text deltas.
+                    if event.delta:
+                        yield event.delta
+                    # Yield thinking deltas for extended-thinking models.
+                    if event.thinking_delta:
+                        yield event.thinking_delta
+                elif isinstance(event, StopEvent):
+                    # Graceful termination — nothing more to stream.
+                    result = event.result
+                    if isinstance(result, AgentOutput):
+                        text = _extract_agent_text(result)
+                        if text:
+                            yield text
+                    return
 
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")
             yield f"\n[Error: {e}]"
+
+
+def _extract_agent_text(output: AgentOutput) -> str:
+    """Extract human-readable text from an AgentOutput.
+
+    Handles ChatMessage objects that may contain TextBlock and/or
+    ThinkingBlock content blocks.
+    """
+    response = output.response
+    text_parts: list[str] = []
+
+    if hasattr(response, "blocks") and response.blocks:
+        for block in response.blocks:
+            if hasattr(block, "text") and block.text:
+                text_parts.append(block.text)
+            elif hasattr(block, "content") and block.content:
+                text_parts.append(block.content)
+    elif hasattr(response, "content") and response.content:
+        text_parts.append(response.content)
+    else:
+        text_parts.append(str(response))
+
+    return "\n".join(text_parts)

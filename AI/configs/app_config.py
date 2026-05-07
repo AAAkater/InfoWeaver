@@ -83,8 +83,6 @@ class Settings(BaseSettings):
     # OLLAMA
     OLLAMA_HOST: str = "localhost"
     OLLAMA_PORT: int = 11434
-    OLLAMA_DENSE_EMBEDDING_MODEL: str = "qwen3-embedding:0.6b"
-    OLLAMA_SPARSE_EMBEDDING_MODEL: str = "bge-m3:latest"
 
     @computed_field
     @property

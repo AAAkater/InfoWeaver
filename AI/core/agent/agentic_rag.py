@@ -3,9 +3,12 @@
 from typing import AsyncGenerator
 
 from llama_index.core.agent import FunctionAgent
-from llama_index.core.agent.workflow.workflow_events import (
+from llama_index.core.agent.workflow import (
+    AgentInput,
     AgentOutput,
     AgentStream,
+    ToolCall,
+    ToolCallResult,
 )
 from llama_index.llms.openai_like import OpenAILike
 from workflows.events import StopEvent
@@ -92,41 +95,6 @@ When answering questions, you should:
             verbose=True,
         )
 
-    async def query(self, query: str) -> str:
-        """Run agent query and return the full response content.
-
-        Args:
-            query: User query string.
-
-        Returns:
-            The complete agent response as a string.
-        """
-        logger.info(f"Running agent for query: {query}")
-        handler = self.workflow.run(user_msg=query)
-
-        # Collect all streamed content and final result.
-        final_text_parts: list[str] = []
-        result = None
-        async for event in handler.stream_events():
-            if isinstance(event, AgentStream):
-                # Prefer the accumulated response content (agent may switch
-                # between thinking and regular text across chunks).
-                if event.response:
-                    final_text_parts = [event.response]
-                elif event.delta:
-                    final_text_parts.append(event.delta)
-            elif isinstance(event, StopEvent):
-                # Extract final answer from the terminal event.
-                result = event.result
-                if isinstance(result, AgentOutput):
-                    final_text_parts = [_extract_agent_text(result)]
-
-        if final_text_parts:
-            return "".join(final_text_parts)
-        if result is not None:
-            return str(result)
-        return ""
-
     async def stream(self, query: str) -> AsyncGenerator[str, None]:
         """Stream agent response delta-by-delta.
 
@@ -145,21 +113,32 @@ When answering questions, you should:
         try:
             handler = self.workflow.run(user_msg=query)
             async for event in handler.stream_events():
-                if isinstance(event, AgentStream):
-                    # Yield regular text deltas.
-                    if event.delta:
-                        yield event.delta
-                    # Yield thinking deltas for extended-thinking models.
-                    if event.thinking_delta:
-                        yield event.thinking_delta
-                elif isinstance(event, StopEvent):
-                    # Graceful termination — nothing more to stream.
-                    result = event.result
-                    if isinstance(result, AgentOutput):
-                        text = _extract_agent_text(result)
-                        if text:
-                            yield text
-                    return
+                match event:
+                    case AgentInput():
+                        logger.debug(f"Agent input | agent={event.current_agent_name} | input={event.input}")
+                    case AgentStream():
+                        if event.delta:
+                            yield event.delta
+                        if event.thinking_delta:
+                            yield event.thinking_delta
+                    case AgentOutput():
+                        logger.debug(
+                            f"Agent output | response={event.response} "
+                            f"| tool_calls={event.tool_calls} | raw={event.raw}"
+                        )
+                    case ToolCall():
+                        logger.debug(f"Tool call | tool_name={event.tool_name} | tool_kwargs={event.tool_kwargs}")
+                    case ToolCallResult():
+                        logger.debug(
+                            f"Tool call result | tool_name={event.tool_name} | tool_kwargs={event.tool_kwargs} | tool_output={event.tool_output}"
+                        )
+                    case StopEvent():
+                        # Graceful termination — nothing more to stream.
+                        logger.debug("Streaming completed successfully.")
+                        logger.debug(f"Final agent output: {event.result}")
+                        return
+                    case _:
+                        logger.debug(f"Unknown event type: {type(event).__name__}")
 
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")

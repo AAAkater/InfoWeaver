@@ -62,6 +62,22 @@ export function updateUserProfile(data: { username: string; email: string }) {
   });
 }
 
+/** Update user avatar */
+export function updateUserAvatar(avatar: File) {
+  const formData = new FormData();
+
+  formData.append('avatar', avatar);
+
+  return request<Api.Auth.UpdateAvatarResponse>({
+    url: '/user/avatar',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
 /** Update user password */
 export function updateUserPassword(data: { first_password: string; second_password: string }) {
   return request({

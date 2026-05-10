@@ -19,8 +19,13 @@ declare namespace Api {
       id: string;
       username: string;
       email: string;
+      avatar_url?: string;
       roles: string[];
       buttons: string[];
+    }
+
+    interface UpdateAvatarResponse {
+      avatar_url: string;
     }
   }
 }

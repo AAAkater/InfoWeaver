@@ -1,31 +1,8 @@
 {
-  "name": "soybean-admin",
+  "name": "infoweaver-frontend",
   "type": "module",
-  "version": "2.0.2",
-  "description": "A fresh and elegant admin template, based on Vue3、Vite7、TypeScript、NaiveUI and UnoCSS. 一个基于Vue3、Vite7、TypeScript、NaiveUI and UnoCSS的清新优雅的中后台模版。",
-  "author": {
-    "name": "Soybean",
-    "email": "soybeanjs@outlook.com",
-    "url": "https://github.com/soybeanjs"
-  },
+  "version": "0.0.1",
   "license": "MIT",
-  "homepage": "https://github.com/soybeanjs/soybean-admin",
-  "repository": {
-    "url": "https://github.com/soybeanjs/soybean-admin.git"
-  },
-  "bugs": {
-    "url": "https://github.com/soybeanjs/soybean-admin/issues"
-  },
-  "keywords": [
-    "Vue3 admin ",
-    "vue-admin-template",
-    "Vite7",
-    "TypeScript",
-    "naive-ui",
-    "naive-ui-admin",
-    "ant-design-vue v4",
-    "UnoCSS"
-  ],
   "engines": {
     "node": ">=20.19.0",
     "pnpm": ">=10.5.0"
@@ -104,6 +81,7 @@
     "@unocss/eslint-config": "66.5.10",
     "@unocss/preset-icons": "66.5.10",
     "@unocss/preset-uno": "66.5.10",
+    "@unocss/preset-wind3": "^66.6.8",
     "@unocss/transformer-directives": "66.5.10",
     "@unocss/transformer-variant-group": "66.5.10",
     "@unocss/vite": "66.5.10",
@@ -133,6 +111,5 @@
   "simple-git-hooks": {
     "commit-msg": "pnpm sa git-commit-verify",
     "pre-commit": "pnpm typecheck && pnpm lint && git diff --exit-code"
-  },
-  "website": "https://admin.soybeanjs.cn"
+  }
 }

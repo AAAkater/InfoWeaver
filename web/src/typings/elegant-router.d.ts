@@ -41,6 +41,7 @@ declare module "@elegant-router/types" {
     "alova_scenes": "/alova/scenes";
     "chat": "/chat";
     "dataset": "/dataset";
+    "dataset-chunks": "/dataset-chunks/:id";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -152,6 +153,7 @@ declare module "@elegant-router/types" {
     | "alova"
     | "chat"
     | "dataset"
+    | "dataset-chunks"
     | "function"
     | "home"
     | "iframe-page"
@@ -189,6 +191,7 @@ declare module "@elegant-router/types" {
     | "alova_request"
     | "alova_scenes"
     | "chat"
+    | "dataset-chunks"
     | "dataset"
     | "function_hide-child_one"
     | "function_hide-child_three"

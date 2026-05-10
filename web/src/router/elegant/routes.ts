@@ -108,6 +108,18 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'dataset-chunks',
+    path: '/dataset-chunks/:id',
+    component: 'layout.base$view.dataset-chunks',
+    meta: {
+      title: 'dataset-chunks',
+      i18nKey: 'route.dataset-chunks',
+      hideInMenu: true,
+      activeMenu: 'dataset'
+    },
+    props: true
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',

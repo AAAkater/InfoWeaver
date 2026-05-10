@@ -24,12 +24,13 @@ function formatTime(isoString: string) {
   <NCard hoverable size="huge">
     <NSpace vertical>
       <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%">
-        <div style="flex: 1">
+        <div style="flex: 1; cursor: pointer" @click="emit('select', 'view', props.dataset)">
           <NAvatar
             size="large"
             :style="{
               color: 'black',
-              backgroundColor: '#E0F2FE'
+              backgroundColor: '#E0F2FE',
+              cursor: 'pointer'
             }"
           >
             {{ props.dataset.icon || '🤖' }}
@@ -44,17 +45,17 @@ function formatTime(isoString: string) {
         </div>
 
         <div style="flex-shrink: 0; display: flex; gap: 8px">
-          <NButton size="small" secondary circle @click="emit('select', 'view', props.dataset)">
+          <NButton size="small" secondary circle @click.stop="emit('select', 'view', props.dataset)">
             <NIcon>
               <EyeIcon />
             </NIcon>
           </NButton>
-          <NButton size="small" secondary circle @click="emit('select', 'edit', props.dataset)">
+          <NButton size="small" secondary circle @click.stop="emit('select', 'edit', props.dataset)">
             <NIcon>
               <EditIcon />
             </NIcon>
           </NButton>
-          <NButton size="small" tertiary circle type="error" @click="emit('select', 'delete', props.dataset)">
+          <NButton size="small" tertiary circle type="error" @click.stop="emit('select', 'delete', props.dataset)">
             <NIcon>
               <DeleteIcon />
             </NIcon>

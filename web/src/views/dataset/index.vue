@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { useDialog, useMessage } from 'naive-ui';
-import { createDataset, deleteDataset, getDatasetById, getDatasets, updateDataset } from '@/service/api/dataset';
+import { useRouter } from 'vue-router';
+import { createDataset, deleteDataset, getDatasets, updateDataset } from '@/service/api/dataset';
 import DatasetCard from './modules/dataset-card.vue';
 import DatasetCreateCard from './modules/dataset-create-card.vue';
-import DatasetDetailModal from './modules/dataset-detail-modal.vue';
 import DatasetFormModal from './modules/dataset-form-modal.vue';
 import DatasetSearch from './modules/dataset-search.vue';
 
 const dialog = useDialog();
 const message = useMessage();
+const router = useRouter();
 
 const loading = ref(false);
-const showDetailModal = ref(false);
-const detailDataset = ref<Api.Dataset.DatasetItem | null>(null);
 const showModal = ref(false);
 const isEdit = ref(false);
 const searchKey = ref('');
@@ -77,15 +76,13 @@ async function fetchDatasets() {
   }
 }
 
-async function handleViewDetail(datasetId: number) {
-  const { response: res } = await getDatasetById(datasetId);
-
-  if (res?.data?.code === 0) {
-    detailDataset.value = res.data.data;
-    showDetailModal.value = true;
-  } else {
-    message.error(res?.data?.msg || '获取详情失败');
-  }
+function handleViewChunks(datasetId: number) {
+  router.push({
+    name: 'dataset-chunks',
+    params: {
+      id: datasetId
+    }
+  });
 }
 
 async function handleCreateDataset(md: Api.Dataset.FormModel) {
@@ -126,7 +123,7 @@ async function handleEditDataset(md: Api.Dataset.FormModel) {
 function handleSelect(key: string, dataset: Api.Dataset.DatasetItem) {
   switch (key) {
     case 'view':
-      handleViewDetail(dataset.id);
+      handleViewChunks(dataset.id);
       break;
     case 'edit':
       isEdit.value = true;
@@ -176,8 +173,6 @@ onMounted(() => {
     </NSpin>
 
     <DatasetFormModal v-model:show="showModal" :model="model" :is-edit="isEdit" @submit="handleSubmit" />
-
-    <DatasetDetailModal v-model:show="showDetailModal" :dataset="detailDataset" />
   </NSpace>
 </template>
 

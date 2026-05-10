@@ -19,6 +19,18 @@ export function getDatasetById(datasetId: number) {
   });
 }
 
+/** List chunks for a dataset */
+export function getDatasetChunks(datasetId: number, page = 1, pageSize = 20) {
+  return request<Api.Dataset.Response<Api.Dataset.DatasetChunkListResp>>({
+    url: `/dataset/${datasetId}/chunk`,
+    method: 'get',
+    params: {
+      page,
+      page_size: pageSize
+    }
+  });
+}
+
 /** Create a new dataset */
 export function createDataset(formModel: Api.Dataset.FormModel) {
   return request<Api.Dataset.Response>({

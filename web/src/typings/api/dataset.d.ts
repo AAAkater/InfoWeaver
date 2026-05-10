@@ -44,6 +44,24 @@ declare namespace Api {
       total: number;
     }
 
+    /** Dataset chunk info */
+    interface ChunkInfo {
+      chunk_metadata: Record<string, string>;
+      content: string;
+      created_at: string;
+      file_id: number;
+      id: number;
+      status: string;
+      updated_at: string;
+      vector_id: string;
+    }
+
+    /** Dataset chunk list response */
+    interface DatasetChunkListResp {
+      chunks: ChunkInfo[];
+      total: number;
+    }
+
     /** Common response wrapper */
     interface Response<T = any> {
       code: number;

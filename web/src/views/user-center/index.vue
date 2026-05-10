@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { useMessage } from 'naive-ui';
-import { updateUserPassword, updateUserProfile } from '@/service/api/auth';
+import { updateUserAvatar, updateUserPassword, updateUserProfile } from '@/service/api/auth';
 import { useAuthStore } from '@/store/modules/auth';
 
 const authStore = useAuthStore();
 const message = useMessage();
+const avatarInputRef = ref<HTMLInputElement | null>(null);
+const isUploadingAvatar = ref(false);
 
 // 用户名编辑
 const isEditingUsername = ref(false);
@@ -29,6 +31,10 @@ const passwordForm = reactive({
 });
 const isLoadingPassword = ref(false);
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return (error as { response?: { data?: { msg?: string } } })?.response?.data?.msg || fallback;
+}
+
 async function handleUpdateUsername() {
   if (!usernameForm.username.trim()) {
     message.error('用户名不能为空');
@@ -37,17 +43,17 @@ async function handleUpdateUsername() {
 
   isLoadingUsername.value = true;
 
-  const { response: res } = await updateUserProfile({
+  const { error } = await updateUserProfile({
     username: usernameForm.username,
     email: authStore.userInfo.email
   });
 
-  if (res.data.code === 0) {
+  if (!error) {
     message.success('用户名更新成功');
     authStore.userInfo.username = usernameForm.username;
     isEditingUsername.value = false;
   } else {
-    message.error(res.data.msg || '更新失败');
+    message.error(getErrorMessage(error, '更新失败'));
   }
 
   isLoadingUsername.value = false;
@@ -61,17 +67,17 @@ async function handleUpdateEmail() {
 
   isLoadingEmail.value = true;
 
-  const { response: res } = await updateUserProfile({
+  const { error } = await updateUserProfile({
     username: authStore.userInfo.username,
     email: emailForm.email
   });
 
-  if (res.data.code === 0) {
+  if (!error) {
     message.success('邮箱更新成功');
     authStore.userInfo.email = emailForm.email;
     isEditingEmail.value = false;
   } else {
-    message.error(res.data.msg || '更新失败');
+    message.error(getErrorMessage(error, '更新失败'));
   }
 
   isLoadingEmail.value = false;
@@ -93,18 +99,18 @@ async function handleUpdatePassword() {
 
   isLoadingPassword.value = true;
 
-  const { response: res } = await updateUserPassword({
+  const { error } = await updateUserPassword({
     first_password: passwordForm.first_password,
     second_password: passwordForm.second_password
   });
 
-  if (res.data.code === 0) {
+  if (!error) {
     message.success('密码修改成功');
     passwordForm.first_password = '';
     passwordForm.second_password = '';
     isEditingPassword.value = false;
   } else {
-    message.error(res.data.msg || '密码修改失败');
+    message.error(getErrorMessage(error, '密码修改失败'));
   }
 
   isLoadingPassword.value = false;
@@ -125,6 +131,40 @@ function cancelEditPassword() {
   passwordForm.first_password = '';
   passwordForm.second_password = '';
 }
+
+function triggerAvatarUpload() {
+  avatarInputRef.value?.click();
+}
+
+async function handleAvatarFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    message.error('请选择图片文件');
+    input.value = '';
+    return;
+  }
+
+  isUploadingAvatar.value = true;
+
+  const { data, error } = await updateUserAvatar(file);
+
+  if (!error) {
+    authStore.userInfo.avatar_url = data.avatar_url;
+
+    message.success('头像更新成功');
+  } else {
+    message.error(getErrorMessage(error, '头像更新失败'));
+  }
+
+  input.value = '';
+  isUploadingAvatar.value = false;
+}
 </script>
 
 <template>
@@ -133,12 +173,24 @@ function cancelEditPassword() {
     <NCard class="profile-card" :bordered="false" :segmented="false">
       <div class="user-header">
         <div class="flex items-center gap-16px">
-          <SoybeanAvatar class="size-80px!" />
+          <div class="avatar-wrapper" @click="triggerAvatarUpload">
+            <img
+              v-if="authStore.userInfo.avatar_url"
+              :src="authStore.userInfo.avatar_url"
+              alt="avatar"
+              class="avatar-image"
+            />
+            <SoybeanAvatar v-else class="size-80px!" />
+            <div class="avatar-mask">
+              <span>{{ isUploadingAvatar ? '上传中' : '更换头像' }}</span>
+            </div>
+          </div>
           <div class="flex-1">
             <h2 class="mb-4px text-18px font-600">{{ authStore.userInfo.username }}</h2>
             <p class="text-13px text-gray-500">{{ authStore.userInfo.email }}</p>
           </div>
         </div>
+        <input ref="avatarInputRef" type="file" accept="image/*" class="hidden" @change="handleAvatarFileChange" />
       </div>
     </NCard>
 
@@ -184,7 +236,13 @@ function cancelEditPassword() {
             <NButton text type="primary" class="edit-btn" @click="isEditingEmail = true">修改</NButton>
           </div>
           <div v-else class="setting-form">
-            <NInput v-model:value="emailForm.email" type="text" placeholder="请输入新邮箱" clearable class="form-input" />
+            <NInput
+              v-model:value="emailForm.email"
+              type="text"
+              placeholder="请输入新邮箱"
+              clearable
+              class="form-input"
+            />
             <span class="form-tip">邮箱修改会在下次登录时需要验证</span>
             <div class="form-actions">
               <NButton type="primary" :loading="isLoadingEmail" size="small" @click="handleUpdateEmail">保存</NButton>
@@ -206,10 +264,22 @@ function cancelEditPassword() {
             <NButton text type="primary" class="edit-btn" @click="isEditingPassword = true">修改</NButton>
           </div>
           <div v-else class="setting-form">
-            <NInput v-model:value="passwordForm.first_password" type="password" placeholder="请输入新密码（至少6位）" clearable
-              show-password-on="click" class="form-input" />
-            <NInput v-model:value="passwordForm.second_password" type="password" placeholder="请确认新密码" clearable
-              show-password-on="click" class="form-input" />
+            <NInput
+              v-model:value="passwordForm.first_password"
+              type="password"
+              placeholder="请输入新密码（至少6位）"
+              clearable
+              show-password-on="click"
+              class="form-input"
+            />
+            <NInput
+              v-model:value="passwordForm.second_password"
+              type="password"
+              placeholder="请确认新密码"
+              clearable
+              show-password-on="click"
+              class="form-input"
+            />
             <div class="form-actions">
               <NButton type="primary" :loading="isLoadingPassword" size="small" @click="handleUpdatePassword">
                 保存
@@ -236,6 +306,39 @@ function cancelEditPassword() {
 
 .user-header {
   padding: 24px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.avatar-wrapper:hover .avatar-mask {
+  opacity: 1;
 }
 
 .section-header {

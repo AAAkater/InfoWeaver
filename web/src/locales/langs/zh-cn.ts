@@ -239,7 +239,6 @@ const local: App.I18n.Schema = {
     document_antd: 'Ant Design Vue文档',
     document_alova: 'Alova文档',
     'user-center': '个人中心',
-    about: '关于',
     provider: '提供商',
     function: '系统功能',
     alova: 'alova示例',
@@ -352,19 +351,6 @@ const local: App.I18n.Schema = {
         title: '绑定微信'
       }
     },
-    about: {
-      title: '关于',
-      introduction: `SoybeanAdmin 是一个优雅且功能强大的后台管理模板，基于最新的前端技术栈，包括 Vue3, Vite7, TypeScript, Pinia 和 UnoCSS。它内置了丰富的主题配置和组件，代码规范严谨，实现了自动化的文件路由系统。此外，它还采用了基于 ApiFox 的在线Mock数据方案。SoybeanAdmin 为您提供了一站式的后台管理解决方案，无需额外配置，开箱即用。同样是一个快速学习前沿技术的最佳实践。`,
-      projectInfo: {
-        title: '项目信息',
-        version: '版本',
-        latestBuildTime: '最新构建时间',
-        githubLink: 'Github 地址',
-        previewLink: '预览地址'
-      },
-      prdDep: '生产依赖',
-      devDep: '开发依赖'
-    },
     home: {
       branchDesc:
         '为了方便大家开发和更新合并，我们对main分支的代码进行了精简，只保留了首页菜单，其余内容已移至example分支进行维护。预览地址显示的内容即为example分支的内容。',
@@ -399,10 +385,10 @@ const local: App.I18n.Schema = {
         tabOperate: {
           title: '标签页操作',
           addTab: '添加标签页',
-          addTabDesc: '跳转到关于页面',
+          addTabDesc: '跳转到首页',
           closeTab: '关闭标签页',
           closeCurrentTab: '关闭当前标签页',
-          closeAboutTab: '关闭"关于"标签页',
+          closeAboutTab: '关闭"首页"标签页',
           addMultiTab: '添加多标签页',
           addMultiTabDesc1: '跳转到多标签页页面',
           addMultiTabDesc2: '跳转到多标签页页面(带有查询参数)'

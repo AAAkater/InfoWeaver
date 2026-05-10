@@ -241,7 +241,6 @@ const local: App.I18n.Schema = {
     document_antd: 'Ant Design Vue Document',
     document_alova: 'Alova Document',
     'user-center': 'User Center',
-    about: 'About',
     provider: 'Provider',
     chat: 'Chat',
     dataset: 'Dataset',
@@ -356,19 +355,6 @@ const local: App.I18n.Schema = {
         title: 'Bind WeChat'
       }
     },
-    about: {
-      title: 'About',
-      introduction: `SoybeanAdmin is an elegant and powerful admin template, based on the latest front-end technology stack, including Vue3, Vite7, TypeScript, Pinia and UnoCSS. It has built-in rich theme configuration and components, strict code specifications, and an automated file routing system. In addition, it also uses the online mock data solution based on ApiFox. SoybeanAdmin provides you with a one-stop admin solution, no additional configuration, and out of the box. It is also a best practice for learning cutting-edge technologies quickly.`,
-      projectInfo: {
-        title: 'Project Info',
-        version: 'Version',
-        latestBuildTime: 'Latest Build Time',
-        githubLink: 'Github Link',
-        previewLink: 'Preview Link'
-      },
-      prdDep: 'Production Dependency',
-      devDep: 'Development Dependency'
-    },
     home: {
       branchDesc:
         'For the convenience of everyone in developing and updating the merge, we have streamlined the code of the main branch, only retaining the homepage menu, and the rest of the content has been moved to the example branch for maintenance. The preview address displays the content of the example branch.',
@@ -403,10 +389,10 @@ const local: App.I18n.Schema = {
         tabOperate: {
           title: 'Tab Operation',
           addTab: 'Add Tab',
-          addTabDesc: 'To about page',
+          addTabDesc: 'To home page',
           closeTab: 'Close Tab',
           closeCurrentTab: 'Close Current Tab',
-          closeAboutTab: 'Close "About" Tab',
+          closeAboutTab: 'Close "Home" Tab',
           addMultiTab: 'Add Multi Tab',
           addMultiTabDesc1: 'To MultiTab page',
           addMultiTabDesc2: 'To MultiTab page(with query params)'

@@ -28,13 +28,13 @@ function resetTabLabel() {
       class="card-wrapper"
     >
       <NDivider title-placement="left">{{ $t('page.function.tab.tabOperate.addTab') }}</NDivider>
-      <NButton @click="routerPushByKey('about')">{{ $t('page.function.tab.tabOperate.addTabDesc') }}</NButton>
+      <NButton @click="routerPushByKey('home')">{{ $t('page.function.tab.tabOperate.addTabDesc') }}</NButton>
       <NDivider title-placement="left">{{ $t('page.function.tab.tabOperate.closeTab') }}</NDivider>
       <NSpace>
         <NButton @click="tabStore.removeActiveTab">
           {{ $t('page.function.tab.tabOperate.closeCurrentTab') }}
         </NButton>
-        <NButton @click="tabStore.removeTabByRouteName('about')">
+        <NButton @click="tabStore.removeTabByRouteName('home')">
           {{ $t('page.function.tab.tabOperate.closeAboutTab') }}
         </NButton>
       </NSpace>

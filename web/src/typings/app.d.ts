@@ -527,19 +527,6 @@ declare namespace App {
             title: string;
           };
         };
-        about: {
-          title: string;
-          introduction: string;
-          projectInfo: {
-            title: string;
-            version: string;
-            latestBuildTime: string;
-            githubLink: string;
-            previewLink: string;
-          };
-          prdDep: string;
-          devDep: string;
-        };
         home: {
           branchDesc: string;
           greeting: string;

@@ -35,12 +35,12 @@ declare module "@elegant-router/types" {
     "403": "/403";
     "404": "/404";
     "500": "/500";
-    "about": "/about";
     "alova": "/alova";
     "alova_request": "/alova/request";
     "alova_scenes": "/alova/scenes";
     "chat": "/chat";
     "dataset": "/dataset";
+    "dataset_chunks": "/dataset/chunks/:id";
     "dataset-chunks": "/dataset-chunks/:id";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
@@ -149,7 +149,6 @@ declare module "@elegant-router/types" {
     | "403"
     | "404"
     | "500"
-    | "about"
     | "alova"
     | "chat"
     | "dataset"
@@ -187,11 +186,11 @@ declare module "@elegant-router/types" {
     | "500"
     | "iframe-page"
     | "login"
-    | "about"
     | "alova_request"
     | "alova_scenes"
     | "chat"
     | "dataset-chunks"
+    | "dataset_chunks"
     | "dataset"
     | "function_hide-child_one"
     | "function_hide-child_three"

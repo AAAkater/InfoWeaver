@@ -737,7 +737,6 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'provider',
       i18nKey: 'route.provider',
-      icon: 'healthicons:provider-fst-24px',
       order: 4
     }
   },

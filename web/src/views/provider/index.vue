@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, h, onMounted, reactive, ref, watch } from 'vue';
 import type { Component } from 'vue';
-import { NIcon, NSwitch, useDialog, useMessage } from 'naive-ui';
+import type { DataTableColumns } from 'naive-ui';
+import { NButton, NIcon, NSwitch, NTag, useDialog, useMessage } from 'naive-ui';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
@@ -9,7 +10,6 @@ import {
   Add12Filled,
   Delete16Regular as DeleteIcon,
   Edit24Regular as EditIcon,
-  MoreHorizontal28Regular,
   Search48Filled,
   Server24Regular
 } from '@vicons/fluent';
@@ -41,6 +41,7 @@ const showAddModelModal = ref(false);
 const currentProvider = ref<Api.Provider.ProviderInfo | null>(null);
 const providerModels = ref<Api.Provider.ModelInfo[]>([]);
 const newModelName = ref('');
+const editApiKeyDisplay = ref('********');
 
 // Pagination
 const currentPage = ref(1);
@@ -79,22 +80,95 @@ function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) });
 }
 
-// Dropdown options
-const dropdownOptions = [
+const tableColumns: DataTableColumns<Api.Provider.ProviderInfo> = [
   {
-    label: '编辑',
-    key: 'edit',
-    icon: renderIcon(EditIcon)
+    title: '名称',
+    key: 'name',
+    width: 180
   },
   {
-    label: '模型列表',
-    key: 'models',
-    icon: renderIcon(Server24Regular)
+    title: 'Base URL',
+    key: 'base_url',
+    minWidth: 280,
+    ellipsis: {
+      tooltip: true
+    }
   },
   {
-    label: '删除',
-    key: 'delete',
-    icon: renderIcon(DeleteIcon)
+    title: '模式',
+    key: 'mode',
+    width: 150,
+    render(row) {
+      return h(
+        NTag,
+        {
+          size: 'small',
+          type: 'info',
+          bordered: false
+        },
+        { default: () => row.mode }
+      );
+    }
+  },
+  {
+    title: '创建时间',
+    key: 'created_at',
+    width: 180,
+    render(row) {
+      return dayjs(row.created_at).format('YYYY-MM-DD HH:mm');
+    }
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 220,
+    render(row) {
+      return h(
+        'div',
+        {
+          style: 'display: flex; gap: 8px; flex-wrap: wrap;'
+        },
+        [
+          h(
+            NButton,
+            {
+              size: 'small',
+              secondary: true,
+              onClick: () => handleSelect('edit', row)
+            },
+            {
+              default: () => '编辑',
+              icon: renderIcon(EditIcon)
+            }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              secondary: true,
+              onClick: () => handleSelect('models', row)
+            },
+            {
+              default: () => '模型',
+              icon: renderIcon(Server24Regular)
+            }
+          ),
+          h(
+            NButton,
+            {
+              size: 'small',
+              secondary: true,
+              type: 'error',
+              onClick: () => handleSelect('delete', row)
+            },
+            {
+              default: () => '删除',
+              icon: renderIcon(DeleteIcon)
+            }
+          )
+        ]
+      );
+    }
   }
 ];
 
@@ -124,7 +198,12 @@ async function handleCreate() {
 
 // Update provider
 async function handleUpdate() {
-  const { response: res } = await updateProvider(editModel);
+  const payload: Api.Provider.ProviderUpdateReq = {
+    ...editModel,
+    api_key: editApiKeyDisplay.value === '********' ? '' : editApiKeyDisplay.value
+  };
+
+  const { response: res } = await updateProvider(payload);
   if (res.data.code === 0) {
     message.success('更新成功');
     showEditModal.value = false;
@@ -259,7 +338,7 @@ function handleSelect(key: string, provider: Api.Provider.ProviderInfo) {
       editModel.name = provider.name;
       editModel.base_url = provider.base_url;
       editModel.mode = provider.mode as Api.Provider.ProviderMode;
-      editModel.api_key = '';
+      editApiKeyDisplay.value = '********';
       showEditModal.value = true;
       break;
     case 'models':
@@ -280,24 +359,16 @@ function handleSelect(key: string, provider: Api.Provider.ProviderInfo) {
   }
 }
 
-// Filter providers by search key
-const filteredProviders = ref<Api.Provider.ProviderInfo[]>([]);
+const filteredProviders = computed(() => {
+  if (!searchKey.value || searchKey.value.trim() === '') {
+    return providers.value;
+  }
 
-// Watch providers and searchKey to update filteredProviders
-watch(
-  [providers, searchKey],
-  () => {
-    if (!searchKey.value || searchKey.value.trim() === '') {
-      filteredProviders.value = providers.value;
-    } else {
-      const keyword = searchKey.value.trim().toLowerCase();
-      filteredProviders.value = providers.value.filter(
-        p => p.name.toLowerCase().includes(keyword) || p.base_url.toLowerCase().includes(keyword)
-      );
-    }
-  },
-  { immediate: true }
-);
+  const keyword = searchKey.value.trim().toLowerCase();
+  return providers.value.filter(
+    p => p.name.toLowerCase().includes(keyword) || p.base_url.toLowerCase().includes(keyword)
+  );
+});
 
 // Watch modelFilter to reset pagination
 watch(modelFilter, () => {
@@ -325,49 +396,18 @@ onMounted(() => {
     </NSpace>
 
     <!-- Provider list -->
-    <NGrid cols="3" x-gap="16" y-gap="16" responsive="screen" item-responsive>
-      <NGridItem v-for="provider in filteredProviders" :key="provider.id" class="grid-item-equal-height">
-        <NCard hoverable size="huge" style="cursor: pointer">
-          <NSpace vertical>
-            <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%">
-              <NAvatar
-                size="large"
-                :style="{
-                  color: 'black',
-                  backgroundColor: '#E0F2FE'
-                }"
-              >
-                <NIcon :component="Server24Regular" />
-              </NAvatar>
-
-              <div style="flex: 1">
-                <div style="font-weight: bold">{{ provider.name }}</div>
-                <div style="color: #949494; font-size: 12px">{{ provider.mode }}</div>
-              </div>
-
-              <NDropdown
-                :options="dropdownOptions"
-                trigger="click"
-                size="small"
-                @select="key => handleSelect(key, provider)"
-              >
-                <NButton size="small" secondary>
-                  <NIcon>
-                    <MoreHorizontal28Regular />
-                  </NIcon>
-                </NButton>
-              </NDropdown>
-            </div>
-            <div style="color: #666; font-size: 12px; line-height: 1.4">
-              {{ provider.base_url }}
-            </div>
-            <div style="color: #949494; font-size: 10px">
-              创建于 · {{ dayjs(provider.created_at).format('YYYY-MM-DD HH:mm') }}
-            </div>
-          </NSpace>
-        </NCard>
-      </NGridItem>
-    </NGrid>
+    <NCard :bordered="false">
+      <NDataTable
+        :columns="tableColumns"
+        :data="filteredProviders"
+        :bordered="false"
+        :single-line="false"
+        size="small"
+      />
+      <template #footer>
+        <div style="color: #949494; font-size: 12px">共 {{ filteredProviders.length }} 个 Provider</div>
+      </template>
+    </NCard>
 
     <!-- Create Modal -->
     <NModal
@@ -421,9 +461,9 @@ onMounted(() => {
         </NFormItem>
         <NFormItem label="API Key" required>
           <NInput
-            v-model:value="editModel.api_key"
+            v-model:value="editApiKeyDisplay"
             type="password"
-            placeholder="请输入新的 API Key（如不修改可留空）"
+            placeholder="默认已隐藏，修改时直接输入新值"
             show-password-on="click"
           />
         </NFormItem>
@@ -536,9 +576,4 @@ onMounted(() => {
   </NSpace>
 </template>
 
-<style scoped>
-.grid-item-equal-height {
-  display: flex;
-  min-height: 120px;
-}
-</style>
+<style scoped></style>

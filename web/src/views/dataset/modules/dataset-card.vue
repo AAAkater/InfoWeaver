@@ -3,7 +3,7 @@ import { NAvatar, NButton, NCard, NIcon, NSpace } from 'naive-ui';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
-import { Delete16Regular as DeleteIcon, Edit24Regular as EditIcon } from '@vicons/fluent';
+import { Delete16Regular as DeleteIcon, Edit24Regular as EditIcon, Eye24Regular as EyeIcon } from '@vicons/fluent';
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
 
@@ -24,13 +24,12 @@ function formatTime(isoString: string) {
   <NCard hoverable size="huge">
     <NSpace vertical>
       <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%">
-        <div style="flex: 1; cursor: pointer" @click="emit('select', 'view', props.dataset)">
+        <div style="flex: 1">
           <NAvatar
             size="large"
             :style="{
               color: 'black',
-              backgroundColor: '#E0F2FE',
-              cursor: 'pointer'
+              backgroundColor: '#E0F2FE'
             }"
           >
             {{ props.dataset.icon || '🤖' }}
@@ -45,28 +44,27 @@ function formatTime(isoString: string) {
         </div>
 
         <div style="flex-shrink: 0; display: flex; gap: 8px">
-          <NButton size="small" secondary circle @click.stop="emit('select', 'edit', props.dataset)">
+          <NButton size="small" secondary circle @click="emit('select', 'view', props.dataset)">
+            <NIcon>
+              <EyeIcon />
+            </NIcon>
+          </NButton>
+          <NButton size="small" secondary circle @click="emit('select', 'edit', props.dataset)">
             <NIcon>
               <EditIcon />
             </NIcon>
           </NButton>
-          <NButton size="small" tertiary circle type="error" @click.stop="emit('select', 'delete', props.dataset)">
+          <NButton size="small" tertiary circle type="error" @click="emit('select', 'delete', props.dataset)">
             <NIcon>
               <DeleteIcon />
             </NIcon>
           </NButton>
         </div>
       </div>
-      <div
-        style="color: #666; font-size: 10px; line-height: 1.4; cursor: pointer"
-        @click="emit('select', 'view', props.dataset)"
-      >
+      <div style="color: #666; font-size: 10px; line-height: 1.4">
         {{ props.dataset.description }}
       </div>
-      <div
-        style="color: #949494; font-size: 10px; transform: scale(0.85); transform-origin: left top; cursor: pointer"
-        @click="emit('select', 'view', props.dataset)"
-      >
+      <div style="color: #949494; font-size: 10px; transform: scale(0.85); transform-origin: left top">
         更新于 · {{ formatTime(props.dataset.updated_at) }}
       </div>
     </NSpace>

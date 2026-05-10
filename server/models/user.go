@@ -26,8 +26,13 @@ type UpdateUserInfoReq struct {
 }
 
 type UserInfoResp struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	ID        uint   `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Role      string `json:"role"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+type UserAvatarResp struct {
+	AvatarURL string `json:"avatar_url"`
 }

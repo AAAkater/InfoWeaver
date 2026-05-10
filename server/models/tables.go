@@ -8,10 +8,11 @@ type (
 	// User represents a system user with role-based permissions
 	User struct {
 		gorm.Model
-		Username string `gorm:"not null"`
-		Email    string `gorm:"unique;not null"`
-		Password string `gorm:"not null"`
-		Role     string `gorm:"default:user"` // "user" or "admin"
+		Username   string `gorm:"not null"`
+		Email      string `gorm:"unique;not null"`
+		Password   string `gorm:"not null"`
+		Role       string `gorm:"default:user"` // "user" or "admin"
+		AvatarPath string `gorm:"type:text"`    // MinIO object path for user avatar
 	}
 
 	// File represents uploaded files stored in MinIO

@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"io"
+
 	"server/db"
 	"server/models"
 	"server/utils"
@@ -58,6 +60,35 @@ func (this *UserService) UpdateUserInfo(ctx context.Context, userID uint, newUse
 		Where("id = ?", userID).
 		Updates(ctx, new_user_info)
 	return err
+}
+
+func (this *UserService) GetAvatarURLByPath(ctx context.Context, avatarPath string) (string, error) {
+	if avatarPath == "" {
+		return "", nil
+	}
+
+	return db.MinioClient.GetPresignedDownloadURL(ctx, avatarPath, 3600)
+}
+
+func (this *UserService) UpdateUserAvatar(ctx context.Context, userID uint, avatarPath string, avatarReader io.Reader, avatarSize int64) (string, error) {
+	_, err := gorm.G[models.User](db.PgSqlDB).
+		Where("id = ?", userID).
+		First(ctx)
+	if err != nil {
+		return "", err
+	}
+	if err := db.MinioClient.UploadFile(ctx, avatarPath, avatarReader, avatarSize); err != nil {
+		return "", ErrUploadFile
+	}
+
+	if _, err := gorm.G[models.User](db.PgSqlDB).
+		Where("id = ?", userID).
+		Update(ctx, "avatar_path", avatarPath); err != nil {
+		_ = db.MinioClient.DeleteFile(ctx, avatarPath)
+		return "", err
+	}
+
+	return db.MinioClient.GetPresignedDownloadURL(ctx, avatarPath, 3600)
 }
 
 func (this *UserService) CheckUserExistsByEmail(ctx context.Context, ownerID uint, email string) (bool, error) {

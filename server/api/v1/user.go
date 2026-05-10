@@ -1,13 +1,17 @@
 package v1
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"path/filepath"
 	"server/config"
 	"server/middleware"
 	"server/models"
 	"server/models/common/response"
 	"server/service"
 	"server/utils"
+	"time"
 
 	"github.com/labstack/echo/v5"
 )
@@ -19,6 +23,7 @@ func SetUserRouter(e *echo.Echo) {
 	userRouterGroup.POST("/register", userHandler.register)
 	userRouterGroup.POST("/login", userHandler.login)
 	userRouterGroup.GET("/info", userHandler.getUserInfo, middleware.TokenMiddleware())
+	userRouterGroup.POST("/avatar", userHandler.uploadAvatar, middleware.TokenMiddleware())
 	userRouterGroup.POST("/resetPassword", userHandler.resetUserPassword, middleware.TokenMiddleware())
 	userRouterGroup.POST("/updateInfo", userHandler.updateUserInfo, middleware.TokenMiddleware())
 }
@@ -132,6 +137,14 @@ func (this *userApi) getUserInfo(ctx *echo.Context) error {
 			Username: dbUser.Username,
 			Email:    dbUser.Email,
 			Role:     dbUser.Role,
+			AvatarURL: func() string {
+				avatarURL, avatarErr := userService.GetAvatarURLByPath(ctx.Request().Context(), dbUser.AvatarPath)
+				if avatarErr != nil {
+					Logger.Warnf("Failed to generate avatar URL for user %d: %v", dbUser.ID, avatarErr)
+					return ""
+				}
+				return avatarURL
+			}(),
 		})
 	case errors.Is(err, service.ErrNotFound):
 		return response.ErrUserNotFound()
@@ -176,6 +189,64 @@ func (this *userApi) resetUserPassword(ctx *echo.Context) error {
 		Logger.Error(err)
 		return response.ErrUnknownError()
 	}
+}
+
+// uploadAvatar godoc
+//
+//	@Summary		Upload User Avatar
+//	@Description	Upload a user avatar image to MinIO and store its object path on the user record
+//	@Tags			User
+//	@Accept			multipart/form-data
+//	@Produce		json
+//	@Security		Bearer
+//	@Param			avatar	formData	file											true	"Avatar image"
+//	@Success		200		{object}	response.ResponseBase[models.UserAvatarResp]	"Avatar uploaded successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]						"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]						"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]						"User not found"
+//	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error"
+//	@Router			/user/avatar [post]
+func (this *userApi) uploadAvatar(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.ErrInvalidToken()
+	}
+
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		return response.ErrMissFile()
+	}
+
+	fileHeaders := form.File["avatar"]
+	if len(fileHeaders) == 0 {
+		return response.ErrMissFile()
+	}
+
+	fileHeader := fileHeaders[0]
+	data, format, err := utils.ValidateAvatarFile(fileHeader)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	ext := filepath.Ext(fileHeader.Filename)
+	if ext == "" {
+		ext = "." + format
+	}
+	avatarPath := fmt.Sprintf("%d/avatar/%d%s", currentUser.ID, time.Now().UnixNano(), ext)
+
+	avatarURL, err := userService.UpdateUserAvatar(ctx.Request().Context(), currentUser.ID, avatarPath, bytes.NewReader(data), int64(len(data)))
+	switch err {
+	case nil:
+		return response.OkWithData(ctx, models.UserAvatarResp{AvatarURL: avatarURL})
+	case service.ErrNotFound:
+		return response.ErrUserNotFound()
+	case service.ErrUploadFile:
+		return response.ErrUnknownError()
+	default:
+		Logger.Errorf("Failed to upload avatar for user %d: %v", currentUser.ID, err)
+		return response.ErrUnknownError()
+	}
+
 }
 
 // updateUserInfo godoc

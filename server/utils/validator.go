@@ -1,6 +1,15 @@
 package utils
 
 import (
+	"bytes"
+	"errors"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"io"
+	"mime/multipart"
+	"strings"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -105,4 +114,44 @@ func isEmoji(r rune) bool {
 	}
 
 	return false
+}
+
+func ValidateAvatarFile(fileHeader *multipart.FileHeader) ([]byte, string, error) {
+	const (
+		MAX_AVATAR_SIZE_BYTES = 5 << 20
+		MAX_AVATAR_WIDTH      = 1024
+		MAX_AVATAR_HEIGHT     = 1024
+	)
+	if fileHeader == nil {
+		return nil, "", errors.New("avatar file is required")
+	}
+	if fileHeader.Size > MAX_AVATAR_SIZE_BYTES {
+		return nil, "", errors.New("Avatar file is too large")
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return nil, "", errors.New("Failed to open file")
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, "", errors.New("Failed to open file")
+	}
+
+	config, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, "", errors.New("Invalid avatar format")
+	}
+	if config.Width > MAX_AVATAR_WIDTH || config.Height > MAX_AVATAR_HEIGHT {
+		return nil, "", errors.New("Invalid avatar dimensions")
+	}
+	switch strings.ToLower(format) {
+	case "jpeg", "png", "gif":
+		return data, format, nil
+	default:
+		return nil, "", errors.New("Invalid avatar format")
+	}
+	return data, format, nil
 }

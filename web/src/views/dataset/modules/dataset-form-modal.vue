@@ -171,14 +171,6 @@ function handlePositiveClick() {
           placeholder="请输入Embedding模型名称"
         />
       </NCard>
-      <NCard title="Provider ID" :bordered="false" size="small">
-        <NInputNumber
-          v-model:value="form.provider_id"
-          size="tiny"
-          style="background-color: #f1f3f6"
-          placeholder="请输入Provider ID"
-        />
-      </NCard>
     </NSpace>
     <NSpace />
   </NModal>

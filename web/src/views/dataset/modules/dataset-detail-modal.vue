@@ -33,22 +33,11 @@ function formatTime(isoString: string) {
 </script>
 
 <template>
-  <NModal
-    v-model:show="visible"
-    :mask-closable="true"
-    :show-icon="false"
-    style="width: 700px; max-width: 90vw"
-  >
+  <NModal v-model:show="visible" :mask-closable="true" :show-icon="false" style="width: 700px; max-width: 90vw">
     <NCard :bordered="false" size="large" style="border-radius: 12px">
       <NSpace vertical :size="20">
         <div
-          style="
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e8e8e8;
-          "
+          style="display: flex; align-items: center; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid #e8e8e8"
         >
           <NAvatar
             :size="64"
@@ -68,9 +57,7 @@ function formatTime(isoString: string) {
               创建于 {{ props.dataset ? dayjs(props.dataset.created_at).format('YYYY-MM-DD HH:mm') : '-' }}
             </div>
           </div>
-          <NButton text style="color: #666" @click="emit('update:show', false)">
-            关闭
-          </NButton>
+          <NButton text style="color: #666" @click="emit('update:show', false)">关闭</NButton>
         </div>
 
         <div v-if="props.dataset?.description" style="background: #f8f9fa; padding: 16px; border-radius: 8px">

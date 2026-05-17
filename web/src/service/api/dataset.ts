@@ -98,9 +98,9 @@ export function getDatasetFiles(datasetId: number, page = 1, pageSize = 20) {
     url: '/file/list',
     method: 'get',
     params: {
-      dataset_id: datasetId,
       page,
-      page_size: pageSize
+      page_size: pageSize,
+      dataset_id: datasetId
     }
   });
 }

@@ -43,6 +43,8 @@ const isProcessing = ref(false);
 
 const datasetId = computed(() => Number(props.id));
 
+const scrollX = 80 + 360 + 100 + 100 + 180 + 180 + 170 + 170;
+
 // ---- File table columns ----
 const fileColumns: DataTableColumns<Api.Dataset.SimpleFileInfo> = [
   {
@@ -167,16 +169,25 @@ async function fetchFiles() {
   fileLoading.value = true;
 
   try {
-    const { response: res } = await getDatasetFiles(datasetId.value, filePage.value, filePageSize.value);
+    const { data: fileData, error: _fetchErr } = await getDatasetFiles(
+      datasetId.value,
+      filePage.value,
+      filePageSize.value
+    );
 
-    if (res?.data?.code === 0) {
-      files.value = res.data.data?.files ?? [];
-      fileTotal.value = res.data.data?.total ?? 0;
+    if (fileData) {
+      const data = fileData as unknown as Api.Dataset.FileListResp;
+      files.value = data.files ?? [];
+      fileTotal.value = data.total ?? 0;
     } else {
-      message.error(res?.data?.msg || '获取文件列表失败');
+      message.error('获取文件列表失败');
       files.value = [];
       fileTotal.value = 0;
     }
+  } catch {
+    message.error('获取文件列表失败');
+    files.value = [];
+    fileTotal.value = 0;
   } finally {
     fileLoading.value = false;
   }
@@ -193,16 +204,20 @@ async function fetchChunks() {
   chunkLoading.value = true;
 
   try {
-    const { response: res } = await getDatasetChunks(datasetId.value, chunkPage.value, chunkPageSize.value);
+    const { data: chunkData } = await getDatasetChunks(datasetId.value, chunkPage.value, chunkPageSize.value);
 
-    if (res?.data?.code === 0) {
-      chunks.value = res.data.data?.chunks ?? [];
-      chunkTotal.value = res.data.data?.total ?? 0;
+    if (chunkData) {
+      const data = chunkData as unknown as Api.Dataset.DatasetChunkListResp;
+      chunks.value = data.chunks ?? [];
+      chunkTotal.value = data.total ?? 0;
     } else {
-      message.error(res?.data?.msg || '获取 Chunk 列表失败');
       chunks.value = [];
       chunkTotal.value = 0;
     }
+  } catch {
+    message.error('获取 Chunk 列表失败');
+    chunks.value = [];
+    chunkTotal.value = 0;
   } finally {
     chunkLoading.value = false;
   }
@@ -311,7 +326,7 @@ async function handleSplitAndEmbed(file: Api.Dataset.FileUploadInfo) {
     // Switch to chunks tab and refresh
     activeTab.value = 'chunks';
     await fetchChunks();
-  } catch (err) {
+  } catch {
     message.error('处理文件时发生错误');
   } finally {
     isProcessing.value = false;
@@ -406,28 +421,21 @@ onMounted(() => {
       </template>
 
       <!-- File Table -->
-      <NDataTable
-        v-if="activeTab === 'files'"
-        :columns="fileColumns"
-        :data="files"
-        :loading="fileLoading"
-        :bordered="false"
-        size="small"
-        :flex-height="true"
-      />
+      <div v-if="activeTab === 'files'" style="max-height: 60vh; overflow: auto">
+        <NDataTable :columns="fileColumns" :data="files" :loading="fileLoading" :bordered="false" size="small" />
+      </div>
 
       <!-- Chunk Table -->
-      <NDataTable
-        v-else
-        :columns="chunkColumns"
-        :data="chunks"
-        :loading="chunkLoading"
-        :bordered="false"
-        size="small"
-        remote
-        :scroll-x="80 + 360 + 100 + 100 + 180 + 180 + 170 + 170"
-        :flex-height="true"
-      />
+      <div v-else style="max-height: 60vh; overflow: auto">
+        <NDataTable
+          :columns="chunkColumns"
+          :data="chunks"
+          :loading="chunkLoading"
+          :bordered="false"
+          size="small"
+          :scroll-x="scrollX"
+        />
+      </div>
 
       <template #footer>
         <!-- File Pagination -->

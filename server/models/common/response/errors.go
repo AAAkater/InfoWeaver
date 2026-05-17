@@ -118,6 +118,13 @@ func ErrFileNotFound() error {
 	}
 }
 
+func ErrChunkNotFound() error {
+	return &echo.HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "Chunk not found",
+	}
+}
+
 func ErrChatSessionTitleAlreadyExists() error {
 	return &echo.HTTPError{
 		Code:    http.StatusForbidden,

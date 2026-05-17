@@ -5,10 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // JsonMap is a custom type for storing arbitrary JSON objects as jsonb
 type JsonMap map[string]any
+
+// GormDBDataType implements GORM's GormDBDataTypeInterface
+func (JsonMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	switch db.Dialector.Name() {
+	case "postgres", "postgresql":
+		return "jsonb"
+	default:
+		return "json"
+	}
+}
 
 // Value implements driver.Valuer interface for database storage
 func (m JsonMap) Value() (driver.Value, error) {

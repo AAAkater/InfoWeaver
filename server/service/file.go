@@ -183,6 +183,19 @@ func (this *FileService) GetFilePathByFileID(ctx context.Context, fileID uint, o
 	return dbFile.MinioPath, err
 }
 
+// CheckChunkOwnershipByChunkIDs verifies that all chunks belong to files owned by the user.
+func (this *FileService) CheckChunkOwnershipByChunkIDs(ctx context.Context, chunkIDs []uint, ownerID uint) (bool, error) {
+	var ownedCount int64
+	result := db.PgSqlDB.WithContext(ctx).Model(&models.Chunk{}).
+		Joins("JOIN files ON files.id = chunks.file_id").
+		Where("chunks.id IN ? AND files.user_id = ?", chunkIDs, ownerID).
+		Count(&ownedCount)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return ownedCount == int64(len(chunkIDs)), nil
+}
+
 // GetDownloadURLByFilePath generates a presigned download URL for a file by file path
 func (this *FileService) GetDownloadURLByFilePath(ctx context.Context, filePath string) (string, error) {
 

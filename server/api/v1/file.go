@@ -23,7 +23,7 @@ func SetFileRouter(e *echo.Echo) {
 	fileRouterGroup.GET("/download/:file_id", fileHandler.getDownloadFileURL)
 	fileRouterGroup.POST("/delete/:file_id", fileHandler.deleteFile)
 	fileRouterGroup.POST("/split", fileHandler.splitDocument)
-	fileRouterGroup.POST("/embedding", fileHandler.embedDocument)
+	fileRouterGroup.POST("/embedding", fileHandler.embedChunks)
 
 }
 
@@ -311,7 +311,7 @@ func (this *fileApi) splitDocument(ctx *echo.Context) error {
 	})
 }
 
-// embedDocument godoc
+// embedChunks godoc
 //
 //	@Summary		Embed Document Chunks
 //	@Description	Call the AI document service to compute embeddings for document chunks
@@ -322,11 +322,12 @@ func (this *fileApi) splitDocument(ctx *echo.Context) error {
 //	@Success		200		{object}	response.ResponseBase[models.EmbeddingResp]	"Embedding completed successfully"
 //	@Failure		400		{object}	response.ResponseBase[any]					"Invalid request parameters"
 //	@Failure		401		{object}	response.ResponseBase[any]					"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]					"Chunk not found or not owned"
 //	@Failure		500		{object}	response.ResponseBase[any]					"Internal server error or embedding service failure"
 //	@Router			/file/embedding [post]
-func (this *fileApi) embedDocument(ctx *echo.Context) error {
-	// Validate token
-	if _, err := utils.GetCurrentUser(ctx); err != nil {
+func (this *fileApi) embedChunks(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
 		return response.ErrInvalidToken()
 	}
 
@@ -335,9 +336,19 @@ func (this *fileApi) embedDocument(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
+	chunkIDs := uniqueUintSlice(args.ChunkIDs)
+	owned, err := fileService.CheckChunkOwnershipByChunkIDs(ctx.Request().Context(), chunkIDs, currentUser.ID)
+	if err != nil {
+		Logger.Errorf("Failed to verify chunk ownership for user %d: %v", currentUser.ID, err)
+		return response.ErrUnknownError()
+	}
+	if !owned {
+		return response.ErrChunkNotFound()
+	}
+
 	result, err := aiDocService.EmbedDocument(
 		ctx.Request().Context(),
-		args.ChunkIDs,
+		chunkIDs,
 		args.EmbeddingConfig,
 	)
 	if err != nil {
@@ -349,4 +360,21 @@ func (this *fileApi) embedDocument(ctx *echo.Context) error {
 		ChunkIDs:    result.ChunkIDs,
 		ChunksCount: result.ChunksCount,
 	})
+}
+
+func uniqueUintSlice(values []uint) []uint {
+	if len(values) <= 1 {
+		return values
+	}
+
+	seen := make(map[uint]struct{}, len(values))
+	unique := make([]uint, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
+	}
+	return unique
 }

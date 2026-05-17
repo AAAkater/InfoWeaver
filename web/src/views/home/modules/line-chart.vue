@@ -1,34 +1,30 @@
 <script setup lang="ts">
-import { watch } from 'vue';
-import { useAppStore } from '@/store/modules/app';
 import { useEcharts } from '@/hooks/common/echarts';
-import { $t } from '@/locales';
 
 defineOptions({
   name: 'LineChart'
 });
 
-const appStore = useAppStore();
-
 const { domRef, updateOptions } = useEcharts(() => ({
+  title: {
+    text: 'Token 用量趋势',
+    textStyle: { fontSize: 14, fontWeight: 600 },
+    left: '0'
+  },
   tooltip: {
     trigger: 'axis',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    }
+    axisPointer: { type: 'cross' }
   },
   legend: {
-    data: [$t('page.home.downloadCount'), $t('page.home.registerCount')],
-    top: '0'
+    data: ['输入 Token', '输出 Token'],
+    top: '0',
+    right: '0'
   },
   grid: {
     left: '3%',
     right: '4%',
     bottom: '3%',
-    top: '15%'
+    top: '50px'
   },
   xAxis: {
     type: 'category',
@@ -36,117 +32,45 @@ const { domRef, updateOptions } = useEcharts(() => ({
     data: [] as string[]
   },
   yAxis: {
-    type: 'value'
+    type: 'value',
+    axisLabel: { formatter: (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)) }
   },
   series: [
     {
-      color: '#8e9dff',
-      name: $t('page.home.downloadCount'),
+      color: '#5da8ff',
+      name: '输入 Token',
       type: 'line',
       smooth: true,
-      stack: 'Total',
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            {
-              offset: 0.25,
-              color: '#8e9dff'
-            },
-            {
-              offset: 1,
-              color: '#fff'
-            }
-          ]
-        }
-      },
-      emphasis: {
-        focus: 'series'
-      },
+      areaStyle: { color: 'rgba(93,168,255,0.12)' },
       data: [] as number[]
     },
     {
       color: '#26deca',
-      name: $t('page.home.registerCount'),
+      name: '输出 Token',
       type: 'line',
       smooth: true,
-      stack: 'Total',
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            {
-              offset: 0.25,
-              color: '#26deca'
-            },
-            {
-              offset: 1,
-              color: '#fff'
-            }
-          ]
-        }
-      },
-      emphasis: {
-        focus: 'series'
-      },
-      data: []
+      areaStyle: { color: 'rgba(38,222,202,0.12)' },
+      data: [] as number[]
     }
   ]
 }));
 
-async function mockData() {
-  await new Promise(resolve => {
-    setTimeout(resolve, 1000);
-  });
+const days = ['5/11', '5/12', '5/13', '5/14', '5/15', '5/16', '5/17'];
+const inputTokens = [8200, 9300, 7500, 11200, 9800, 13200, 10500];
+const outputTokens = [2100, 2800, 1900, 3500, 2600, 4200, 3200];
 
+setTimeout(() => {
   updateOptions(opts => {
-    opts.xAxis.data = ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00', '24:00'];
-    opts.series[0].data = [4623, 6145, 6268, 6411, 1890, 4251, 2978, 3880, 3606, 4311];
-    opts.series[1].data = [2208, 2016, 2916, 4512, 8281, 2008, 1963, 2367, 2956, 678];
-
+    opts.xAxis.data = days;
+    opts.series[0].data = inputTokens;
+    opts.series[1].data = outputTokens;
     return opts;
   });
-}
-
-function updateLocale() {
-  updateOptions((opts, factory) => {
-    const originOpts = factory();
-
-    opts.legend.data = originOpts.legend.data;
-    opts.series[0].name = originOpts.series[0].name;
-    opts.series[1].name = originOpts.series[1].name;
-
-    return opts;
-  });
-}
-
-async function init() {
-  mockData();
-}
-
-watch(
-  () => appStore.locale,
-  () => {
-    updateLocale();
-  }
-);
-
-// init
-init();
+}, 400);
 </script>
 
 <template>
-  <NCard :bordered="false" class="card-wrapper">
-    <div ref="domRef" class="h-360px overflow-hidden"></div>
-  </NCard>
+  <div ref="domRef" class="h-300px" />
 </template>
 
 <style scoped></style>

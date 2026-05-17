@@ -223,15 +223,9 @@ onMounted(() => {
     </div>
 
     <NCard :bordered="false">
-      <NDataTable
-        :columns="columns"
-        :data="mcpList"
-        :loading="loading"
-        :bordered="false"
-        size="small"
-        remote
-        :flex-height="true"
-      />
+      <div style="max-height: 60vh; overflow: auto">
+        <NDataTable :columns="columns" :data="mcpList" :loading="loading" :bordered="false" size="small" />
+      </div>
       <template #footer>
         <NSpace justify="end">
           <NPagination

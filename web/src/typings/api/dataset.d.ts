@@ -99,6 +99,58 @@ declare namespace Api {
       datasets: DatasetItem[];
     }
 
+    /** File upload info */
+    interface FileUploadInfo {
+      id: number;
+      name: string;
+      type: string;
+      size: number;
+      dataset_id: number;
+      owner_id: number;
+    }
+
+    /** File upload response */
+    interface FileUploadResp {
+      files: FileUploadInfo[];
+    }
+
+    /** File split request */
+    interface SplitDocReq {
+      file_id: number;
+      dataset_id: number;
+      minio_path: string;
+      chunk_size: number;
+      chunk_overlap: number;
+    }
+
+    /** File split response */
+    interface SplitDocResp {
+      file_id: number;
+      dataset_id: number;
+      file_name: string;
+      chunks_count: number;
+    }
+
+    /** Embedding config */
+    interface EmbeddingConfig {
+      model_name: string;
+      provider_type: string;
+      api_key: string;
+      base_url: string;
+    }
+
+    /** Embedding request */
+    interface EmbeddingReq {
+      chunk_ids: number[];
+      embedding_config: EmbeddingConfig;
+    }
+
+    /** Embedding response */
+    interface EmbeddingResp {
+      chunk_ids: number[];
+      chunks_count: number;
+    }
+
     /** Dataset response (legacy compatibility) */
     interface DatasetResponse {
       code: number;

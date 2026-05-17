@@ -56,3 +56,38 @@ export function updateDataset(formModel: Api.Dataset.FormModel) {
     data: formModel
   });
 }
+
+/** Upload files to a dataset */
+export function uploadFiles(datasetId: number, files: File[]) {
+  const formData = new FormData();
+  formData.append('id', String(datasetId));
+  files.forEach(file => {
+    formData.append('files', file);
+  });
+  return request<Api.Dataset.Response<Api.Dataset.FileUploadResp>>({
+    url: '/file/upload',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+/** Split a file into chunks for RAG processing */
+export function splitDocument(data: Api.Dataset.SplitDocReq) {
+  return request<Api.Dataset.Response<Api.Dataset.SplitDocResp>>({
+    url: '/file/split',
+    method: 'post',
+    data
+  });
+}
+
+/** Compute embeddings for document chunks */
+export function embedChunks(data: Api.Dataset.EmbeddingReq) {
+  return request<Api.Dataset.Response<Api.Dataset.EmbeddingResp>>({
+    url: '/file/embedding',
+    method: 'post',
+    data
+  });
+}

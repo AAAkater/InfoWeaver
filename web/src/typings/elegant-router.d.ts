@@ -40,7 +40,6 @@ declare module "@elegant-router/types" {
     "alova_scenes": "/alova/scenes";
     "chat": "/chat";
     "dataset": "/dataset";
-    "dataset_chunks": "/dataset/chunks/:id";
     "dataset-chunks": "/dataset-chunks/:id";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
@@ -190,7 +189,6 @@ declare module "@elegant-router/types" {
     | "alova_scenes"
     | "chat"
     | "dataset-chunks"
-    | "dataset_chunks"
     | "dataset"
     | "function_hide-child_one"
     | "function_hide-child_three"

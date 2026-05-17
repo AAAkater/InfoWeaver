@@ -186,7 +186,6 @@ const routeMap: RouteMap = {
   "alova_scenes": "/alova/scenes",
   "chat": "/chat",
   "dataset": "/dataset",
-  "dataset_chunks": "/dataset/chunks/:id",
   "dataset-chunks": "/dataset-chunks/:id",
   "function": "/function",
   "function_hide-child": "/function/hide-child",

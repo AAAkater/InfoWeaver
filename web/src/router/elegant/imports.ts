@@ -24,7 +24,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   alova_scenes: () => import("@/views/alova/scenes/index.vue"),
   chat: () => import("@/views/chat/index.vue"),
   "dataset-chunks": () => import("@/views/dataset-chunks/[id].vue"),
-  dataset_chunks: () => import("@/views/dataset/chunks/[id].vue"),
   dataset: () => import("@/views/dataset/index.vue"),
   "function_hide-child_one": () => import("@/views/function/hide-child/one/index.vue"),
   "function_hide-child_three": () => import("@/views/function/hide-child/three/index.vue"),

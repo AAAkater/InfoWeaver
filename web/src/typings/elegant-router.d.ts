@@ -60,12 +60,6 @@ declare module "@elegant-router/types" {
     "manage_user": "/manage/user";
     "manage_user-detail": "/manage/user-detail/:id";
     "mcp": "/mcp";
-    "multi-menu": "/multi-menu";
-    "multi-menu_first": "/multi-menu/first";
-    "multi-menu_first_child": "/multi-menu/first/child";
-    "multi-menu_second": "/multi-menu/second";
-    "multi-menu_second_child": "/multi-menu/second/child";
-    "multi-menu_second_child_home": "/multi-menu/second/child/home";
     "plugin": "/plugin";
     "plugin_barcode": "/plugin/barcode";
     "plugin_charts": "/plugin/charts";
@@ -159,7 +153,6 @@ declare module "@elegant-router/types" {
     | "login"
     | "manage"
     | "mcp"
-    | "multi-menu"
     | "plugin"
     | "pro-naive"
     | "provider"
@@ -206,8 +199,6 @@ declare module "@elegant-router/types" {
     | "manage_user-detail"
     | "manage_user"
     | "mcp"
-    | "multi-menu_first_child"
-    | "multi-menu_second_child_home"
     | "plugin_barcode"
     | "plugin_charts_antv"
     | "plugin_charts_echarts"

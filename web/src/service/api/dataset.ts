@@ -91,3 +91,16 @@ export function embedChunks(data: Api.Dataset.EmbeddingReq) {
     data
   });
 }
+
+/** Get file list for a dataset */
+export function getDatasetFiles(datasetId: number, page = 1, pageSize = 20) {
+  return request<Api.Dataset.Response<Api.Dataset.FileListResp>>({
+    url: '/file/list',
+    method: 'get',
+    params: {
+      dataset_id: datasetId,
+      page,
+      page_size: pageSize
+    }
+  });
+}

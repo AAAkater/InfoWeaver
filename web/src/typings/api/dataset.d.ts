@@ -151,6 +151,21 @@ declare namespace Api {
       chunks_count: number;
     }
 
+    /** Simple file info (for list) */
+    interface SimpleFileInfo {
+      id: number;
+      name: string;
+      type?: string;
+      size?: number;
+      createdAt?: string;
+    }
+
+    /** File list response */
+    interface FileListResp {
+      files: SimpleFileInfo[];
+      total: number;
+    }
+
     /** Dataset response (legacy compatibility) */
     interface DatasetResponse {
       code: number;

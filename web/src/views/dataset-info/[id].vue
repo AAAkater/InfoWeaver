@@ -2,9 +2,9 @@
 import { computed, h, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import type { DataTableColumns } from 'naive-ui';
-import { NButton, NInputNumber, NTag, useMessage } from 'naive-ui';
+import { NButton, NButtonGroup, NInputNumber, NTag, useMessage } from 'naive-ui';
 import dayjs from 'dayjs';
-import { embedChunks, getDatasetChunks, splitDocument, uploadFiles } from '@/service/api/dataset';
+import { getDatasetChunks, getDatasetFiles, splitDocument, uploadFiles } from '@/service/api/dataset';
 
 interface Props {
   id: string;
@@ -15,11 +15,23 @@ const props = defineProps<Props>();
 const router = useRouter();
 const message = useMessage();
 
-const loading = ref(false);
+// Toggle between file table and chunk table
+type TableTab = 'files' | 'chunks';
+const activeTab = ref<TableTab>('files');
+
+// File table state
+const fileLoading = ref(false);
+const files = ref<Api.Dataset.SimpleFileInfo[]>([]);
+const fileTotal = ref(0);
+const filePage = ref(1);
+const filePageSize = ref(20);
+
+// Chunk table state
+const chunkLoading = ref(false);
 const chunks = ref<Api.Dataset.ChunkInfo[]>([]);
-const total = ref(0);
-const page = ref(1);
-const pageSize = ref(20);
+const chunkTotal = ref(0);
+const chunkPage = ref(1);
+const chunkPageSize = ref(20);
 
 // File upload
 const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -31,7 +43,52 @@ const isProcessing = ref(false);
 
 const datasetId = computed(() => Number(props.id));
 
-const columns: DataTableColumns<Api.Dataset.ChunkInfo> = [
+// ---- File table columns ----
+const fileColumns: DataTableColumns<Api.Dataset.SimpleFileInfo> = [
+  {
+    title: 'ID',
+    key: 'id',
+    width: 80
+  },
+  {
+    title: '文件名',
+    key: 'name',
+    minWidth: 240,
+    ellipsis: {
+      tooltip: true
+    }
+  },
+  {
+    title: '类型',
+    key: 'type',
+    width: 120,
+    render(row) {
+      return row.type || '-';
+    }
+  },
+  {
+    title: '大小',
+    key: 'size',
+    width: 120,
+    render(row) {
+      if (!row.size) return '-';
+      if (row.size < 1024) return `${row.size} B`;
+      if (row.size < 1024 * 1024) return `${(row.size / 1024).toFixed(1)} KB`;
+      return `${(row.size / (1024 * 1024)).toFixed(2)} MB`;
+    }
+  },
+  {
+    title: '创建时间',
+    key: 'createdAt',
+    width: 180,
+    render(row) {
+      return row.createdAt ? dayjs(row.createdAt).format('YYYY-MM-DD HH:mm') : '-';
+    }
+  }
+];
+
+// ---- Chunk table columns ----
+const chunkColumns: DataTableColumns<Api.Dataset.ChunkInfo> = [
   {
     title: 'ID',
     key: 'id',
@@ -97,39 +154,90 @@ const columns: DataTableColumns<Api.Dataset.ChunkInfo> = [
   }
 ];
 
-const scrollX = 80 + 360 + 100 + 100 + 180 + 180 + 170 + 170;
+// ---- Data fetching ----
+
+async function fetchFiles() {
+  if (!Number.isFinite(datasetId.value)) {
+    message.error('无效的数据集 ID');
+    files.value = [];
+    fileTotal.value = 0;
+    return;
+  }
+
+  fileLoading.value = true;
+
+  try {
+    const { response: res } = await getDatasetFiles(datasetId.value, filePage.value, filePageSize.value);
+
+    if (res?.data?.code === 0) {
+      files.value = res.data.data?.files ?? [];
+      fileTotal.value = res.data.data?.total ?? 0;
+    } else {
+      message.error(res?.data?.msg || '获取文件列表失败');
+      files.value = [];
+      fileTotal.value = 0;
+    }
+  } finally {
+    fileLoading.value = false;
+  }
+}
 
 async function fetchChunks() {
   if (!Number.isFinite(datasetId.value)) {
     message.error('无效的数据集 ID');
     chunks.value = [];
-    total.value = 0;
+    chunkTotal.value = 0;
     return;
   }
 
-  loading.value = true;
+  chunkLoading.value = true;
 
   try {
-    const { response: res } = await getDatasetChunks(datasetId.value, page.value, pageSize.value);
+    const { response: res } = await getDatasetChunks(datasetId.value, chunkPage.value, chunkPageSize.value);
 
     if (res?.data?.code === 0) {
       chunks.value = res.data.data?.chunks ?? [];
-      total.value = res.data.data?.total ?? 0;
+      chunkTotal.value = res.data.data?.total ?? 0;
     } else {
       message.error(res?.data?.msg || '获取 Chunk 列表失败');
       chunks.value = [];
-      total.value = 0;
+      chunkTotal.value = 0;
     }
   } finally {
-    loading.value = false;
+    chunkLoading.value = false;
   }
 }
 
-function handlePageSizeChange(size: number) {
-  pageSize.value = size;
-  page.value = 1;
+function refreshCurrentTab() {
+  if (activeTab.value === 'files') {
+    fetchFiles();
+  } else {
+    fetchChunks();
+  }
+}
+
+function handleTabChange(tab: TableTab) {
+  activeTab.value = tab;
+  if (tab === 'files' && files.value.length === 0) {
+    fetchFiles();
+  } else if (tab === 'chunks' && chunks.value.length === 0) {
+    fetchChunks();
+  }
+}
+
+function handleFilePageSizeChange(size: number) {
+  filePageSize.value = size;
+  filePage.value = 1;
+  fetchFiles();
+}
+
+function handleChunkPageSizeChange(size: number) {
+  chunkPageSize.value = size;
+  chunkPage.value = 1;
   fetchChunks();
 }
+
+// ---- File upload ----
 
 function triggerFileUpload() {
   fileInputRef.value?.click();
@@ -141,9 +249,9 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 async function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement;
-  const files = input.files;
+  const selectedFiles = input.files;
 
-  if (!files || files.length === 0) {
+  if (!selectedFiles || selectedFiles.length === 0) {
     return;
   }
 
@@ -153,7 +261,7 @@ async function handleFileChange(event: Event) {
     return;
   }
 
-  const fileList = Array.from(files);
+  const fileList = Array.from(selectedFiles);
   isUploading.value = true;
 
   try {
@@ -162,6 +270,8 @@ async function handleFileChange(event: Event) {
     if (!error && data?.code === 0) {
       uploadedFiles.value = data.data?.files ?? [];
       message.success(`成功上传 ${fileList.length} 个文件`);
+      // Refresh file list
+      await fetchFiles();
     } else {
       message.error(getErrorMessage(error, '文件上传失败'));
     }
@@ -180,7 +290,6 @@ async function handleSplitAndEmbed(file: Api.Dataset.FileUploadInfo) {
   isProcessing.value = true;
 
   try {
-    // Step 1: Split the document
     const splitPayload: Api.Dataset.SplitDocReq = {
       file_id: file.id,
       dataset_id: datasetId.value,
@@ -199,7 +308,8 @@ async function handleSplitAndEmbed(file: Api.Dataset.FileUploadInfo) {
 
     message.success(`文档拆分完成，生成 ${splitData.data?.chunks_count ?? 0} 个片段`);
 
-    // Refresh chunk list
+    // Switch to chunks tab and refresh
+    activeTab.value = 'chunks';
     await fetchChunks();
   } catch (err) {
     message.error('处理文件时发生错误');
@@ -208,28 +318,36 @@ async function handleSplitAndEmbed(file: Api.Dataset.FileUploadInfo) {
   }
 }
 
+// ---- Lifecycle ----
+
 watch(
   () => props.id,
   () => {
-    page.value = 1;
-    fetchChunks();
+    filePage.value = 1;
+    chunkPage.value = 1;
+    if (activeTab.value === 'files') {
+      fetchFiles();
+    } else {
+      fetchChunks();
+    }
   }
 );
 
 onMounted(() => {
-  fetchChunks();
+  fetchFiles();
 });
 </script>
 
 <template>
   <NSpace vertical :size="16">
+    <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <div class="text-18px font-600">Dataset Chunks</div>
+        <div class="text-18px font-600">数据集详情</div>
         <div class="mt-4px text-12px text-gray-500">Dataset ID: {{ props.id }}</div>
       </div>
       <NSpace>
-        <NButton :loading="loading" @click="fetchChunks">刷新</NButton>
+        <NButton :loading="fileLoading || chunkLoading" @click="refreshCurrentTab">刷新</NButton>
         <NButton @click="router.back()">返回</NButton>
       </NSpace>
     </div>
@@ -272,28 +390,68 @@ onMounted(() => {
       <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileChange" />
     </NCard>
 
-    <NCard :bordered="false">
+    <!-- Toggle + Table Card -->
+    <NCard :bordered="false" size="small">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <NButtonGroup size="small">
+            <NButton :type="activeTab === 'files' ? 'primary' : 'default'" @click="handleTabChange('files')">
+              文件列表
+            </NButton>
+            <NButton :type="activeTab === 'chunks' ? 'primary' : 'default'" @click="handleTabChange('chunks')">
+              分块列表
+            </NButton>
+          </NButtonGroup>
+        </div>
+      </template>
+
+      <!-- File Table -->
       <NDataTable
-        :columns="columns"
+        v-if="activeTab === 'files'"
+        :columns="fileColumns"
+        :data="files"
+        :loading="fileLoading"
+        :bordered="false"
+        size="small"
+        :flex-height="true"
+      />
+
+      <!-- Chunk Table -->
+      <NDataTable
+        v-else
+        :columns="chunkColumns"
         :data="chunks"
-        :loading="loading"
+        :loading="chunkLoading"
         :bordered="false"
         size="small"
         remote
-        :scroll-x="scrollX"
+        :scroll-x="80 + 360 + 100 + 100 + 180 + 180 + 170 + 170"
         :flex-height="true"
       />
 
       <template #footer>
-        <NSpace justify="end">
+        <!-- File Pagination -->
+        <NSpace v-if="activeTab === 'files'" justify="end">
           <NPagination
-            v-model:page="page"
-            :item-count="total"
-            :page-size="pageSize"
+            v-model:page="filePage"
+            :item-count="fileTotal"
+            :page-size="filePageSize"
+            show-size-picker
+            :page-sizes="[10, 20, 50, 100]"
+            @update:page="fetchFiles"
+            @update:page-size="handleFilePageSizeChange"
+          />
+        </NSpace>
+        <!-- Chunk Pagination -->
+        <NSpace v-else justify="end">
+          <NPagination
+            v-model:page="chunkPage"
+            :item-count="chunkTotal"
+            :page-size="chunkPageSize"
             show-size-picker
             :page-sizes="[10, 20, 50, 100]"
             @update:page="fetchChunks"
-            @update:page-size="handlePageSizeChange"
+            @update:page-size="handleChunkPageSizeChange"
           />
         </NSpace>
       </template>

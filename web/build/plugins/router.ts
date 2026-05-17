@@ -47,10 +47,34 @@ export function setupElegantRouter() {
         'dataset-info': 'dataset'
       };
 
+      const orderMap: Partial<Record<RouteKey, number>> = {
+        home: 1,
+        chat: 2,
+        dataset: 3,
+        provider: 4,
+        mcp: 5
+      };
+
+      const iconMap: Partial<Record<RouteKey, string>> = {
+        home: 'mdi:monitor-dashboard',
+        chat: 'mdi:chat-plus',
+        dataset: 'material-symbols-light:book-4-spark-rounded',
+        provider: 'mdi:cloud-braces',
+        mcp: 'mdi:server'
+      };
+
       const meta: Partial<RouteMeta> = {
         title: key,
         i18nKey: `route.${key}` as App.I18n.I18nKey
       };
+
+      if (key in orderMap) {
+        meta.order = orderMap[key];
+      }
+
+      if (key in iconMap) {
+        meta.icon = iconMap[key];
+      }
 
       if (constantRoutes.includes(key)) {
         meta.constant = true;

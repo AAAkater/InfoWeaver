@@ -328,6 +328,17 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'mcp',
+    path: '/mcp',
+    component: 'layout.base$view.mcp',
+    meta: {
+      title: 'mcp',
+      i18nKey: 'route.mcp',
+      order: 99,
+      icon: 'mdi:server'
+    }
+  },
+  {
     name: 'multi-menu',
     path: '/multi-menu',
     component: 'layout.base',
@@ -726,7 +737,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'provider',
       i18nKey: 'route.provider',
-      order: 4
+      order: 4,
+      icon: 'mdi:cloud-braces'
     }
   },
   {

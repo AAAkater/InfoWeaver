@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDialog, useMessage } from 'naive-ui';
-import { createDataset, deleteDataset, getDatasets, updateDataset } from '@/service/api/dataset';
+import { createDataset, deleteDataset, getDatasets, updateDataset, uploadFiles } from '@/service/api/dataset';
 import DatasetCard from './modules/dataset-card.vue';
 import DatasetCreateCard from './modules/dataset-create-card.vue';
 import DatasetFormModal from './modules/dataset-form-modal.vue';
@@ -78,18 +78,36 @@ async function fetchDatasets() {
 
 function handleViewChunks(datasetId: number) {
   router.push({
-    name: 'dataset-chunks',
+    name: 'dataset-info',
     params: {
       id: datasetId
     }
   });
 }
 
-async function handleCreateDataset(md: Api.Dataset.FormModel) {
+async function handleCreateDataset(md: Api.Dataset.FormModel, files: File[] = []) {
   const { response: res } = await createDataset(md);
 
   if (res.data.code === 0) {
-    message.success('创建成功');
+    const createdId = res.data.data?.id;
+
+    // Upload files if any
+    if (files.length > 0 && createdId !== undefined) {
+      try {
+        const { data: uploadData, error: uploadError } = await uploadFiles(createdId, files);
+
+        if (!uploadError && uploadData?.code === 0) {
+          message.success(`创建成功，已上传 ${files.length} 个文件`);
+        } else {
+          message.success('知识库创建成功，但文件上传失败');
+        }
+      } catch {
+        message.success('知识库创建成功，但文件上传失败');
+      }
+    } else {
+      message.success('创建成功');
+    }
+
     showModal.value = false;
     await fetchDatasets();
   } else {
@@ -143,11 +161,11 @@ function handleSelect(key: string, dataset: Api.Dataset.DatasetItem) {
   }
 }
 
-function handleSubmit(form: Api.Dataset.FormModel) {
+function handleSubmit(form: Api.Dataset.FormModel, files: File[] = []) {
   if (isEdit.value && form.id !== undefined) {
     handleEditDataset(form);
   } else {
-    handleCreateDataset(form);
+    handleCreateDataset(form, files);
   }
 }
 

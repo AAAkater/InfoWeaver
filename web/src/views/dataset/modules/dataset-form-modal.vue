@@ -8,12 +8,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: 'submit', model: Api.Dataset.FormModel): void;
+  (event: 'submit', model: Api.Dataset.FormModel, files: File[]): void;
   (event: 'update:show', value: boolean): void;
 }>();
 
 const bodyStyle = {
-  width: '500px'
+  width: '600px'
 };
 
 const searchTypeOptions = [
@@ -24,6 +24,10 @@ const searchTypeOptions = [
 
 const emojiList = ['😀', '😂', '😎', '🤖', '🐱', '🦊', '🐶', '🦄', '🐼', '🦉'];
 const hovered = ref<string | null>(null);
+
+// File upload
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const selectedFiles = ref<File[]>([]);
 
 const visible = computed({
   get: () => props.show,
@@ -50,6 +54,7 @@ function resetForm() {
     embedding_model: '',
     provider_id: 0
   });
+  selectedFiles.value = [];
 }
 
 function syncForm() {
@@ -89,8 +94,32 @@ function selectEmoji(emoji: string) {
   form.icon = emoji;
 }
 
+function triggerFileUpload() {
+  fileInputRef.value?.click();
+}
+
+function handleFilesChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+
+  if (files && files.length > 0) {
+    selectedFiles.value = [...selectedFiles.value, ...Array.from(files)];
+  }
+  input.value = '';
+}
+
+function removeFile(index: number) {
+  selectedFiles.value.splice(index, 1);
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 function handlePositiveClick() {
-  emit('submit', { ...form });
+  emit('submit', { ...form }, [...selectedFiles.value]);
 }
 </script>
 
@@ -170,6 +199,38 @@ function handlePositiveClick() {
           style="background-color: #f1f3f6"
           placeholder="请输入Embedding模型名称"
         />
+      </NCard>
+
+      <!-- 文件上传（仅创建时显示） -->
+      <NCard v-if="!props.isEdit" title="上传文件" :bordered="false" size="small">
+        <NSpace vertical :size="8">
+          <NButton size="small" secondary type="info" @click="triggerFileUpload">
+            <template #icon>
+              <span class="i-mdi:file-upload-outline text-16px" />
+            </template>
+            选择文件
+          </NButton>
+          <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFilesChange" />
+
+          <!-- Selected files list -->
+          <div v-if="selectedFiles.length > 0">
+            <div class="mb-4px text-12px text-gray-500">已选择 {{ selectedFiles.length }} 个文件</div>
+            <div
+              v-for="(file, idx) in selectedFiles"
+              :key="idx"
+              class="mb-4px flex items-center justify-between rounded-4px bg-gray-50 px-8px py-4px"
+            >
+              <span class="max-w-360px truncate text-13px">{{ file.name }}</span>
+              <NSpace :size="8" align="center">
+                <span class="text-12px text-gray-400">{{ formatFileSize(file.size) }}</span>
+                <NButton size="tiny" text type="error" @click="removeFile(idx)">
+                  <span class="i-mdi:close text-14px" />
+                </NButton>
+              </NSpace>
+            </div>
+          </div>
+          <div v-else class="text-12px text-gray-400">支持上传 PDF、Word、TXT 等文档文件，创建后可进行分块处理</div>
+        </NSpace>
       </NCard>
     </NSpace>
     <NSpace />

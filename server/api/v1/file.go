@@ -280,8 +280,8 @@ func (this *fileApi) deleteFile(ctx *echo.Context) error {
 //	@Failure		500		{object}	response.ResponseBase[any]						"Internal server error or split service failure"
 //	@Router			/file/split [post]
 func (this *fileApi) splitDocument(ctx *echo.Context) error {
-	// Validate token
-	if _, err := utils.GetCurrentUser(ctx); err != nil {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
 		return response.ErrInvalidToken()
 	}
 
@@ -290,11 +290,18 @@ func (this *fileApi) splitDocument(ctx *echo.Context) error {
 		return response.BadRequestWithMsg(err.Error())
 	}
 
+	// Look up the MinIO path from the database instead of trusting the client
+	minioPath, err := fileService.GetFilePathByFileID(ctx.Request().Context(), args.FileID, currentUser.ID)
+	if err != nil {
+		Logger.Errorf("Failed to get file path for file ID %d: %v", args.FileID, err)
+		return response.ErrFileNotFound()
+	}
+
 	result, err := aiDocService.SplitDocument(
 		ctx.Request().Context(),
 		args.FileID,
 		args.DatasetID,
-		args.MinioPath,
+		minioPath,
 		args.ChunkSize,
 		args.ChunkOverlap,
 	)

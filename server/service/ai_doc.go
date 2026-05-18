@@ -12,13 +12,7 @@ type AIDocService struct{}
 // SplitDocument calls the AI document split service for a single file.
 // It returns the split result or an error if the call fails.
 func (this *AIDocService) SplitDocument(ctx context.Context, fileID, datasetID uint, minioPath string, chunkSize, chunkOverlap int) (*models.SplitDocumentResp, error) {
-	return callAIServerSplit(ctx, models.SplitDocumentReq{
-		FileID:       fileID,
-		DatasetID:    datasetID,
-		MinioPath:    minioPath,
-		ChunkSize:    chunkSize,
-		ChunkOverlap: chunkOverlap,
-	})
+	return callAIServerSplit(ctx, fileID, datasetID, minioPath, chunkSize, chunkOverlap)
 }
 
 // EmbedDocument calls the AI document embedding service.

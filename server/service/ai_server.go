@@ -81,7 +81,7 @@ func withDocCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 // --- Convenience wrappers for AIDocService ---
 
 // callAIServerSplit sends a split request with a doc-level timeout.
-func callAIServerSplit(ctx context.Context, req models.SplitDocumentReq) (*models.SplitDocumentResp, error) {
+func callAIServerSplit(ctx context.Context, fileID, datasetID uint, minioPath string, chunkSize, chunkOverlap int) (*models.SplitDocumentResp, error) {
 	ctx, cancel := withDocCtx(ctx)
 	defer cancel()
 
@@ -90,7 +90,13 @@ func callAIServerSplit(ctx context.Context, req models.SplitDocumentReq) (*model
 		Msg  string                   `json:"msg"`
 		Data models.SplitDocumentResp `json:"data"`
 	}
-	if err := aiServerPostJSON(ctx, aiPathDocSplit, req, &result); err != nil {
+	if err := aiServerPostJSON(ctx, aiPathDocSplit, map[string]any{
+		"file_id":       fileID,
+		"dataset_id":    datasetID,
+		"minio_path":    minioPath,
+		"chunk_size":    chunkSize,
+		"chunk_overlap": chunkOverlap,
+	}, &result); err != nil {
 		return nil, err
 	}
 	if result.Code != 0 {

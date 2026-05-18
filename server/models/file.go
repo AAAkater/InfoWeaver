@@ -73,13 +73,13 @@ type FileUploadMessage struct {
 	DatasetID uint      `json:"dataset_id"`
 }
 
-// SplitDocumentReq represents the request body for the document split API
+// SplitDocumentReq represents the request body for the document split API.
+// MinioPath is NOT accepted from the client; it is looked up server-side from the database.
 type SplitDocumentReq struct {
-	FileID       uint   `json:"file_id" validate:"required"`
-	DatasetID    uint   `json:"dataset_id" validate:"required"`
-	MinioPath    string `json:"minio_path" validate:"required"`
-	ChunkSize    int    `json:"chunk_size" validate:"required,min=64,max=4096"`
-	ChunkOverlap int    `json:"chunk_overlap" validate:"required,min=0,max=2048"`
+	FileID       uint `json:"file_id" validate:"required"`
+	DatasetID    uint `json:"dataset_id" validate:"required"`
+	ChunkSize    int  `json:"chunk_size" validate:"required,min=64,max=4096"`
+	ChunkOverlap int  `json:"chunk_overlap" validate:"required,min=0,max=2048"`
 }
 
 // SplitDocumentResp represents the data returned by the document split API

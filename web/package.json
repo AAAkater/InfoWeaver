@@ -19,7 +19,8 @@
     "preview": "vite preview",
     "release": "sa release",
     "typecheck": "vue-tsc --noEmit --skipLibCheck",
-    "update-pkg": "sa update-pkg"
+    "update-pkg": "sa update-pkg",
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@antv/data-set": "0.11.8",
@@ -39,6 +40,9 @@
     "@visactor/vtable-editors": "1.22.8",
     "@visactor/vtable-gantt": "1.22.8",
     "@visactor/vue-vtable": "1.22.8",
+    "@vitest/eslint-plugin": "^1.6.17",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.7.0",
     "@vueuse/components": "14.1.0",
     "@vueuse/core": "14.1.0",
     "clipboard": "2.0.11",

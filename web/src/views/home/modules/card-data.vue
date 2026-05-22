@@ -1,69 +1,69 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { createReusableTemplate } from '@vueuse/core';
-import { useThemeStore } from '@/store/modules/theme';
+import { ref } from "vue"
+import { createReusableTemplate } from "@vueuse/core"
+import { useThemeStore } from "@/store/modules/theme"
 
 defineOptions({
-  name: 'CardData'
-});
+  name: "CardData",
+})
 
 interface StatCard {
-  key: string;
-  title: string;
-  value: string;
-  subtitle: string;
+  key: string
+  title: string
+  value: string
+  subtitle: string
   color: {
-    start: string;
-    end: string;
-  };
-  icon: string;
+    start: string
+    end: string
+  }
+  icon: string
 }
 
 const statCards = ref<StatCard[]>([
   {
-    key: 'todayTokens',
-    title: '今日 Token',
-    value: '12,580',
-    subtitle: '较昨日 +18%',
-    color: { start: '#5da8ff', end: '#8e9dff' },
-    icon: 'mdi:lightning-bolt'
+    key: "todayTokens",
+    title: "今日 Token",
+    value: "12,580",
+    subtitle: "较昨日 +18%",
+    color: { start: "#5da8ff", end: "#8e9dff" },
+    icon: "mdi:lightning-bolt",
   },
   {
-    key: 'apiCalls',
-    title: 'API 调用',
-    value: '347',
-    subtitle: '今日调用次数',
-    color: { start: '#26deca', end: '#56cdf3' },
-    icon: 'mdi:api'
+    key: "apiCalls",
+    title: "API 调用",
+    value: "347",
+    subtitle: "今日调用次数",
+    color: { start: "#26deca", end: "#56cdf3" },
+    icon: "mdi:api",
   },
   {
-    key: 'activeModels',
-    title: '活跃模型',
-    value: '5',
-    subtitle: '共 8 个模型',
-    color: { start: '#fcbc25', end: '#f68057' },
-    icon: 'mdi:brain-circuit'
+    key: "activeModels",
+    title: "活跃模型",
+    value: "5",
+    subtitle: "共 8 个模型",
+    color: { start: "#fcbc25", end: "#f68057" },
+    icon: "mdi:brain-circuit",
   },
   {
-    key: 'totalDocs',
-    title: '文档数',
-    value: '128',
-    subtitle: '已索引文档',
-    color: { start: '#865ec0', end: '#b955a4' },
-    icon: 'mdi:file-document-multiple'
-  }
-]);
+    key: "totalDocs",
+    title: "文档数",
+    value: "128",
+    subtitle: "已索引文档",
+    color: { start: "#865ec0", end: "#b955a4" },
+    icon: "mdi:file-document-multiple",
+  },
+])
 
 interface GradientBgProps {
-  gradientColor: string;
+  gradientColor: string
 }
 
-const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>();
+const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>()
 
-const themeStore = useThemeStore();
+const themeStore = useThemeStore()
 
-function getGradientColor(color: StatCard['color']) {
-  return `linear-gradient(to bottom right, ${color.start}, ${color.end})`;
+function getGradientColor(color: StatCard["color"]) {
+  return `linear-gradient(to bottom right, ${color.start}, ${color.end})`
 }
 </script>
 

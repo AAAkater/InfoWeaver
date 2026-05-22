@@ -1,109 +1,109 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from "vue"
 
 const props = defineProps<{
-  isEdit?: boolean;
-  model: Api.Mcp.McpUpdateReq;
-  show: boolean;
-}>();
+  isEdit?: boolean
+  model: Api.Mcp.McpUpdateReq
+  show: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'submit', model: Api.Mcp.McpUpdateReq): void;
-  (event: 'update:show', value: boolean): void;
-}>();
+  (event: "submit", model: Api.Mcp.McpUpdateReq): void
+  (event: "update:show", value: boolean): void
+}>()
 
 const transportOptions = [
-  { label: 'stdio', value: 'stdio' },
-  { label: 'SSE', value: 'sse' },
-  { label: 'Streamable HTTP', value: 'streamable_http' }
-];
+  { label: "stdio", value: "stdio" },
+  { label: "SSE", value: "sse" },
+  { label: "Streamable HTTP", value: "streamable_http" },
+]
 
-const bodyStyle = { width: '600px' };
+const bodyStyle = { width: "600px" }
 
 const visible = computed({
   get: () => props.show,
-  set: value => emit('update:show', value)
-});
+  set: (value) => emit("update:show", value),
+})
 
 const form = reactive<Api.Mcp.McpUpdateReq>({
   id: 0,
-  name: '',
-  transport: 'stdio',
-  command: '',
-  args: '',
-  url: '',
+  name: "",
+  transport: "stdio",
+  command: "",
+  args: "",
+  url: "",
   enabled: true,
   env_vars: {},
-  headers: {}
-});
+  headers: {},
+})
 
 // env_vars editing
-const envVarsText = ref('');
+const envVarsText = ref("")
 
 // headers editing
-const headersText = ref('');
+const headersText = ref("")
 
 function resetForm() {
   Object.assign(form, {
     id: 0,
-    name: '',
-    transport: 'stdio' as const,
-    command: '',
-    args: '',
-    url: '',
+    name: "",
+    transport: "stdio" as const,
+    command: "",
+    args: "",
+    url: "",
     enabled: true,
     env_vars: {},
-    headers: {}
-  });
-  envVarsText.value = '';
-  headersText.value = '';
+    headers: {},
+  })
+  envVarsText.value = ""
+  headersText.value = ""
 }
 
 function syncForm() {
   Object.assign(form, {
     id: props.model.id ?? 0,
-    name: props.model.name || '',
-    transport: props.model.transport || 'stdio',
-    command: props.model.command || '',
-    args: props.model.args || '',
-    url: props.model.url || '',
+    name: props.model.name || "",
+    transport: props.model.transport || "stdio",
+    command: props.model.command || "",
+    args: props.model.args || "",
+    url: props.model.url || "",
     enabled: props.model.enabled ?? true,
     env_vars: props.model.env_vars ?? {},
-    headers: props.model.headers ?? {}
-  });
-  envVarsText.value = JSON.stringify(props.model.env_vars ?? {}, null, 2);
-  headersText.value = JSON.stringify(props.model.headers ?? {}, null, 2);
+    headers: props.model.headers ?? {},
+  })
+  envVarsText.value = JSON.stringify(props.model.env_vars ?? {}, null, 2)
+  headersText.value = JSON.stringify(props.model.headers ?? {}, null, 2)
 }
 
 watch(
   () => props.show,
-  show => {
-    if (show) syncForm();
-    else resetForm();
-  }
-);
+  (show) => {
+    if (show) syncForm()
+    else resetForm()
+  },
+)
 
 watch(
   () => props.model,
   () => {
-    if (props.show) syncForm();
+    if (props.show) syncForm()
   },
-  { deep: true }
-);
+  { deep: true },
+)
 
 function parseJsonField(text: string, fallback: Record<string, any>) {
-  if (!text.trim()) return {};
+  if (!text.trim()) return {}
   try {
-    return JSON.parse(text);
+    return JSON.parse(text)
   } catch {
-    return fallback;
+    return fallback
   }
 }
 
 function handlePositiveClick() {
-  form.env_vars = parseJsonField(envVarsText.value, form.env_vars ?? {});
-  form.headers = parseJsonField(headersText.value, form.headers ?? {});
-  emit('submit', { ...form });
+  form.env_vars = parseJsonField(envVarsText.value, form.env_vars ?? {})
+  form.headers = parseJsonField(headersText.value, form.headers ?? {})
+  emit("submit", { ...form })
 }
 </script>
 

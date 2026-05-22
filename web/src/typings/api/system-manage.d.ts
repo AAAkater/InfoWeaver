@@ -5,28 +5,28 @@ declare namespace Api {
    * backend api module: "systemManage"
    */
   namespace SystemManage {
-    type CommonSearchParams = Pick<Common.PaginatingCommonParams, 'current' | 'size'>;
+    type CommonSearchParams = Pick<Common.PaginatingCommonParams, "current" | "size">
 
     /** role */
     type Role = Common.CommonRecord<{
       /** role name */
-      roleName: string;
+      roleName: string
       /** role code */
-      roleCode: string;
+      roleCode: string
       /** role description */
-      roleDesc: string;
-    }>;
+      roleDesc: string
+    }>
 
     /** role search params */
     type RoleSearchParams = CommonType.RecordNullable<
-      Pick<Api.SystemManage.Role, 'roleName' | 'roleCode' | 'status'> & CommonSearchParams
-    >;
+      Pick<Api.SystemManage.Role, "roleName" | "roleCode" | "status"> & CommonSearchParams
+    >
 
     /** role list */
-    type RoleList = Common.PaginatingQueryRecord<Role>;
+    type RoleList = Common.PaginatingQueryRecord<Role>
 
     /** all role */
-    type AllRole = Pick<Role, 'id' | 'roleName' | 'roleCode'>;
+    type AllRole = Pick<Role, "id" | "roleName" | "roleCode">
 
     /**
      * user gender
@@ -34,32 +34,35 @@ declare namespace Api {
      * - "1": "male"
      * - "2": "female"
      */
-    type UserGender = '1' | '2';
+    type UserGender = "1" | "2"
 
     /** user */
     type User = Common.CommonRecord<{
       /** user name */
-      userName: string;
+      userName: string
       /** user gender */
-      userGender: UserGender | null;
+      userGender: UserGender | null
       /** user nick name */
-      nickName: string;
+      nickName: string
       /** user phone */
-      userPhone: string;
+      userPhone: string
       /** user email */
-      userEmail: string;
+      userEmail: string
       /** user role code collection */
-      userRoles: string[];
-    }>;
+      userRoles: string[]
+    }>
 
     /** user search params */
     type UserSearchParams = CommonType.RecordNullable<
-      Pick<Api.SystemManage.User, 'userName' | 'userGender' | 'nickName' | 'userPhone' | 'userEmail' | 'status'> &
+      Pick<
+        Api.SystemManage.User,
+        "userName" | "userGender" | "nickName" | "userPhone" | "userEmail" | "status"
+      > &
         CommonSearchParams
-    >;
+    >
 
     /** user list */
-    type UserList = Common.PaginatingQueryRecord<User>;
+    type UserList = Common.PaginatingQueryRecord<User>
 
     /**
      * menu type
@@ -67,7 +70,7 @@ declare namespace Api {
      * - "1": directory
      * - "2": menu
      */
-    type MenuType = '1' | '2';
+    type MenuType = "1" | "2"
 
     type MenuButton = {
       /**
@@ -75,10 +78,10 @@ declare namespace Api {
        *
        * it can be used to control the button permission
        */
-      code: string;
+      code: string
       /** button description */
-      desc: string;
-    };
+      desc: string
+    }
 
     /**
      * icon type
@@ -86,54 +89,54 @@ declare namespace Api {
      * - "1": iconify icon
      * - "2": local icon
      */
-    type IconType = '1' | '2';
+    type IconType = "1" | "2"
 
     type MenuPropsOfRoute = Pick<
-      import('vue-router').RouteMeta,
-      | 'i18nKey'
-      | 'keepAlive'
-      | 'constant'
-      | 'order'
-      | 'href'
-      | 'hideInMenu'
-      | 'activeMenu'
-      | 'multiTab'
-      | 'fixedIndexInTab'
-      | 'query'
-    >;
+      import("vue-router").RouteMeta,
+      | "i18nKey"
+      | "keepAlive"
+      | "constant"
+      | "order"
+      | "href"
+      | "hideInMenu"
+      | "activeMenu"
+      | "multiTab"
+      | "fixedIndexInTab"
+      | "query"
+    >
 
     type Menu = Common.CommonRecord<{
       /** parent menu id */
-      parentId: number;
+      parentId: number
       /** menu type */
-      menuType: MenuType;
+      menuType: MenuType
       /** menu name */
-      menuName: string;
+      menuName: string
       /** route name */
-      routeName: string;
+      routeName: string
       /** route path */
-      routePath: string;
+      routePath: string
       /** component */
-      component?: string;
+      component?: string
       /** iconify icon name or local icon name */
-      icon: string;
+      icon: string
       /** icon type */
-      iconType: IconType;
+      iconType: IconType
       /** buttons */
-      buttons?: MenuButton[] | null;
+      buttons?: MenuButton[] | null
       /** children menu */
-      children?: Menu[] | null;
+      children?: Menu[] | null
     }> &
-      MenuPropsOfRoute;
+      MenuPropsOfRoute
 
     /** menu list */
-    type MenuList = Common.PaginatingQueryRecord<Menu>;
+    type MenuList = Common.PaginatingQueryRecord<Menu>
 
     type MenuTree = {
-      id: number;
-      label: string;
-      pId: number;
-      children?: MenuTree[];
-    };
+      id: number
+      label: string
+      pId: number
+      children?: MenuTree[]
+    }
   }
 }

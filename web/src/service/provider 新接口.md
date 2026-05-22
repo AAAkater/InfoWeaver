@@ -16,7 +16,6 @@ code_clipboard: true
 highlight_theme: darkula
 headingLevel: 2
 generator: "@tarslib/widdershins v4.0.30"
-
 ---
 
 # 默认模块
@@ -48,10 +47,10 @@ Create a new provider
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|Authorization|header|string| 否 |none|
-|body|body|[models.ProviderCreateReq](#schemamodels.providercreatereq)| 是 |none|
+| 名称          | 位置   | 类型                                                        | 必选 | 说明 |
+| ------------- | ------ | ----------------------------------------------------------- | ---- | ---- |
+| Authorization | header | string                                                      | 否   | none |
+| body          | body   | [models.ProviderCreateReq](#schemamodels.providercreatereq) | 是   | none |
 
 > 返回示例
 
@@ -67,13 +66,13 @@ Create a new provider
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Provider created successfully|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Provider name already exists|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                          | 数据模型                                                      |
+| ------ | -------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Provider created successfully | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters    | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token      | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Provider name already exists  | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error         | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
 
 ## POST Delete Provider
 
@@ -83,10 +82,10 @@ Delete a provider by ID
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|provider_id|path|integer| 是 |Provider ID|
-|Authorization|header|string| 否 |none|
+| 名称          | 位置   | 类型    | 必选 | 说明        |
+| ------------- | ------ | ------- | ---- | ----------- |
+| provider_id   | path   | integer | 是   | Provider ID |
+| Authorization | header | string  | 否   | none        |
 
 > 返回示例
 
@@ -102,13 +101,13 @@ Delete a provider by ID
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Provider deleted successfully|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Provider not found|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                          | 数据模型                                                      |
+| ------ | -------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Provider deleted successfully | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters    | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token      | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | Provider not found            | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error         | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
 
 ## GET Get Provider by ID
 
@@ -118,10 +117,10 @@ Get a provider by its ID
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|provider_id|path|integer| 是 |Provider ID|
-|Authorization|header|string| 否 |none|
+| 名称          | 位置   | 类型    | 必选 | 说明        |
+| ------------- | ------ | ------- | ---- | ----------- |
+| provider_id   | path   | integer | 是   | Provider ID |
+| Authorization | header | string  | 否   | none        |
 
 > 返回示例
 
@@ -143,13 +142,13 @@ Get a provider by its ID
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Provider retrieved successfully|[response.ResponseBase-models_ProviderInfo](#schemaresponse.responsebase-models_providerinfo)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Provider not found|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                            | 数据模型                                                                                      |
+| ------ | -------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Provider retrieved successfully | [response.ResponseBase-models_ProviderInfo](#schemaresponse.responsebase-models_providerinfo) |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters      | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                 |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token        | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                 |
+| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | Provider not found              | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                 |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error           | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                 |
 
 ## GET Get All Providers
 
@@ -159,9 +158,9 @@ Get a list of all providers
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|Authorization|header|string| 否 |none|
+| 名称          | 位置   | 类型   | 必选 | 说明 |
+| ------------- | ------ | ------ | ---- | ---- |
+| Authorization | header | string | 否   | none |
 
 > 返回示例
 
@@ -188,11 +187,11 @@ Get a list of all providers
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Providers retrieved successfully|[response.ResponseBase-models_ProviderListResp](#schemaresponse.responsebase-models_providerlistresp)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                             | 数据模型                                                                                              |
+| ------ | -------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Providers retrieved successfully | [response.ResponseBase-models_ProviderListResp](#schemaresponse.responsebase-models_providerlistresp) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token         | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                         |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error            | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                         |
 
 ## GET List Models
 
@@ -202,10 +201,10 @@ Get available models from a provider
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|provider_id|path|integer| 是 |Provider ID|
-|Authorization|header|string| 否 |none|
+| 名称          | 位置   | 类型    | 必选 | 说明        |
+| ------------- | ------ | ------- | ---- | ----------- |
+| provider_id   | path   | integer | 是   | Provider ID |
+| Authorization | header | string  | 否   | none        |
 
 > 返回示例
 
@@ -230,13 +229,13 @@ Get available models from a provider
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Models retrieved successfully|[response.ResponseBase-models_ProviderModelsResp](#schemaresponse.responsebase-models_providermodelsresp)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Provider not found|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                          | 数据模型                                                                                                  |
+| ------ | -------------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Models retrieved successfully | [response.ResponseBase-models_ProviderModelsResp](#schemaresponse.responsebase-models_providermodelsresp) |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters    | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                             |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token      | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                             |
+| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | Provider not found            | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                             |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error         | [response.ResponseBase-any](#schemaresponse.responsebase-any)                                             |
 
 ## POST Update Provider
 
@@ -258,10 +257,10 @@ Update an existing provider
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|Authorization|header|string| 否 |none|
-|body|body|[models.ProviderUpdateReq](#schemamodels.providerupdatereq)| 是 |none|
+| 名称          | 位置   | 类型                                                        | 必选 | 说明 |
+| ------------- | ------ | ----------------------------------------------------------- | ---- | ---- |
+| Authorization | header | string                                                      | 否   | none |
+| body          | body   | [models.ProviderUpdateReq](#schemamodels.providerupdatereq) | 是   | none |
 
 > 返回示例
 
@@ -277,14 +276,14 @@ Update an existing provider
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Provider updated successfully|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|403|[Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)|Provider name already exists|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Provider not found|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                          | 数据模型                                                      |
+| ------ | -------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Provider updated successfully | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters    | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token      | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 403    | [Forbidden](https://tools.ietf.org/html/rfc7231#section-6.5.3)             | Provider name already exists  | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | Provider not found            | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error         | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
 
 ## POST Set Model Enable Status
 
@@ -304,10 +303,10 @@ Enable or disable a single model for a provider
 
 ### 请求参数
 
-|名称|位置|类型|必选|说明|
-|---|---|---|---|---|
-|Authorization|header|string| 否 |none|
-|body|body|[models.ProviderSetModelEnableReq](#schemamodels.providersetmodelenablereq)| 是 |none|
+| 名称          | 位置   | 类型                                                                        | 必选 | 说明 |
+| ------------- | ------ | --------------------------------------------------------------------------- | ---- | ---- |
+| Authorization | header | string                                                                      | 否   | none |
+| body          | body   | [models.ProviderSetModelEnableReq](#schemamodels.providersetmodelenablereq) | 是   | none |
 
 > 返回示例
 
@@ -323,13 +322,13 @@ Enable or disable a single model for a provider
 
 ### 返回结果
 
-|状态码|状态码含义|说明|数据模型|
-|---|---|---|---|
-|200|[OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)|Model enable status set successfully|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|400|[Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)|Invalid request parameters|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|401|[Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)|Invalid or expired token|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|404|[Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)|Provider not found|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
-|500|[Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1)|Internal server error|[response.ResponseBase-any](#schemaresponse.responsebase-any)|
+| 状态码 | 状态码含义                                                                 | 说明                                 | 数据模型                                                      |
+| ------ | -------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- |
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1)                    | Model enable status set successfully | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 400    | [Bad Request](https://tools.ietf.org/html/rfc7231#section-6.5.1)           | Invalid request parameters           | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 401    | [Unauthorized](https://tools.ietf.org/html/rfc7235#section-3.1)            | Invalid or expired token             | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 404    | [Not Found](https://tools.ietf.org/html/rfc7231#section-6.5.4)             | Provider not found                   | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
+| 500    | [Internal Server Error](https://tools.ietf.org/html/rfc7231#section-6.6.1) | Internal server error                | [response.ResponseBase-any](#schemaresponse.responsebase-any) |
 
 # 数据模型
 
@@ -346,16 +345,15 @@ Enable or disable a single model for a provider
   "data": null,
   "msg": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|code|integer|false|none||none|
-|data|any|false|none||none|
-|msg|string|false|none||none|
+| 名称 | 类型    | 必选  | 约束 | 中文名 | 说明 |
+| ---- | ------- | ----- | ---- | ------ | ---- |
+| code | integer | false | none |        | none |
+| data | any     | false | none |        | none |
+| msg  | string  | false | none |        | none |
 
 <h2 id="tocS_models.ProviderCreateReq">models.ProviderCreateReq</h2>
 
@@ -371,27 +369,26 @@ Enable or disable a single model for a provider
   "mode": "openai",
   "name": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|api_key|string|true|none||none|
-|base_url|string|true|none||none|
-|mode|string|true|none||none|
-|name|string|true|none||none|
+| 名称     | 类型   | 必选 | 约束 | 中文名 | 说明 |
+| -------- | ------ | ---- | ---- | ------ | ---- |
+| api_key  | string | true | none |        | none |
+| base_url | string | true | none |        | none |
+| mode     | string | true | none |        | none |
+| name     | string | true | none |        | none |
 
 #### 枚举值
 
-|属性|值|
-|---|---|
-|mode|openai|
-|mode|openai_response|
-|mode|gemini|
-|mode|anthropic|
-|mode|ollama|
+| 属性 | 值              |
+| ---- | --------------- |
+| mode | openai          |
+| mode | openai_response |
+| mode | gemini          |
+| mode | anthropic       |
+| mode | ollama          |
 
 <h2 id="tocS_models.ModelInfo">models.ModelInfo</h2>
 
@@ -407,17 +404,16 @@ Enable or disable a single model for a provider
   "object": "string",
   "owned_by": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|enabled|boolean|false|none||Enable status for this model|
-|id|string|false|none||Model identifier (e.g., "gpt-4", "text-embedding-3-small")|
-|object|string|false|none||Object type (usually "model")|
-|owned_by|string|false|none||Owner of the model (e.g., "openai")|
+| 名称     | 类型    | 必选  | 约束 | 中文名 | 说明                                                       |
+| -------- | ------- | ----- | ---- | ------ | ---------------------------------------------------------- |
+| enabled  | boolean | false | none |        | Enable status for this model                               |
+| id       | string  | false | none |        | Model identifier (e.g., "gpt-4", "text-embedding-3-small") |
+| object   | string  | false | none |        | Object type (usually "model")                              |
+| owned_by | string  | false | none |        | Owner of the model (e.g., "openai")                        |
 
 <h2 id="tocS_models.ProviderInfo">models.ProviderInfo</h2>
 
@@ -434,18 +430,17 @@ Enable or disable a single model for a provider
   "mode": "string",
   "name": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|base_url|string|false|none||none|
-|created_at|string|false|none||none|
-|id|integer|false|none||none|
-|mode|string|false|none||none|
-|name|string|false|none||none|
+| 名称       | 类型    | 必选  | 约束 | 中文名 | 说明 |
+| ---------- | ------- | ----- | ---- | ------ | ---- |
+| base_url   | string  | false | none |        | none |
+| created_at | string  | false | none |        | none |
+| id         | integer | false | none |        | none |
+| mode       | string  | false | none |        | none |
+| name       | string  | false | none |        | none |
 
 <h2 id="tocS_models.ProviderListResp">models.ProviderListResp</h2>
 
@@ -467,15 +462,14 @@ Enable or disable a single model for a provider
   ],
   "total": 0
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|providers|[[models.ProviderInfo](#schemamodels.providerinfo)]|false|none||none|
-|total|integer|false|none||none|
+| 名称      | 类型                                                | 必选  | 约束 | 中文名 | 说明 |
+| --------- | --------------------------------------------------- | ----- | ---- | ------ | ---- |
+| providers | [[models.ProviderInfo](#schemamodels.providerinfo)] | false | none |        | none |
+| total     | integer                                             | false | none |        | none |
 
 <h2 id="tocS_models.ProviderUpdateReq">models.ProviderUpdateReq</h2>
 
@@ -492,28 +486,27 @@ Enable or disable a single model for a provider
   "mode": "openai",
   "name": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|api_key|string|true|none||none|
-|base_url|string|true|none||none|
-|id|integer|true|none||none|
-|mode|string|true|none||none|
-|name|string|true|none||none|
+| 名称     | 类型    | 必选 | 约束 | 中文名 | 说明 |
+| -------- | ------- | ---- | ---- | ------ | ---- |
+| api_key  | string  | true | none |        | none |
+| base_url | string  | true | none |        | none |
+| id       | integer | true | none |        | none |
+| mode     | string  | true | none |        | none |
+| name     | string  | true | none |        | none |
 
 #### 枚举值
 
-|属性|值|
-|---|---|
-|mode|openai|
-|mode|openai_response|
-|mode|gemini|
-|mode|anthropic|
-|mode|ollama|
+| 属性 | 值              |
+| ---- | --------------- |
+| mode | openai          |
+| mode | openai_response |
+| mode | gemini          |
+| mode | anthropic       |
+| mode | ollama          |
 
 <h2 id="tocS_models.ProviderModelsResp">models.ProviderModelsResp</h2>
 
@@ -533,14 +526,13 @@ Enable or disable a single model for a provider
     }
   ]
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|models|[[models.ModelInfo](#schemamodels.modelinfo)]|false|none||none|
+| 名称   | 类型                                          | 必选  | 约束 | 中文名 | 说明 |
+| ------ | --------------------------------------------- | ----- | ---- | ------ | ---- |
+| models | [[models.ModelInfo](#schemamodels.modelinfo)] | false | none |        | none |
 
 <h2 id="tocS_models.ProviderSetModelEnableReq">models.ProviderSetModelEnableReq</h2>
 
@@ -555,16 +547,15 @@ Enable or disable a single model for a provider
   "id": 0,
   "model_id": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|enabled|boolean|true|none||Enable status|
-|id|integer|true|none||Provider ID|
-|model_id|string|true|none||Model ID to enable/disable|
+| 名称     | 类型    | 必选 | 约束 | 中文名 | 说明                       |
+| -------- | ------- | ---- | ---- | ------ | -------------------------- |
+| enabled  | boolean | true | none |        | Enable status              |
+| id       | integer | true | none |        | Provider ID                |
+| model_id | string  | true | none |        | Model ID to enable/disable |
 
 <h2 id="tocS_response.ResponseBase-models_ProviderInfo">response.ResponseBase-models_ProviderInfo</h2>
 
@@ -585,16 +576,15 @@ Enable or disable a single model for a provider
   },
   "msg": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|code|integer|false|none||none|
-|data|[models.ProviderInfo](#schemamodels.providerinfo)|false|none||none|
-|msg|string|false|none||none|
+| 名称 | 类型                                              | 必选  | 约束 | 中文名 | 说明 |
+| ---- | ------------------------------------------------- | ----- | ---- | ------ | ---- |
+| code | integer                                           | false | none |        | none |
+| data | [models.ProviderInfo](#schemamodels.providerinfo) | false | none |        | none |
+| msg  | string                                            | false | none |        | none |
 
 <h2 id="tocS_response.ResponseBase-models_ProviderListResp">response.ResponseBase-models_ProviderListResp</h2>
 
@@ -620,16 +610,15 @@ Enable or disable a single model for a provider
   },
   "msg": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|code|integer|false|none||none|
-|data|[models.ProviderListResp](#schemamodels.providerlistresp)|false|none||none|
-|msg|string|false|none||none|
+| 名称 | 类型                                                      | 必选  | 约束 | 中文名 | 说明 |
+| ---- | --------------------------------------------------------- | ----- | ---- | ------ | ---- |
+| code | integer                                                   | false | none |        | none |
+| data | [models.ProviderListResp](#schemamodels.providerlistresp) | false | none |        | none |
+| msg  | string                                                    | false | none |        | none |
 
 <h2 id="tocS_response.ResponseBase-models_ProviderModelsResp">response.ResponseBase-models_ProviderModelsResp</h2>
 
@@ -653,14 +642,12 @@ Enable or disable a single model for a provider
   },
   "msg": "string"
 }
-
 ```
 
 ### 属性
 
-|名称|类型|必选|约束|中文名|说明|
-|---|---|---|---|---|---|
-|code|integer|false|none||none|
-|data|[models.ProviderModelsResp](#schemamodels.providermodelsresp)|false|none||none|
-|msg|string|false|none||none|
-
+| 名称 | 类型                                                          | 必选  | 约束 | 中文名 | 说明 |
+| ---- | ------------------------------------------------------------- | ----- | ---- | ------ | ---- |
+| code | integer                                                       | false | none |        | none |
+| data | [models.ProviderModelsResp](#schemamodels.providermodelsresp) | false | none |        | none |
+| msg  | string                                                        | false | none |        | none |

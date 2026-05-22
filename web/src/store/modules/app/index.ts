@@ -1,35 +1,43 @@
-import { effectScope, nextTick, onScopeDispose, ref, watch } from 'vue';
-import { breakpointsTailwind, useBreakpoints, useEventListener, useTitle } from '@vueuse/core';
-import { defineStore } from 'pinia';
-import { useBoolean } from '@sa/hooks';
-import { router } from '@/router';
-import { localStg } from '@/utils/storage';
-import { SetupStoreId } from '@/enum';
-import { $t, setLocale } from '@/locales';
-import { setDayjsLocale } from '@/locales/dayjs';
-import { useRouteStore } from '../route';
-import { useTabStore } from '../tab';
-import { useThemeStore } from '../theme';
+import { effectScope, nextTick, onScopeDispose, ref, watch } from "vue"
+import { breakpointsTailwind, useBreakpoints, useEventListener, useTitle } from "@vueuse/core"
+import { defineStore } from "pinia"
+import { useBoolean } from "@sa/hooks"
+import { router } from "@/router"
+import { localStg } from "@/utils/storage"
+import { SetupStoreId } from "@/enum"
+import { $t, setLocale } from "@/locales"
+import { setDayjsLocale } from "@/locales/dayjs"
+import { useRouteStore } from "../route"
+import { useTabStore } from "../tab"
+import { useThemeStore } from "../theme"
 
 export const useAppStore = defineStore(SetupStoreId.App, () => {
-  const themeStore = useThemeStore();
-  const routeStore = useRouteStore();
-  const tabStore = useTabStore();
-  const scope = effectScope();
-  const breakpoints = useBreakpoints(breakpointsTailwind);
-  const { bool: themeDrawerVisible, setTrue: openThemeDrawer, setFalse: closeThemeDrawer } = useBoolean();
-  const { bool: reloadFlag, setBool: setReloadFlag } = useBoolean(true);
-  const { bool: fullContent, toggle: toggleFullContent } = useBoolean();
-  const { bool: contentXScrollable, setBool: setContentXScrollable } = useBoolean();
-  const { bool: siderCollapse, setBool: setSiderCollapse, toggle: toggleSiderCollapse } = useBoolean();
+  const themeStore = useThemeStore()
+  const routeStore = useRouteStore()
+  const tabStore = useTabStore()
+  const scope = effectScope()
+  const breakpoints = useBreakpoints(breakpointsTailwind)
+  const {
+    bool: themeDrawerVisible,
+    setTrue: openThemeDrawer,
+    setFalse: closeThemeDrawer,
+  } = useBoolean()
+  const { bool: reloadFlag, setBool: setReloadFlag } = useBoolean(true)
+  const { bool: fullContent, toggle: toggleFullContent } = useBoolean()
+  const { bool: contentXScrollable, setBool: setContentXScrollable } = useBoolean()
+  const {
+    bool: siderCollapse,
+    setBool: setSiderCollapse,
+    toggle: toggleSiderCollapse,
+  } = useBoolean()
   const {
     bool: mixSiderFixed,
     setBool: setMixSiderFixed,
-    toggle: toggleMixSiderFixed
-  } = useBoolean(localStg.get('mixSiderFixed') === 'Y');
+    toggle: toggleMixSiderFixed,
+  } = useBoolean(localStg.get("mixSiderFixed") === "Y")
 
   /** Is mobile layout */
-  const isMobile = breakpoints.smaller('sm');
+  const isMobile = breakpoints.smaller("sm")
 
   /**
    * Reload page
@@ -37,48 +45,48 @@ export const useAppStore = defineStore(SetupStoreId.App, () => {
    * @param duration Duration time
    */
   async function reloadPage(duration = 300) {
-    setReloadFlag(false);
+    setReloadFlag(false)
 
-    const d = themeStore.page.animate ? duration : 40;
+    const d = themeStore.page.animate ? duration : 40
 
-    await new Promise(resolve => {
-      setTimeout(resolve, d);
-    });
+    await new Promise((resolve) => {
+      setTimeout(resolve, d)
+    })
 
-    setReloadFlag(true);
-    routeStore.resetRouteCache();
+    setReloadFlag(true)
+    routeStore.resetRouteCache()
   }
 
-  const locale = ref<App.I18n.LangType>(localStg.get('lang') || 'zh-CN');
+  const locale = ref<App.I18n.LangType>(localStg.get("lang") || "zh-CN")
 
   const localeOptions: App.I18n.LangOption[] = [
     {
-      label: '中文',
-      key: 'zh-CN'
+      label: "中文",
+      key: "zh-CN",
     },
     {
-      label: 'English',
-      key: 'en-US'
-    }
-  ];
+      label: "English",
+      key: "en-US",
+    },
+  ]
 
   function changeLocale(lang: App.I18n.LangType) {
-    locale.value = lang;
-    setLocale(lang);
-    localStg.set('lang', lang);
+    locale.value = lang
+    setLocale(lang)
+    localStg.set("lang", lang)
   }
 
   /** Update document title by locale */
   function updateDocumentTitleByLocale() {
-    const { i18nKey, title } = router.currentRoute.value.meta;
+    const { i18nKey, title } = router.currentRoute.value.meta
 
-    const documentTitle = i18nKey ? $t(i18nKey) : title;
+    const documentTitle = i18nKey ? $t(i18nKey) : title
 
-    useTitle(documentTitle);
+    useTitle(documentTitle)
   }
 
   function init() {
-    setDayjsLocale(locale.value);
+    setDayjsLocale(locale.value)
   }
 
   // watch store
@@ -86,61 +94,61 @@ export const useAppStore = defineStore(SetupStoreId.App, () => {
     // watch isMobile, if is mobile, collapse sider
     watch(
       isMobile,
-      newValue => {
+      (newValue) => {
         if (newValue) {
           // backup theme setting before is mobile
-          localStg.set('backupThemeSettingBeforeIsMobile', {
+          localStg.set("backupThemeSettingBeforeIsMobile", {
             layout: themeStore.layout.mode,
-            siderCollapse: siderCollapse.value
-          });
+            siderCollapse: siderCollapse.value,
+          })
 
-          themeStore.setThemeLayout('vertical');
-          setSiderCollapse(true);
+          themeStore.setThemeLayout("vertical")
+          setSiderCollapse(true)
         } else {
           // when is not mobile, recover the backup theme setting
-          const backup = localStg.get('backupThemeSettingBeforeIsMobile');
+          const backup = localStg.get("backupThemeSettingBeforeIsMobile")
 
           if (backup) {
             nextTick(() => {
-              themeStore.setThemeLayout(backup.layout);
-              setSiderCollapse(backup.siderCollapse);
+              themeStore.setThemeLayout(backup.layout)
+              setSiderCollapse(backup.siderCollapse)
 
-              localStg.remove('backupThemeSettingBeforeIsMobile');
-            });
+              localStg.remove("backupThemeSettingBeforeIsMobile")
+            })
           }
         }
       },
-      { immediate: true }
-    );
+      { immediate: true },
+    )
 
     // watch locale
     watch(locale, () => {
       // update document title by locale
-      updateDocumentTitleByLocale();
+      updateDocumentTitleByLocale()
 
       // update global menus by locale
-      routeStore.updateGlobalMenusByLocale();
+      routeStore.updateGlobalMenusByLocale()
 
       // update tabs by locale
-      tabStore.updateTabsByLocale();
+      tabStore.updateTabsByLocale()
 
       // set dayjs locale
-      setDayjsLocale(locale.value);
-    });
-  });
+      setDayjsLocale(locale.value)
+    })
+  })
 
   // cache mixSiderFixed
-  useEventListener(window, 'beforeunload', () => {
-    localStg.set('mixSiderFixed', mixSiderFixed.value ? 'Y' : 'N');
-  });
+  useEventListener(window, "beforeunload", () => {
+    localStg.set("mixSiderFixed", mixSiderFixed.value ? "Y" : "N")
+  })
 
   /** On scope dispose */
   onScopeDispose(() => {
-    scope.stop();
-  });
+    scope.stop()
+  })
 
   // init
-  init();
+  init()
 
   return {
     isMobile,
@@ -161,6 +169,6 @@ export const useAppStore = defineStore(SetupStoreId.App, () => {
     toggleSiderCollapse,
     mixSiderFixed,
     setMixSiderFixed,
-    toggleMixSiderFixed
-  };
-});
+    toggleMixSiderFixed,
+  }
+})

@@ -1,44 +1,44 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue"
 
-defineOptions({ name: 'CustomIconSelect' });
+defineOptions({ name: "CustomIconSelect" })
 
 interface Props {
   /** Selected icon */
-  value: string;
+  value: string
   /** List of icons */
-  icons: string[];
+  icons: string[]
   /** Icon for when nothing is selected */
-  emptyIcon?: string;
+  emptyIcon?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  emptyIcon: 'mdi:apps'
-});
+  emptyIcon: "mdi:apps",
+})
 
 interface Emits {
-  (e: 'update:value', val: string): void;
+  (e: "update:value", val: string): void
 }
 
-const emit = defineEmits<Emits>();
+const emit = defineEmits<Emits>()
 
 const modelValue = computed({
   get() {
-    return props.value;
+    return props.value
   },
   set(val: string) {
-    emit('update:value', val);
-  }
-});
+    emit("update:value", val)
+  },
+})
 
-const selectedIcon = computed(() => modelValue.value || props.emptyIcon);
+const selectedIcon = computed(() => modelValue.value || props.emptyIcon)
 
-const searchValue = ref('');
+const searchValue = ref("")
 
-const iconsList = computed(() => props.icons.filter(v => v.includes(searchValue.value)));
+const iconsList = computed(() => props.icons.filter((v) => v.includes(searchValue.value)))
 
 function handleChange(iconItem: string) {
-  modelValue.value = iconItem;
+  modelValue.value = iconItem
 }
 </script>
 

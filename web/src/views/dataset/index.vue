@@ -1,177 +1,183 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useDialog, useMessage } from 'naive-ui';
-import { createDataset, deleteDataset, getDatasets, updateDataset, uploadFiles } from '@/service/api/dataset';
-import DatasetCard from './modules/dataset-card.vue';
-import DatasetCreateCard from './modules/dataset-create-card.vue';
-import DatasetFormModal from './modules/dataset-form-modal.vue';
-import DatasetSearch from './modules/dataset-search.vue';
+import { onMounted, reactive, ref } from "vue"
+import { useRouter } from "vue-router"
+import { useDialog, useMessage } from "naive-ui"
+import {
+  createDataset,
+  deleteDataset,
+  getDatasets,
+  updateDataset,
+  uploadFiles,
+} from "@/service/api/dataset"
+import DatasetCard from "./modules/dataset-card.vue"
+import DatasetCreateCard from "./modules/dataset-create-card.vue"
+import DatasetFormModal from "./modules/dataset-form-modal.vue"
+import DatasetSearch from "./modules/dataset-search.vue"
 
-const dialog = useDialog();
-const message = useMessage();
-const router = useRouter();
+const dialog = useDialog()
+const message = useMessage()
+const router = useRouter()
 
-const loading = ref(false);
-const showModal = ref(false);
-const isEdit = ref(false);
-const searchKey = ref('');
-const datasets = ref<Api.Dataset.DatasetItem[]>([]);
+const loading = ref(false)
+const showModal = ref(false)
+const isEdit = ref(false)
+const searchKey = ref("")
+const datasets = ref<Api.Dataset.DatasetItem[]>([])
 
 const model: Api.Dataset.FormModel = reactive({
   id: undefined,
-  icon: '🤖',
-  description: '',
-  name: '',
-  search_type: 'hybrid',
-  embedding_model: '',
-  provider_id: 0
-});
+  icon: "🤖",
+  description: "",
+  name: "",
+  search_type: "hybrid",
+  embedding_model: "",
+  provider_id: 0,
+})
 
 function resetModel() {
   Object.assign(model, {
     id: undefined,
-    icon: '🤖',
-    description: '',
-    name: '',
-    search_type: 'hybrid',
-    embedding_model: '',
-    provider_id: 0
-  });
+    icon: "🤖",
+    description: "",
+    name: "",
+    search_type: "hybrid",
+    embedding_model: "",
+    provider_id: 0,
+  })
 }
 
 function fillModel(dataset: Api.Dataset.DatasetItem) {
   Object.assign(model, {
     id: dataset.id,
-    icon: dataset.icon || '🤖',
+    icon: dataset.icon || "🤖",
     name: dataset.name,
     description: dataset.description,
-    search_type: dataset.search_type || 'hybrid',
-    embedding_model: dataset.embedding_model || '',
-    provider_id: dataset.provider_id || 0
-  });
+    search_type: dataset.search_type || "hybrid",
+    embedding_model: dataset.embedding_model || "",
+    provider_id: dataset.provider_id || 0,
+  })
 }
 
 function openCreateModal() {
-  resetModel();
-  isEdit.value = false;
-  showModal.value = true;
+  resetModel()
+  isEdit.value = false
+  showModal.value = true
 }
 
 async function fetchDatasets() {
-  loading.value = true;
+  loading.value = true
 
   try {
-    const keyword = searchKey.value.trim() || undefined;
-    const { response: res } = await getDatasets(keyword);
+    const keyword = searchKey.value.trim() || undefined
+    const { response: res } = await getDatasets(keyword)
 
     if (res?.data?.code === 0) {
-      datasets.value = res.data.data?.datasets ?? [];
+      datasets.value = res.data.data?.datasets ?? []
     } else {
-      message.error('获取数据失败');
-      datasets.value = [];
+      message.error("获取数据失败")
+      datasets.value = []
     }
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 function handleViewChunks(datasetId: number) {
   router.push({
-    name: 'dataset-info',
+    name: "dataset-info",
     params: {
-      id: datasetId
-    }
-  });
+      id: datasetId,
+    },
+  })
 }
 
 async function handleCreateDataset(md: Api.Dataset.FormModel, files: File[] = []) {
-  const { response: res } = await createDataset(md);
+  const { response: res } = await createDataset(md)
 
   if (res.data.code === 0) {
-    const createdId = res.data.data?.id;
+    const createdId = res.data.data?.id
 
     // Upload files if any
     if (files.length > 0 && createdId !== undefined) {
       try {
-        const { data: uploadData, error: uploadError } = await uploadFiles(createdId, files);
+        const { data: uploadData, error: uploadError } = await uploadFiles(createdId, files)
 
         if (!uploadError && uploadData?.code === 0) {
-          message.success(`创建成功，已上传 ${files.length} 个文件`);
+          message.success(`创建成功，已上传 ${files.length} 个文件`)
         } else {
-          message.success('知识库创建成功，但文件上传失败');
+          message.success("知识库创建成功，但文件上传失败")
         }
       } catch {
-        message.success('知识库创建成功，但文件上传失败');
+        message.success("知识库创建成功，但文件上传失败")
       }
     } else {
-      message.success('创建成功');
+      message.success("创建成功")
     }
 
-    showModal.value = false;
-    await fetchDatasets();
+    showModal.value = false
+    await fetchDatasets()
   } else {
-    message.error(res.data.msg || '创建失败');
+    message.error(res.data.msg || "创建失败")
   }
 }
 
 async function handleDeleteDataset(id: number) {
-  const { response: res } = await deleteDataset(id);
+  const { response: res } = await deleteDataset(id)
 
   if (res.data.code === 0) {
-    message.success('删除成功');
-    await fetchDatasets();
+    message.success("删除成功")
+    await fetchDatasets()
   } else {
-    message.error(res.data.msg || '删除失败');
+    message.error(res.data.msg || "删除失败")
   }
 }
 
 async function handleEditDataset(md: Api.Dataset.FormModel) {
-  const { response: res } = await updateDataset(md);
+  const { response: res } = await updateDataset(md)
 
   if (res.data.code === 0) {
-    message.success('编辑成功');
-    showModal.value = false;
-    await fetchDatasets();
+    message.success("编辑成功")
+    showModal.value = false
+    await fetchDatasets()
   } else {
-    message.error(res.data.msg || '编辑失败');
+    message.error(res.data.msg || "编辑失败")
   }
 }
 
 function handleSelect(key: string, dataset: Api.Dataset.DatasetItem) {
   switch (key) {
-    case 'view':
-      handleViewChunks(dataset.id);
-      break;
-    case 'edit':
-      isEdit.value = true;
-      fillModel(dataset);
-      showModal.value = true;
-      break;
-    case 'delete':
+    case "view":
+      handleViewChunks(dataset.id)
+      break
+    case "edit":
+      isEdit.value = true
+      fillModel(dataset)
+      showModal.value = true
+      break
+    case "delete":
       dialog.warning({
-        title: '确认删除',
+        title: "确认删除",
         content: `确定要删除知识库 “${dataset.name}” 吗？此操作不可恢复。`,
-        positiveText: '删除',
-        negativeText: '取消',
-        onPositiveClick: () => handleDeleteDataset(dataset.id)
-      });
-      break;
+        positiveText: "删除",
+        negativeText: "取消",
+        onPositiveClick: () => handleDeleteDataset(dataset.id),
+      })
+      break
     default:
   }
 }
 
 function handleSubmit(form: Api.Dataset.FormModel, files: File[] = []) {
   if (isEdit.value && form.id !== undefined) {
-    handleEditDataset(form);
+    handleEditDataset(form)
   } else {
-    handleCreateDataset(form, files);
+    handleCreateDataset(form, files)
   }
 }
 
 onMounted(() => {
-  fetchDatasets();
-});
+  fetchDatasets()
+})
 </script>
 
 <template>
@@ -190,7 +196,12 @@ onMounted(() => {
       </NGrid>
     </NSpin>
 
-    <DatasetFormModal v-model:show="showModal" :model="model" :is-edit="isEdit" @submit="handleSubmit" />
+    <DatasetFormModal
+      v-model:show="showModal"
+      :model="model"
+      :is-edit="isEdit"
+      @submit="handleSubmit"
+    />
   </NSpace>
 </template>
 

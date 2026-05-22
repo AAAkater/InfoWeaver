@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from "vue"
 
 const props = defineProps<{
-  show: boolean;
-}>();
+  show: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'submit', modelName: string): void;
-  (event: 'update:show', value: boolean): void;
-}>();
+  (event: "submit", modelName: string): void
+  (event: "update:show", value: boolean): void
+}>()
 
 const bodyStyle = {
-  width: '400px'
-};
+  width: "400px",
+}
 
 const visible = computed({
   get: () => props.show,
-  set: value => emit('update:show', value)
-});
+  set: (value) => emit("update:show", value),
+})
 
-const modelName = ref('');
+const modelName = ref("")
 
 watch(
   () => props.show,
-  show => {
+  (show) => {
     if (show) {
-      modelName.value = '';
+      modelName.value = ""
     }
-  }
-);
+  },
+)
 
 function handlePositiveClick() {
-  emit('submit', modelName.value.trim());
+  emit("submit", modelName.value.trim())
 }
 </script>
 

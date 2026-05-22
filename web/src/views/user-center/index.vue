@@ -1,169 +1,169 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
-import { useMessage } from 'naive-ui';
-import { updateUserAvatar, updateUserPassword, updateUserProfile } from '@/service/api/auth';
-import { useAuthStore } from '@/store/modules/auth';
+import { reactive, ref } from "vue"
+import { useMessage } from "naive-ui"
+import { updateUserAvatar, updateUserPassword, updateUserProfile } from "@/service/api/auth"
+import { useAuthStore } from "@/store/modules/auth"
 
-const authStore = useAuthStore();
-const message = useMessage();
-const avatarInputRef = ref<HTMLInputElement | null>(null);
-const isUploadingAvatar = ref(false);
+const authStore = useAuthStore()
+const message = useMessage()
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const isUploadingAvatar = ref(false)
 
 // 用户名编辑
-const isEditingUsername = ref(false);
+const isEditingUsername = ref(false)
 const usernameForm = reactive({
-  username: authStore.userInfo.username
-});
-const isLoadingUsername = ref(false);
+  username: authStore.userInfo.username,
+})
+const isLoadingUsername = ref(false)
 
 // 邮箱编辑
-const isEditingEmail = ref(false);
+const isEditingEmail = ref(false)
 const emailForm = reactive({
-  email: authStore.userInfo.email
-});
-const isLoadingEmail = ref(false);
+  email: authStore.userInfo.email,
+})
+const isLoadingEmail = ref(false)
 
 // 密码修改
-const isEditingPassword = ref(false);
+const isEditingPassword = ref(false)
 const passwordForm = reactive({
-  first_password: '',
-  second_password: ''
-});
-const isLoadingPassword = ref(false);
+  first_password: "",
+  second_password: "",
+})
+const isLoadingPassword = ref(false)
 
 function getErrorMessage(error: unknown, fallback: string) {
-  return (error as { response?: { data?: { msg?: string } } })?.response?.data?.msg || fallback;
+  return (error as { response?: { data?: { msg?: string } } })?.response?.data?.msg || fallback
 }
 
 async function handleUpdateUsername() {
   if (!usernameForm.username.trim()) {
-    message.error('用户名不能为空');
-    return;
+    message.error("用户名不能为空")
+    return
   }
 
-  isLoadingUsername.value = true;
+  isLoadingUsername.value = true
 
   const { error } = await updateUserProfile({
     username: usernameForm.username,
-    email: authStore.userInfo.email
-  });
+    email: authStore.userInfo.email,
+  })
 
   if (!error) {
-    message.success('用户名更新成功');
-    authStore.userInfo.username = usernameForm.username;
-    isEditingUsername.value = false;
+    message.success("用户名更新成功")
+    authStore.userInfo.username = usernameForm.username
+    isEditingUsername.value = false
   } else {
-    message.error(getErrorMessage(error, '更新失败'));
+    message.error(getErrorMessage(error, "更新失败"))
   }
 
-  isLoadingUsername.value = false;
+  isLoadingUsername.value = false
 }
 
 async function handleUpdateEmail() {
   if (!emailForm.email.trim()) {
-    message.error('邮箱不能为空');
-    return;
+    message.error("邮箱不能为空")
+    return
   }
 
-  isLoadingEmail.value = true;
+  isLoadingEmail.value = true
 
   const { error } = await updateUserProfile({
     username: authStore.userInfo.username,
-    email: emailForm.email
-  });
+    email: emailForm.email,
+  })
 
   if (!error) {
-    message.success('邮箱更新成功');
-    authStore.userInfo.email = emailForm.email;
-    isEditingEmail.value = false;
+    message.success("邮箱更新成功")
+    authStore.userInfo.email = emailForm.email
+    isEditingEmail.value = false
   } else {
-    message.error(getErrorMessage(error, '更新失败'));
+    message.error(getErrorMessage(error, "更新失败"))
   }
 
-  isLoadingEmail.value = false;
+  isLoadingEmail.value = false
 }
 
 async function handleUpdatePassword() {
   if (!passwordForm.first_password.trim()) {
-    message.error('新密码不能为空');
-    return;
+    message.error("新密码不能为空")
+    return
   }
   if (passwordForm.first_password.length < 6) {
-    message.error('新密码长度不能少于6位');
-    return;
+    message.error("新密码长度不能少于6位")
+    return
   }
   if (passwordForm.first_password !== passwordForm.second_password) {
-    message.error('两次输入的密码不一致');
-    return;
+    message.error("两次输入的密码不一致")
+    return
   }
 
-  isLoadingPassword.value = true;
+  isLoadingPassword.value = true
 
   const { error } = await updateUserPassword({
     first_password: passwordForm.first_password,
-    second_password: passwordForm.second_password
-  });
+    second_password: passwordForm.second_password,
+  })
 
   if (!error) {
-    message.success('密码修改成功');
-    passwordForm.first_password = '';
-    passwordForm.second_password = '';
-    isEditingPassword.value = false;
+    message.success("密码修改成功")
+    passwordForm.first_password = ""
+    passwordForm.second_password = ""
+    isEditingPassword.value = false
   } else {
-    message.error(getErrorMessage(error, '密码修改失败'));
+    message.error(getErrorMessage(error, "密码修改失败"))
   }
 
-  isLoadingPassword.value = false;
+  isLoadingPassword.value = false
 }
 
 function cancelEditUsername() {
-  isEditingUsername.value = false;
-  usernameForm.username = authStore.userInfo.username;
+  isEditingUsername.value = false
+  usernameForm.username = authStore.userInfo.username
 }
 
 function cancelEditEmail() {
-  isEditingEmail.value = false;
-  emailForm.email = authStore.userInfo.email;
+  isEditingEmail.value = false
+  emailForm.email = authStore.userInfo.email
 }
 
 function cancelEditPassword() {
-  isEditingPassword.value = false;
-  passwordForm.first_password = '';
-  passwordForm.second_password = '';
+  isEditingPassword.value = false
+  passwordForm.first_password = ""
+  passwordForm.second_password = ""
 }
 
 function triggerAvatarUpload() {
-  avatarInputRef.value?.click();
+  avatarInputRef.value?.click()
 }
 
 async function handleAvatarFileChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
 
   if (!file) {
-    return;
+    return
   }
 
-  if (!file.type.startsWith('image/')) {
-    message.error('请选择图片文件');
-    input.value = '';
-    return;
+  if (!file.type.startsWith("image/")) {
+    message.error("请选择图片文件")
+    input.value = ""
+    return
   }
 
-  isUploadingAvatar.value = true;
+  isUploadingAvatar.value = true
 
-  const { data, error } = await updateUserAvatar(file);
+  const { data, error } = await updateUserAvatar(file)
 
   if (!error) {
-    authStore.userInfo.avatar_url = data.avatar_url;
+    authStore.userInfo.avatar_url = data.avatar_url
 
-    message.success('头像更新成功');
+    message.success("头像更新成功")
   } else {
-    message.error(getErrorMessage(error, '头像更新失败'));
+    message.error(getErrorMessage(error, "头像更新失败"))
   }
 
-  input.value = '';
-  isUploadingAvatar.value = false;
+  input.value = ""
+  isUploadingAvatar.value = false
 }
 </script>
 
@@ -182,7 +182,7 @@ async function handleAvatarFileChange(event: Event) {
             />
             <SoybeanAvatar v-else class="size-80px!" />
             <div class="avatar-mask">
-              <span>{{ isUploadingAvatar ? '上传中' : '更换头像' }}</span>
+              <span>{{ isUploadingAvatar ? "上传中" : "更换头像" }}</span>
             </div>
           </div>
           <div class="flex-1">
@@ -190,7 +190,13 @@ async function handleAvatarFileChange(event: Event) {
             <p class="text-13px text-gray-500">{{ authStore.userInfo.email }}</p>
           </div>
         </div>
-        <input ref="avatarInputRef" type="file" accept="image/*" class="hidden" @change="handleAvatarFileChange" />
+        <input
+          ref="avatarInputRef"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          @change="handleAvatarFileChange"
+        />
       </div>
     </NCard>
 
@@ -210,12 +216,24 @@ async function handleAvatarFileChange(event: Event) {
           </div>
           <div v-if="!isEditingUsername" class="setting-value">
             <span class="value-text">{{ authStore.userInfo.username }}</span>
-            <NButton text type="primary" class="edit-btn" @click="isEditingUsername = true">修改</NButton>
+            <NButton text type="primary" class="edit-btn" @click="isEditingUsername = true"
+              >修改</NButton
+            >
           </div>
           <div v-else class="setting-form">
-            <NInput v-model:value="usernameForm.username" placeholder="请输入新用户名" clearable class="form-input" />
+            <NInput
+              v-model:value="usernameForm.username"
+              placeholder="请输入新用户名"
+              clearable
+              class="form-input"
+            />
             <div class="form-actions">
-              <NButton type="primary" :loading="isLoadingUsername" size="small" @click="handleUpdateUsername">
+              <NButton
+                type="primary"
+                :loading="isLoadingUsername"
+                size="small"
+                @click="handleUpdateUsername"
+              >
                 保存
               </NButton>
               <NButton size="small" @click="cancelEditUsername">取消</NButton>
@@ -233,7 +251,9 @@ async function handleAvatarFileChange(event: Event) {
           </div>
           <div v-if="!isEditingEmail" class="setting-value">
             <span class="value-text">{{ authStore.userInfo.email }}</span>
-            <NButton text type="primary" class="edit-btn" @click="isEditingEmail = true">修改</NButton>
+            <NButton text type="primary" class="edit-btn" @click="isEditingEmail = true"
+              >修改</NButton
+            >
           </div>
           <div v-else class="setting-form">
             <NInput
@@ -245,7 +265,13 @@ async function handleAvatarFileChange(event: Event) {
             />
             <span class="form-tip">邮箱修改会在下次登录时需要验证</span>
             <div class="form-actions">
-              <NButton type="primary" :loading="isLoadingEmail" size="small" @click="handleUpdateEmail">保存</NButton>
+              <NButton
+                type="primary"
+                :loading="isLoadingEmail"
+                size="small"
+                @click="handleUpdateEmail"
+                >保存</NButton
+              >
               <NButton size="small" @click="cancelEditEmail">取消</NButton>
             </div>
           </div>
@@ -261,7 +287,9 @@ async function handleAvatarFileChange(event: Event) {
           </div>
           <div v-if="!isEditingPassword" class="setting-value">
             <span class="value-text">••••••••</span>
-            <NButton text type="primary" class="edit-btn" @click="isEditingPassword = true">修改</NButton>
+            <NButton text type="primary" class="edit-btn" @click="isEditingPassword = true"
+              >修改</NButton
+            >
           </div>
           <div v-else class="setting-form">
             <NInput
@@ -281,7 +309,12 @@ async function handleAvatarFileChange(event: Event) {
               class="form-input"
             />
             <div class="form-actions">
-              <NButton type="primary" :loading="isLoadingPassword" size="small" @click="handleUpdatePassword">
+              <NButton
+                type="primary"
+                :loading="isLoadingPassword"
+                size="small"
+                @click="handleUpdatePassword"
+              >
                 保存
               </NButton>
               <NButton size="small" @click="cancelEditPassword">取消</NButton>

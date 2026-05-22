@@ -6,26 +6,26 @@ declare namespace Api {
    */
   namespace Auth {
     interface registerResponse {
-      code: number;
-      msg: string;
-      data: string;
+      code: number
+      msg: string
+      data: string
     }
     interface LoginToken {
-      token: string;
-      refreshToken: string;
+      token: string
+      refreshToken: string
     }
 
     interface UserInfo {
-      id: string;
-      username: string;
-      email: string;
-      avatar_url?: string;
-      roles: string[];
-      buttons: string[];
+      id: string
+      username: string
+      email: string
+      avatar_url?: string
+      roles: string[]
+      buttons: string[]
     }
 
     interface UpdateAvatarResponse {
-      avatar_url: string;
+      avatar_url: string
     }
   }
 }

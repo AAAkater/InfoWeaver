@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useAppStore } from '@/store/modules/app';
-import HeaderBanner from './modules/header-banner.vue';
-import CardData from './modules/card-data.vue';
-import LineChart from './modules/line-chart.vue';
-import PieChart from './modules/pie-chart.vue';
+import { computed } from "vue"
+import { useAppStore } from "@/store/modules/app"
+import HeaderBanner from "./modules/header-banner.vue"
+import CardData from "./modules/card-data.vue"
+import LineChart from "./modules/line-chart.vue"
+import PieChart from "./modules/pie-chart.vue"
 
-const appStore = useAppStore();
+const appStore = useAppStore()
 
-const gap = computed(() => (appStore.isMobile ? 0 : 16));
+const gap = computed(() => (appStore.isMobile ? 0 : 16))
 </script>
 
 <template>

@@ -1,7 +1,7 @@
-import type { CustomRoute, ElegantConstRoute, ElegantRoute } from '@elegant-router/types';
-import { generatedRoutes } from '../elegant/routes';
-import { layouts, views } from '../elegant/imports';
-import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
+import type { CustomRoute, ElegantConstRoute, ElegantRoute } from "@elegant-router/types"
+import { generatedRoutes } from "../elegant/routes"
+import { layouts, views } from "../elegant/imports"
+import { transformElegantRoutesToVueRoutes } from "../elegant/transform"
 
 /**
  * custom routes
@@ -10,219 +10,219 @@ import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
  */
 const customRoutes: CustomRoute[] = [
   {
-    name: 'exception',
-    path: '/exception',
-    component: 'layout.base',
+    name: "exception",
+    path: "/exception",
+    component: "layout.base",
     meta: {
-      title: 'exception',
-      i18nKey: 'route.exception',
-      icon: 'ant-design:exception-outlined',
+      title: "exception",
+      i18nKey: "route.exception",
+      icon: "ant-design:exception-outlined",
       order: 7,
-      hideInMenu: true
+      hideInMenu: true,
     },
     children: [
       {
-        name: 'exception_403',
-        path: '/exception/403',
-        component: 'view.403',
+        name: "exception_403",
+        path: "/exception/403",
+        component: "view.403",
         meta: {
-          title: 'exception_403',
-          i18nKey: 'route.exception_403',
-          icon: 'ic:baseline-block'
-        }
+          title: "exception_403",
+          i18nKey: "route.exception_403",
+          icon: "ic:baseline-block",
+        },
       },
       {
-        name: 'exception_404',
-        path: '/exception/404',
-        component: 'view.404',
+        name: "exception_404",
+        path: "/exception/404",
+        component: "view.404",
         meta: {
-          title: 'exception_404',
-          i18nKey: 'route.exception_404',
-          icon: 'ic:baseline-web-asset-off'
-        }
+          title: "exception_404",
+          i18nKey: "route.exception_404",
+          icon: "ic:baseline-web-asset-off",
+        },
       },
       {
-        name: 'exception_500',
-        path: '/exception/500',
-        component: 'view.500',
+        name: "exception_500",
+        path: "/exception/500",
+        component: "view.500",
         meta: {
-          title: 'exception_500',
-          i18nKey: 'route.exception_500',
-          icon: 'ic:baseline-wifi-off'
-        }
-      }
-    ]
+          title: "exception_500",
+          i18nKey: "route.exception_500",
+          icon: "ic:baseline-wifi-off",
+        },
+      },
+    ],
   },
   {
-    name: 'document',
-    path: '/document',
-    component: 'layout.base',
+    name: "document",
+    path: "/document",
+    component: "layout.base",
     meta: {
-      title: 'document',
-      i18nKey: 'route.document',
+      title: "document",
+      i18nKey: "route.document",
       order: 2,
-      icon: 'mdi:file-document-multiple-outline',
-      hideInMenu: true
+      icon: "mdi:file-document-multiple-outline",
+      hideInMenu: true,
     },
     children: [
       {
-        name: 'document_antd',
-        path: '/document/antd',
-        component: 'view.iframe-page',
+        name: "document_antd",
+        path: "/document/antd",
+        component: "view.iframe-page",
         props: {
-          url: 'https://antdv.com/components/overview-cn'
+          url: "https://antdv.com/components/overview-cn",
         },
         meta: {
-          title: 'document_antd',
-          i18nKey: 'route.document_antd',
+          title: "document_antd",
+          i18nKey: "route.document_antd",
           order: 7,
-          icon: 'logos:ant-design'
-        }
+          icon: "logos:ant-design",
+        },
       },
       {
-        name: 'document_naive',
-        path: '/document/naive',
-        component: 'view.iframe-page',
+        name: "document_naive",
+        path: "/document/naive",
+        component: "view.iframe-page",
         props: {
-          url: 'https://www.naiveui.com/zh-CN/os-theme/docs/introduction'
+          url: "https://www.naiveui.com/zh-CN/os-theme/docs/introduction",
         },
         meta: {
-          title: 'document_naive',
-          i18nKey: 'route.document_naive',
+          title: "document_naive",
+          i18nKey: "route.document_naive",
           order: 6,
-          icon: 'logos:naiveui'
-        }
+          icon: "logos:naiveui",
+        },
       },
       {
-        name: 'document_pro-naive',
-        path: '/document/pro-naive',
-        component: 'view.iframe-page',
+        name: "document_pro-naive",
+        path: "/document/pro-naive",
+        component: "view.iframe-page",
         props: {
-          url: 'https://naive-ui.pro-components.cn/'
+          url: "https://naive-ui.pro-components.cn/",
         },
         meta: {
-          title: 'document_pro-naive',
-          i18nKey: 'route.document_pro-naive',
+          title: "document_pro-naive",
+          i18nKey: "route.document_pro-naive",
           order: 6,
-          icon: 'logos:naiveui'
-        }
+          icon: "logos:naiveui",
+        },
       },
       {
-        name: 'document_alova',
-        path: '/document/alova',
-        component: 'view.iframe-page',
+        name: "document_alova",
+        path: "/document/alova",
+        component: "view.iframe-page",
         props: {
-          url: 'https://alova.js.org'
+          url: "https://alova.js.org",
         },
         meta: {
-          title: 'document_alova',
-          i18nKey: 'route.document_alova',
+          title: "document_alova",
+          i18nKey: "route.document_alova",
           order: 7,
-          localIcon: 'alova'
-        }
+          localIcon: "alova",
+        },
       },
       {
-        name: 'document_project',
-        path: '/document/project',
-        component: 'view.iframe-page',
+        name: "document_project",
+        path: "/document/project",
+        component: "view.iframe-page",
         props: {
-          url: 'https://docs.soybeanjs.cn/zh'
+          url: "https://docs.soybeanjs.cn/zh",
         },
         meta: {
-          title: 'document_project',
-          i18nKey: 'route.document_project',
+          title: "document_project",
+          i18nKey: "route.document_project",
           order: 1,
-          localIcon: 'logo'
-        }
+          localIcon: "logo",
+        },
       },
       {
-        name: 'document_project-link',
-        path: '/document/project-link',
-        component: 'view.iframe-page',
+        name: "document_project-link",
+        path: "/document/project-link",
+        component: "view.iframe-page",
         meta: {
-          title: 'document_project-link',
-          i18nKey: 'route.document_project-link',
+          title: "document_project-link",
+          i18nKey: "route.document_project-link",
           order: 2,
-          localIcon: 'logo',
-          href: 'https://docs.soybeanjs.cn/zh'
-        }
+          localIcon: "logo",
+          href: "https://docs.soybeanjs.cn/zh",
+        },
       },
       {
-        name: 'document_video',
-        path: '/document/video',
-        component: 'view.iframe-page',
+        name: "document_video",
+        path: "/document/video",
+        component: "view.iframe-page",
         meta: {
-          title: 'document_video',
-          i18nKey: 'route.document_video',
+          title: "document_video",
+          i18nKey: "route.document_video",
           order: 2,
-          localIcon: 'logo',
-          href: 'https://www.bilibili.com/video/BV1YKdRYXELC'
-        }
+          localIcon: "logo",
+          href: "https://www.bilibili.com/video/BV1YKdRYXELC",
+        },
       },
       {
-        name: 'document_unocss',
-        path: '/document/unocss',
-        component: 'view.iframe-page',
+        name: "document_unocss",
+        path: "/document/unocss",
+        component: "view.iframe-page",
         props: {
-          url: 'https://unocss.dev/'
+          url: "https://unocss.dev/",
         },
         meta: {
-          title: 'document_unocss',
-          i18nKey: 'route.document_unocss',
+          title: "document_unocss",
+          i18nKey: "route.document_unocss",
           order: 5,
-          icon: 'logos:unocss'
-        }
+          icon: "logos:unocss",
+        },
       },
       {
-        name: 'document_vite',
-        path: '/document/vite',
-        component: 'view.iframe-page',
+        name: "document_vite",
+        path: "/document/vite",
+        component: "view.iframe-page",
         props: {
-          url: 'https://cn.vitejs.dev/'
+          url: "https://cn.vitejs.dev/",
         },
         meta: {
-          title: 'document_vite',
-          i18nKey: 'route.document_vite',
+          title: "document_vite",
+          i18nKey: "route.document_vite",
           order: 4,
-          icon: 'logos:vitejs'
-        }
+          icon: "logos:vitejs",
+        },
       },
       {
-        name: 'document_vue',
-        path: '/document/vue',
-        component: 'view.iframe-page',
+        name: "document_vue",
+        path: "/document/vue",
+        component: "view.iframe-page",
         props: {
-          url: 'https://cn.vuejs.org/'
+          url: "https://cn.vuejs.org/",
         },
         meta: {
-          title: 'document_vue',
-          i18nKey: 'route.document_vue',
+          title: "document_vue",
+          i18nKey: "route.document_vue",
           order: 3,
-          icon: 'logos:vue'
-        }
-      }
-    ]
-  }
-];
+          icon: "logos:vue",
+        },
+      },
+    ],
+  },
+]
 
 /** create routes when the auth route mode is static */
 export function createStaticRoutes() {
-  const constantRoutes: ElegantRoute[] = [];
+  const constantRoutes: ElegantRoute[] = []
 
-  const authRoutes: ElegantRoute[] = [];
+  const authRoutes: ElegantRoute[] = []
 
-  [...customRoutes, ...generatedRoutes].forEach(item => {
+  ;[...customRoutes, ...generatedRoutes].forEach((item) => {
     if (item.meta?.constant) {
-      constantRoutes.push(item);
+      constantRoutes.push(item)
     } else {
-      authRoutes.push(item);
+      authRoutes.push(item)
     }
-  });
+  })
 
   return {
     constantRoutes,
-    authRoutes
-  };
+    authRoutes,
+  }
 }
 
 /**
@@ -231,5 +231,5 @@ export function createStaticRoutes() {
  * @param routes Elegant routes
  */
 export function getAuthVueRoutes(routes: ElegantConstRoute[]) {
-  return transformElegantRoutesToVueRoutes(routes, layouts, views);
+  return transformElegantRoutesToVueRoutes(routes, layouts, views)
 }

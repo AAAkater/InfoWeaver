@@ -8,20 +8,20 @@ declare namespace Api {
     /** common params of paginating */
     interface PaginatingCommonParams {
       /** current page number */
-      current: number;
+      current: number
       /** page size */
-      size: number;
+      size: number
       /** total count */
-      total: number;
+      total: number
     }
 
     /** common params of paginating query list data */
     interface PaginatingQueryRecord<T = any> extends PaginatingCommonParams {
-      records: T[];
+      records: T[]
     }
 
     /** common search params of table */
-    type CommonSearchParams = Pick<Common.PaginatingCommonParams, 'current' | 'size'>;
+    type CommonSearchParams = Pick<Common.PaginatingCommonParams, "current" | "size">
 
     /**
      * enable status
@@ -29,22 +29,22 @@ declare namespace Api {
      * - "1": enabled
      * - "2": disabled
      */
-    type EnableStatus = '1' | '2';
+    type EnableStatus = "1" | "2"
 
     /** common record */
     type CommonRecord<T = any> = {
       /** record id */
-      id: number;
+      id: number
       /** record creator */
-      createBy: string;
+      createBy: string
       /** record create time */
-      createTime: string;
+      createTime: string
       /** record updater */
-      updateBy: string;
+      updateBy: string
       /** record update time */
-      updateTime: string;
+      updateTime: string
       /** record status */
-      status: EnableStatus | null;
-    } & T;
+      status: EnableStatus | null
+    } & T
   }
 }

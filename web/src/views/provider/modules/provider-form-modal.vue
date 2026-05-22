@@ -1,100 +1,104 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from "vue"
 
 type ProviderFormModel = {
-  id?: number;
-  api_key: string;
-  base_url: string;
-  mode: Api.Provider.ProviderMode;
-  name: string;
-};
+  id?: number
+  api_key: string
+  base_url: string
+  mode: Api.Provider.ProviderMode
+  name: string
+}
 
 const props = defineProps<{
-  isEdit?: boolean;
-  model: ProviderFormModel;
-  show: boolean;
-}>();
+  isEdit?: boolean
+  model: ProviderFormModel
+  show: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'submit', model: ProviderFormModel): void;
-  (event: 'update:show', value: boolean): void;
-}>();
+  (event: "submit", model: ProviderFormModel): void
+  (event: "update:show", value: boolean): void
+}>()
 
 const bodyStyle = {
-  width: '500px'
-};
+  width: "500px",
+}
 
 const modeOptions = [
-  { label: 'OpenAI', value: 'openai' },
-  { label: 'OpenAI Response', value: 'openai_response' },
-  { label: 'Gemini', value: 'gemini' },
-  { label: 'Anthropic', value: 'anthropic' },
-  { label: 'Ollama', value: 'ollama' }
-];
+  { label: "OpenAI", value: "openai" },
+  { label: "OpenAI Response", value: "openai_response" },
+  { label: "Gemini", value: "gemini" },
+  { label: "Anthropic", value: "anthropic" },
+  { label: "Ollama", value: "ollama" },
+]
 
 const visible = computed({
   get: () => props.show,
-  set: value => emit('update:show', value)
-});
+  set: (value) => emit("update:show", value),
+})
 
 const form = reactive<ProviderFormModel>({
   id: undefined,
-  api_key: '',
-  base_url: '',
-  mode: 'openai',
-  name: ''
-});
+  api_key: "",
+  base_url: "",
+  mode: "openai",
+  name: "",
+})
 
-const apiKeyDisplay = ref('');
+const apiKeyDisplay = ref("")
 
 function resetForm() {
   Object.assign(form, {
     id: undefined,
-    api_key: '',
-    base_url: '',
-    mode: 'openai',
-    name: ''
-  });
-  apiKeyDisplay.value = '';
+    api_key: "",
+    base_url: "",
+    mode: "openai",
+    name: "",
+  })
+  apiKeyDisplay.value = ""
 }
 
 function syncForm() {
   Object.assign(form, {
     id: props.model.id,
-    base_url: props.model.base_url || '',
-    mode: props.model.mode || 'openai',
-    name: props.model.name || ''
-  });
-  apiKeyDisplay.value = props.isEdit ? '********' : '';
-  form.api_key = props.isEdit ? '' : props.model.api_key || '';
+    base_url: props.model.base_url || "",
+    mode: props.model.mode || "openai",
+    name: props.model.name || "",
+  })
+  apiKeyDisplay.value = props.isEdit ? "********" : ""
+  form.api_key = props.isEdit ? "" : props.model.api_key || ""
 }
 
 watch(
   () => props.show,
-  show => {
+  (show) => {
     if (show) {
-      syncForm();
+      syncForm()
     } else {
-      resetForm();
+      resetForm()
     }
-  }
-);
+  },
+)
 
 watch(
   () => props.model,
   () => {
     if (props.show) {
-      syncForm();
+      syncForm()
     }
   },
-  { deep: true }
-);
+  { deep: true },
+)
 
 function handlePositiveClick() {
-  emit('submit', {
+  emit("submit", {
     ...form,
-    api_key: props.isEdit ? (apiKeyDisplay.value === '********' ? '' : apiKeyDisplay.value) : apiKeyDisplay.value
-  });
+    api_key: props.isEdit
+      ? apiKeyDisplay.value === "********"
+        ? ""
+        : apiKeyDisplay.value
+      : apiKeyDisplay.value,
+  })
 }
 </script>
 

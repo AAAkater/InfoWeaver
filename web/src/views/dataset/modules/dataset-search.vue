@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { Search48Filled } from '@vicons/fluent';
+import { Search48Filled } from "@vicons/fluent"
 
 const props = defineProps<{
-  loading?: boolean;
-  modelValue: string;
-}>();
+  loading?: boolean
+  modelValue: string
+}>()
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string): void;
-  (event: 'search'): void;
-}>();
+  (event: "update:modelValue", value: string): void
+  (event: "search"): void
+}>()
 
 function handleSearch() {
-  emit('search');
+  emit("search")
 }
 </script>
 
@@ -24,7 +24,7 @@ function handleSearch() {
       placeholder="请输入关键字"
       clearable
       :loading="props.loading"
-      @update:value="value => emit('update:modelValue', value)"
+      @update:value="(value) => emit('update:modelValue', value)"
       @blur="handleSearch"
       @keyup.enter="handleSearch"
     >

@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useAuthStore } from '@/store/modules/auth';
-import defaultAvatar from '@/assets/imgs/soybean.jpg';
+import { computed, ref } from "vue"
+import { useAuthStore } from "@/store/modules/auth"
+import defaultAvatar from "@/assets/imgs/soybean.jpg"
 
 defineOptions({
-  name: 'HeaderBanner'
-});
+  name: "HeaderBanner",
+})
 
-const authStore = useAuthStore();
+const authStore = useAuthStore()
 
 // Mock user stats
-const totalTokens = ref('1,245,680');
-const monthlyTokens = ref('326,400');
-const totalCalls = ref('4,832');
+const totalTokens = ref("1,245,680")
+const monthlyTokens = ref("326,400")
+const totalCalls = ref("4,832")
 
 const avatarUrl = computed(() => {
-  return authStore.userInfo.avatar_url || '';
-});
+  return authStore.userInfo.avatar_url || ""
+})
 </script>
 
 <template>

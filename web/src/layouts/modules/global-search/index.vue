@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import { useBoolean } from '@sa/hooks';
-import { $t } from '@/locales';
-import SearchModal from './components/search-modal.vue';
+import { useBoolean } from "@sa/hooks"
+import { $t } from "@/locales"
+import SearchModal from "./components/search-modal.vue"
 
-defineOptions({ name: 'GlobalSearch' });
+defineOptions({ name: "GlobalSearch" })
 
-const { bool: show, toggle } = useBoolean();
+const { bool: show, toggle } = useBoolean()
 </script>
 
 <template>

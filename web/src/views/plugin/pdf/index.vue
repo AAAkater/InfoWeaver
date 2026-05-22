@@ -1,53 +1,60 @@
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue';
-import VuePdfEmbed from 'vue-pdf-embed';
-import { useLoading } from '@sa/hooks';
+import { ref, shallowRef } from "vue"
+import VuePdfEmbed from "vue-pdf-embed"
+import { useLoading } from "@sa/hooks"
 
-const { loading, endLoading } = useLoading(true);
+const { loading, endLoading } = useLoading(true)
 
-const pdfRef = shallowRef<InstanceType<typeof VuePdfEmbed> | null>(null);
-const source = `https://xiaoxian521.github.io/hyperlink/pdf/Cookie%E5%92%8CSession%E5%8C%BA%E5%88%AB%E7%94%A8%E6%B3%95.pdf`;
+const pdfRef = shallowRef<InstanceType<typeof VuePdfEmbed> | null>(null)
+const source = `https://xiaoxian521.github.io/hyperlink/pdf/Cookie%E5%92%8CSession%E5%8C%BA%E5%88%AB%E7%94%A8%E6%B3%95.pdf`
 
-const showAllPages = ref(false);
-const currentPage = ref<undefined | number>(1);
-const pageCount = ref(1);
+const showAllPages = ref(false)
+const currentPage = ref<undefined | number>(1)
+const pageCount = ref(1)
 
 function onPdfRendered() {
-  endLoading();
+  endLoading()
 
   if (pdfRef.value?.doc) {
-    pageCount.value = pdfRef.value.doc.numPages;
+    pageCount.value = pdfRef.value.doc.numPages
   }
 }
 
 function showAllPagesChange() {
-  currentPage.value = showAllPages.value ? undefined : 1;
+  currentPage.value = showAllPages.value ? undefined : 1
 }
 
-const rotations = [0, 90, 180, 270];
-const currentRotation = ref(0);
+const rotations = [0, 90, 180, 270]
+const currentRotation = ref(0)
 
 function handleRotate() {
-  currentRotation.value = (currentRotation.value + 1) % 4;
+  currentRotation.value = (currentRotation.value + 1) % 4
 }
 
 async function handlePrint() {
-  await pdfRef.value?.print(undefined, 'test.pdf', true);
+  await pdfRef.value?.print(undefined, "test.pdf", true)
 }
 
 async function handleDownload() {
-  await pdfRef.value?.download('test.pdf');
+  await pdfRef.value?.download("test.pdf")
 }
 </script>
 
 <template>
   <div class="overflow-hidden">
-    <NCard title="PDF 预览" :bordered="false" class="h-full card-wrapper" content-class="overflow-hidden">
+    <NCard
+      title="PDF 预览"
+      :bordered="false"
+      class="h-full card-wrapper"
+      content-class="overflow-hidden"
+    >
       <div class="h-full flex-col-stretch">
         <GithubLink link="https://github.com/hrynko/vue-pdf-embed" />
         <WebSiteLink label="文档地址：" link="https://www.npmjs.com/package/vue-pdf-embed" />
         <div class="flex-y-center justify-end gap-12px">
-          <NCheckbox v-model:checked="showAllPages" @update:checked="showAllPagesChange">显示所有页面</NCheckbox>
+          <NCheckbox v-model:checked="showAllPages" @update:checked="showAllPagesChange"
+            >显示所有页面</NCheckbox
+          >
           <ButtonIcon tooltip-content="旋转90度" @click="handleRotate">
             <icon-material-symbols-light:rotate-90-degrees-ccw-outline-rounded />
           </ButtonIcon>

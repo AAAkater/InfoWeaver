@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Add12Filled, Search48Filled } from '@vicons/fluent';
+import { Add12Filled, Search48Filled } from "@vicons/fluent"
 
 const props = defineProps<{
-  loading?: boolean;
-  modelValue: string;
-}>();
+  loading?: boolean
+  modelValue: string
+}>()
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string): void;
-  (event: 'create'): void;
-}>();
+  (event: "update:modelValue", value: string): void
+  (event: "create"): void
+}>()
 </script>
 
 <template>
@@ -21,7 +21,7 @@ const emit = defineEmits<{
       clearable
       :loading="props.loading"
       style="width: 300px"
-      @update:value="value => emit('update:modelValue', value)"
+      @update:value="(value) => emit('update:modelValue', value)"
     >
       <template #prefix>
         <NIcon :component="Search48Filled" />

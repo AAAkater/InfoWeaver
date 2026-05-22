@@ -1,125 +1,125 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from "vue"
 
 const props = defineProps<{
-  isEdit?: boolean;
-  model: Api.Dataset.FormModel;
-  show: boolean;
-}>();
+  isEdit?: boolean
+  model: Api.Dataset.FormModel
+  show: boolean
+}>()
 
 const emit = defineEmits<{
-  (event: 'submit', model: Api.Dataset.FormModel, files: File[]): void;
-  (event: 'update:show', value: boolean): void;
-}>();
+  (event: "submit", model: Api.Dataset.FormModel, files: File[]): void
+  (event: "update:show", value: boolean): void
+}>()
 
 const bodyStyle = {
-  width: '600px'
-};
+  width: "600px",
+}
 
 const searchTypeOptions = [
-  { label: '关键词检索', value: 'sparse' },
-  { label: '语义检索', value: 'dense' },
-  { label: '混合检索', value: 'hybrid' }
-];
+  { label: "关键词检索", value: "sparse" },
+  { label: "语义检索", value: "dense" },
+  { label: "混合检索", value: "hybrid" },
+]
 
-const emojiList = ['😀', '😂', '😎', '🤖', '🐱', '🦊', '🐶', '🦄', '🐼', '🦉'];
-const hovered = ref<string | null>(null);
+const emojiList = ["😀", "😂", "😎", "🤖", "🐱", "🦊", "🐶", "🦄", "🐼", "🦉"]
+const hovered = ref<string | null>(null)
 
 // File upload
-const fileInputRef = ref<HTMLInputElement | null>(null);
-const selectedFiles = ref<File[]>([]);
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const selectedFiles = ref<File[]>([])
 
 const visible = computed({
   get: () => props.show,
-  set: value => emit('update:show', value)
-});
+  set: (value) => emit("update:show", value),
+})
 
 const form = reactive<Api.Dataset.FormModel>({
   id: undefined,
-  icon: '🤖',
-  description: '',
-  name: '',
-  search_type: 'hybrid',
-  embedding_model: '',
-  provider_id: 0
-});
+  icon: "🤖",
+  description: "",
+  name: "",
+  search_type: "hybrid",
+  embedding_model: "",
+  provider_id: 0,
+})
 
 function resetForm() {
   Object.assign(form, {
     id: undefined,
-    icon: '🤖',
-    description: '',
-    name: '',
-    search_type: 'hybrid',
-    embedding_model: '',
-    provider_id: 0
-  });
-  selectedFiles.value = [];
+    icon: "🤖",
+    description: "",
+    name: "",
+    search_type: "hybrid",
+    embedding_model: "",
+    provider_id: 0,
+  })
+  selectedFiles.value = []
 }
 
 function syncForm() {
   Object.assign(form, {
     id: props.model.id,
-    icon: props.model.icon || '🤖',
-    description: props.model.description || '',
-    name: props.model.name || '',
-    search_type: props.model.search_type || 'hybrid',
-    embedding_model: props.model.embedding_model || '',
-    provider_id: props.model.provider_id || 0
-  });
+    icon: props.model.icon || "🤖",
+    description: props.model.description || "",
+    name: props.model.name || "",
+    search_type: props.model.search_type || "hybrid",
+    embedding_model: props.model.embedding_model || "",
+    provider_id: props.model.provider_id || 0,
+  })
 }
 
 watch(
   () => props.show,
-  show => {
+  (show) => {
     if (show) {
-      syncForm();
+      syncForm()
     } else {
-      resetForm();
+      resetForm()
     }
-  }
-);
+  },
+)
 
 watch(
   () => props.model,
   () => {
     if (props.show) {
-      syncForm();
+      syncForm()
     }
   },
-  { deep: true }
-);
+  { deep: true },
+)
 
 function selectEmoji(emoji: string) {
-  form.icon = emoji;
+  form.icon = emoji
 }
 
 function triggerFileUpload() {
-  fileInputRef.value?.click();
+  fileInputRef.value?.click()
 }
 
 function handleFilesChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const files = input.files;
+  const input = event.target as HTMLInputElement
+  const files = input.files
 
   if (files && files.length > 0) {
-    selectedFiles.value = [...selectedFiles.value, ...Array.from(files)];
+    selectedFiles.value = [...selectedFiles.value, ...Array.from(files)]
   }
-  input.value = '';
+  input.value = ""
 }
 
 function removeFile(index: number) {
-  selectedFiles.value.splice(index, 1);
+  selectedFiles.value.splice(index, 1)
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
 function handlePositiveClick() {
-  emit('submit', { ...form }, [...selectedFiles.value]);
+  emit("submit", { ...form }, [...selectedFiles.value])
 }
 </script>
 
@@ -136,14 +136,19 @@ function handlePositiveClick() {
     @positive-click="handlePositiveClick"
   >
     <NSpace :size="10" vertical>
-      <NCard title="知识库名称" :bordered="false" size="small" content-style="display:flex;gap: 8px;">
+      <NCard
+        title="知识库名称"
+        :bordered="false"
+        size="small"
+        content-style="display:flex;gap: 8px;"
+      >
         <NPopover trigger="click" placement="bottom-start">
           <template #trigger>
             <NAvatar
               :style="{
                 color: 'black',
                 backgroundColor: '#FFEAD5',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }"
             >
               {{ form.icon }}
@@ -155,7 +160,7 @@ function handlePositiveClick() {
               :key="emoji"
               style="font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px"
               :style="{
-                backgroundColor: hovered === emoji ? '#e0e0e0' : 'transparent'
+                backgroundColor: hovered === emoji ? '#e0e0e0' : 'transparent',
               }"
               @click="selectEmoji(emoji)"
               @mouseenter="hovered = emoji"
@@ -210,11 +215,19 @@ function handlePositiveClick() {
             </template>
             选择文件
           </NButton>
-          <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFilesChange" />
+          <input
+            ref="fileInputRef"
+            type="file"
+            multiple
+            class="hidden"
+            @change="handleFilesChange"
+          />
 
           <!-- Selected files list -->
           <div v-if="selectedFiles.length > 0">
-            <div class="mb-4px text-12px text-gray-500">已选择 {{ selectedFiles.length }} 个文件</div>
+            <div class="mb-4px text-12px text-gray-500">
+              已选择 {{ selectedFiles.length }} 个文件
+            </div>
             <div
               v-for="(file, idx) in selectedFiles"
               :key="idx"
@@ -229,7 +242,9 @@ function handlePositiveClick() {
               </NSpace>
             </div>
           </div>
-          <div v-else class="text-12px text-gray-400">支持上传 PDF、Word、TXT 等文档文件，创建后可进行分块处理</div>
+          <div v-else class="text-12px text-gray-400">
+            支持上传 PDF、Word、TXT 等文档文件，创建后可进行分块处理
+          </div>
         </NSpace>
       </NCard>
     </NSpace>

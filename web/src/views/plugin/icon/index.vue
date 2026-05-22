@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
-import { icons } from './icons';
+import { ref } from "vue"
+import { icons } from "./icons"
 
-const selectValue = ref('');
+const selectValue = ref("")
 
-const localIcons = ['custom-icon', 'activity', 'at-sign', 'cast', 'chrome', 'copy', 'wind'];
+const localIcons = ["custom-icon", "activity", "at-sign", "cast", "chrome", "copy", "wind"]
 </script>
 
 <template>
@@ -27,8 +27,8 @@ const localIcons = ['custom-icon', 'activity', 'at-sign', 'cast', 'chrome', 'cop
     </NCard>
     <NCard title="自定义图标示例" :bordered="false" class="mt-10px card-wrapper">
       <div class="pb-12px text-16px">
-        在src/assets/svg-icon文件夹下的svg文件，通过在template里面以 icon - local - {文件名} 直接渲染,
-        其中icon-local为.env文件里的 VITE_ICON_LOCAL_PREFIX
+        在src/assets/svg-icon文件夹下的svg文件，通过在template里面以 icon - local - {文件名}
+        直接渲染, 其中icon-local为.env文件里的 VITE_ICON_LOCAL_PREFIX
       </div>
       <div class="grid grid-cols-10">
         <div class="mt-5px flex-x-center">
@@ -38,7 +38,9 @@ const localIcons = ['custom-icon', 'activity', 'at-sign', 'cast', 'chrome', 'cop
           <icon-local-cast class="text-20px text-error" />
         </div>
       </div>
-      <div class="py-12px text-16px">通过SvgIcon组件动态渲染, 菜单通过meta的localIcon属性渲染自定义图标</div>
+      <div class="py-12px text-16px">
+        通过SvgIcon组件动态渲染, 菜单通过meta的localIcon属性渲染自定义图标
+      </div>
       <div class="grid grid-cols-10">
         <div v-for="(fileName, index) in localIcons" :key="index" class="mt-5px flex-x-center">
           <SvgIcon :local-icon="fileName" class="text-30px text-primary" />

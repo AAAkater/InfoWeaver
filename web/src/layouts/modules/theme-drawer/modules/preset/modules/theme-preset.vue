@@ -1,94 +1,95 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { defu } from 'defu';
-import { useThemeStore } from '@/store/modules/theme';
-import { themeSettings } from '@/theme/settings';
-import { $t } from '@/locales';
+import { computed } from "vue"
+import { defu } from "defu"
+import { useThemeStore } from "@/store/modules/theme"
+import { themeSettings } from "@/theme/settings"
+import { $t } from "@/locales"
 
 defineOptions({
-  name: 'ThemePreset'
-});
+  name: "ThemePreset",
+})
 
 type ThemePreset = Pick<
   App.Theme.ThemeSetting,
-  | 'themeScheme'
-  | 'grayscale'
-  | 'colourWeakness'
-  | 'recommendColor'
-  | 'themeColor'
-  | 'themeRadius'
-  | 'otherColor'
-  | 'isInfoFollowPrimary'
-  | 'layout'
-  | 'page'
-  | 'header'
-  | 'tab'
-  | 'fixedHeaderAndTab'
-  | 'sider'
-  | 'footer'
-  | 'watermark'
-  | 'tokens'
+  | "themeScheme"
+  | "grayscale"
+  | "colourWeakness"
+  | "recommendColor"
+  | "themeColor"
+  | "themeRadius"
+  | "otherColor"
+  | "isInfoFollowPrimary"
+  | "layout"
+  | "page"
+  | "header"
+  | "tab"
+  | "fixedHeaderAndTab"
+  | "sider"
+  | "footer"
+  | "watermark"
+  | "tokens"
 > & {
-  name: string;
-  desc: string;
-  i18nkey?: string;
-  version: string;
+  name: string
+  desc: string
+  i18nkey?: string
+  version: string
   /** Optional NaiveUI theme overrides */
-  naiveui?: App.Theme.NaiveUIThemeOverride;
-};
+  naiveui?: App.Theme.NaiveUIThemeOverride
+}
 
-const presetModules = import.meta.glob('@/theme/preset/*.json', { eager: true, import: 'default' });
+const presetModules = import.meta.glob("@/theme/preset/*.json", { eager: true, import: "default" })
 
-const themeStore = useThemeStore();
+const themeStore = useThemeStore()
 
 // Extract preset data
 const presets = computed(() =>
   Object.entries(presetModules)
     .map(([path, presetData]) => {
-      const fileName = path.split('/').pop()?.replace('.json', '') || '';
+      const fileName = path.split("/").pop()?.replace(".json", "") || ""
       return {
         id: fileName,
-        ...(presetData as ThemePreset)
-      };
+        ...(presetData as ThemePreset),
+      }
     })
     .sort((a, b) => {
-      if (a.name === 'default') return -1;
-      if (b.name === 'default') return 1;
-      return a.name.localeCompare(b.name);
-    })
-);
+      if (a.name === "default") return -1
+      if (b.name === "default") return 1
+      return a.name.localeCompare(b.name)
+    }),
+)
 
 const getPresetName = (preset: ThemePreset): string => {
-  if (!preset.i18nkey) return preset.name;
+  if (!preset.i18nkey) return preset.name
   try {
-    const key = `${preset.i18nkey}.name` as App.I18n.I18nKey;
-    const translated = $t(key);
-    return translated !== key ? translated : preset.name;
+    const key = `${preset.i18nkey}.name` as App.I18n.I18nKey
+    const translated = $t(key)
+    return translated !== key ? translated : preset.name
   } catch {
-    return preset.name;
+    return preset.name
   }
-};
+}
 
 const getPresetDesc = (preset: ThemePreset): string => {
-  if (!preset.i18nkey) return preset.desc;
+  if (!preset.i18nkey) return preset.desc
   try {
-    const key = `${preset.i18nkey}.desc` as App.I18n.I18nKey;
-    const translated = $t(key);
-    return translated !== key ? translated : preset.desc;
+    const key = `${preset.i18nkey}.desc` as App.I18n.I18nKey
+    const translated = $t(key)
+    return translated !== key ? translated : preset.desc
   } catch {
-    return preset.desc;
+    return preset.desc
   }
-};
+}
 
 const applyPreset = (preset: ThemePreset): void => {
-  const mergedPreset = defu(preset, themeSettings);
-  const { themeScheme, grayscale, colourWeakness, layout, watermark, naiveui, ...rest } = mergedPreset;
-  themeStore.setThemeScheme(themeScheme);
-  themeStore.setGrayscale(grayscale);
-  themeStore.setColourWeakness(colourWeakness);
-  themeStore.setThemeLayout(layout.mode);
-  themeStore.setWatermarkEnableUserName(watermark.enableUserName);
-  themeStore.setWatermarkEnableTime(watermark.enableTime);
+  const mergedPreset = defu(preset, themeSettings)
+  const { themeScheme, grayscale, colourWeakness, layout, watermark, naiveui, ...rest } =
+    mergedPreset
+  themeStore.setThemeScheme(themeScheme)
+  themeStore.setGrayscale(grayscale)
+  themeStore.setColourWeakness(colourWeakness)
+  themeStore.setThemeLayout(layout.mode)
+  themeStore.setWatermarkEnableUserName(watermark.enableUserName)
+  themeStore.setWatermarkEnableTime(watermark.enableTime)
 
   Object.assign(themeStore, {
     ...rest,
@@ -99,18 +100,18 @@ const applyPreset = (preset: ThemePreset): void => {
     sider: { ...rest.sider },
     footer: { ...rest.footer },
     watermark: { ...watermark },
-    tokens: { ...rest.tokens }
-  });
+    tokens: { ...rest.tokens },
+  })
 
   // Apply NaiveUI theme overrides if present
-  themeStore.setNaiveThemeOverrides(naiveui);
+  themeStore.setNaiveThemeOverrides(naiveui)
 
-  window.$message?.success($t('theme.appearance.preset.applySuccess'));
-};
+  window.$message?.success($t("theme.appearance.preset.applySuccess"))
+}
 </script>
 
 <template>
-  <NDivider>{{ $t('theme.appearance.preset.title') }}</NDivider>
+  <NDivider>{{ $t("theme.appearance.preset.title") }}</NDivider>
 
   <div class="flex flex-col gap-3">
     <div
@@ -123,10 +124,22 @@ const applyPreset = (preset: ThemePreset): void => {
           <h5 class="m-0 truncate text-sm text-primary font-600">
             {{ getPresetName(preset) }}
           </h5>
-          <NBadge :value="`v${preset.version}`" type="info" size="small" class="flex-shrink-0 opacity-80" />
+          <NBadge
+            :value="`v${preset.version}`"
+            type="info"
+            size="small"
+            class="flex-shrink-0 opacity-80"
+          />
         </div>
-        <NButton type="primary" size="tiny" ghost round class="ml-2 flex-shrink-0" @click="applyPreset(preset)">
-          {{ $t('theme.appearance.preset.apply') }}
+        <NButton
+          type="primary"
+          size="tiny"
+          ghost
+          round
+          class="ml-2 flex-shrink-0"
+          @click="applyPreset(preset)"
+        >
+          {{ $t("theme.appearance.preset.apply") }}
         </NButton>
       </div>
 
@@ -145,10 +158,10 @@ const applyPreset = (preset: ThemePreset): void => {
         </div>
         <div class="flex items-center gap-1">
           <div class="text-lg">
-            {{ preset.themeScheme === 'dark' ? '🌙' : '☀️' }}
+            {{ preset.themeScheme === "dark" ? "🌙" : "☀️" }}
           </div>
           <div class="text-lg">
-            {{ preset.grayscale ? '🎨' : '' }}
+            {{ preset.grayscale ? "🎨" : "" }}
           </div>
         </div>
       </div>

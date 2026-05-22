@@ -219,6 +219,9 @@ importers:
       lint-staged:
         specifier: 16.2.7
         version: 16.2.7
+      prettier:
+        specifier: 3.8.3
+        version: 3.8.3
       pro-naive-ui-resolver:
         specifier: 1.0.2
         version: 1.0.2

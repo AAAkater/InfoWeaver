@@ -3,7 +3,7 @@
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
   },
-  "editor.formatOnSave": false,
+  "editor.formatOnSave": true,
   "eslint.validate": [
     "html",
     "css",
@@ -25,7 +25,6 @@
   "i18n-ally.parsers.typescript.compilerOptions": {
     "moduleResolution": "node"
   },
-  "prettier.enable": false,
   "typescript.tsdk": "node_modules/typescript/lib",
   "unocss.root": ["./"]
 }

@@ -94,6 +94,7 @@
     "eslint-plugin-vue": "10.6.2",
     "kolorist": "1.8.0",
     "lint-staged": "16.2.7",
+    "prettier": "3.8.3",
     "pro-naive-ui-resolver": "1.0.2",
     "sass": "1.97.1",
     "simple-git-hooks": "2.13.1",

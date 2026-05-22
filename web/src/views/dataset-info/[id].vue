@@ -45,6 +45,8 @@ const datasetId = computed(() => Number(props.id));
 
 const scrollX = 80 + 360 + 100 + 100 + 180 + 180 + 170 + 170;
 
+const fileScrollX = 80 + 240 + 120 + 120 + 180 + 80;
+
 // ---- File table columns ----
 const fileColumns: DataTableColumns<Api.Dataset.SimpleFileInfo> = [
   {
@@ -85,6 +87,18 @@ const fileColumns: DataTableColumns<Api.Dataset.SimpleFileInfo> = [
     width: 180,
     render(row) {
       return row.createdAt ? dayjs(row.createdAt).format('YYYY-MM-DD HH:mm') : '-';
+    }
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 80,
+    render(row) {
+      return h(
+        NButton,
+        { size: 'tiny', type: 'error', onClick: () => handleDeleteFile(row) },
+        { default: () => '删除' }
+      );
     }
   }
 ];
@@ -155,6 +169,10 @@ const chunkColumns: DataTableColumns<Api.Dataset.ChunkInfo> = [
     }
   }
 ];
+
+function handleDeleteFile(_file: Api.Dataset.SimpleFileInfo) {
+  message.success('删除成功');
+}
 
 // ---- Data fetching ----
 

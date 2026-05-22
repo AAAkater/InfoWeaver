@@ -37,6 +37,41 @@ const activeConversationId = ref<string>();
 const inputMessage = ref('');
 const isLoading = ref(false);
 const messageContainerRef = ref<HTMLElement>();
+const searchQuery = ref('');
+const showSettings = ref(false);
+
+// Mock RAG 召回设置
+const ragSettings = ref({
+  topK: 3,
+  similarityThreshold: 0.7,
+  selectedDatasets: ['前端技术文档', 'AI技术文档'],
+  enableRerank: true
+});
+
+// Mock LLM 采样参数
+const llmSettings = ref({
+  model: 'gpt-4o-mini',
+  temperature: 0.7,
+  topP: 0.9,
+  maxTokens: 2048,
+  frequencyPenalty: 0,
+  presencePenalty: 0
+});
+
+// Mock 可用模型列表
+const availableModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo', 'claude-3-sonnet', 'claude-3-haiku'];
+
+// Mock 可用知识库列表
+const availableDatasets = ['前端技术文档', 'AI技术文档', '项目开发规范', 'API接口文档', '运维手册'];
+
+function toggleDataset(ds: string) {
+  const idx = ragSettings.value.selectedDatasets.indexOf(ds);
+  if (idx === -1) {
+    ragSettings.value.selectedDatasets.push(ds);
+  } else {
+    ragSettings.value.selectedDatasets.splice(idx, 1);
+  }
+}
 
 const activeConversation = computed(() => {
   return conversations.value.find(c => c.id === activeConversationId.value);
@@ -44,6 +79,12 @@ const activeConversation = computed(() => {
 
 const messages = computed(() => {
   return activeConversation?.value?.messages || [];
+});
+
+const filteredConversations = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return conversations.value;
+  return conversations.value.filter(c => c.title.toLowerCase().includes(q));
 });
 
 function generateId() {
@@ -180,7 +221,13 @@ async function mockSendMessage(content: string): Promise<{ response: string; sou
 }
 
 async function sendMessage() {
-  if (!inputMessage.value.trim() || isLoading.value) return;
+  if (!inputMessage.value.trim()) {
+    if (!isLoading.value) {
+      window.$message?.warning('请输入内容后再发送');
+    }
+    return;
+  }
+  if (isLoading.value) return;
 
   if (!activeConversationId.value) {
     createNewConversation();
@@ -249,9 +296,203 @@ function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) });
 }
 
+// Mock 历史会话数据
+function createMockConversations() {
+  const mockData: Conversation[] = [
+    {
+      id: 'mock-1',
+      title: 'Vue3 组合式API 使用问题',
+      messages: [
+        {
+          id: 'm1-1',
+          role: 'user',
+          content: 'Vue3 的 ref 和 reactive 有什么区别？',
+          timestamp: new Date(Date.now() - 86400000 * 2)
+        },
+        {
+          id: 'm1-2',
+          role: 'assistant',
+          content: 'ref 用于基本类型，reactive 用于对象类型。ref 需要通过 .value 访问，reactive 直接访问。',
+          timestamp: new Date(Date.now() - 86400000 * 2 + 60000),
+          sources: [mockKnowledgeBase[0]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 86400000 * 2)
+    },
+    {
+      id: 'mock-2',
+      title: 'RAG 检索增强生成原理',
+      messages: [
+        {
+          id: 'm2-1',
+          role: 'user',
+          content: '请详细解释一下 RAG 技术的工作原理',
+          timestamp: new Date(Date.now() - 86400000)
+        },
+        {
+          id: 'm2-2',
+          role: 'assistant',
+          content:
+            'RAG（检索增强生成）结合了信息检索和文本生成。首先从知识库中检索相关文档，然后将检索结果作为上下文，辅助 LLM 生成更准确的回答。',
+          timestamp: new Date(Date.now() - 86400000 + 30000),
+          sources: [mockKnowledgeBase[3]]
+        },
+        {
+          id: 'm2-3',
+          role: 'user',
+          content: 'RAG 相比传统微调有什么优势？',
+          timestamp: new Date(Date.now() - 86400000 + 120000)
+        },
+        {
+          id: 'm2-4',
+          role: 'assistant',
+          content: 'RAG 可以实时更新知识库而无需重新训练模型，减少幻觉问题，并且答案可追溯至具体文档来源。',
+          timestamp: new Date(Date.now() - 86400000 + 150000),
+          sources: [mockKnowledgeBase[3], mockKnowledgeBase[4]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 86400000)
+    },
+    {
+      id: 'mock-3',
+      title: 'VectorDB 选型建议咨询',
+      messages: [
+        {
+          id: 'm3-1',
+          role: 'user',
+          content: '我们项目想选一个向量数据库，有什么推荐吗？',
+          timestamp: new Date(Date.now() - 43200000)
+        },
+        {
+          id: 'm3-2',
+          role: 'assistant',
+          content:
+            '常用的向量数据库包括：Pinecone（SaaS托管）、Milvus（开源高性能）、Weaviate（自带向量化）、Qdrant（Rust编写，性能优秀）。选择时需考虑数据量、延迟要求、是否自托管等因素。',
+          timestamp: new Date(Date.now() - 43200000 + 45000),
+          sources: [mockKnowledgeBase[4]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 43200000)
+    },
+    {
+      id: 'mock-4',
+      title: 'NaiveUI 表单校验方案',
+      messages: [
+        {
+          id: 'm4-1',
+          role: 'user',
+          content: 'NaiveUI 的表单校验怎么做？需要动态校验规则',
+          timestamp: new Date(Date.now() - 36000000)
+        },
+        {
+          id: 'm4-2',
+          role: 'assistant',
+          content:
+            'NaiveUI 的 NForm 组件支持通过 rules 属性设置校验规则，可以使用 computed 动态生成规则。支持 required、min、max、pattern 等内置规则，也支持自定义 validator 函数。',
+          timestamp: new Date(Date.now() - 36000000 + 30000),
+          sources: [mockKnowledgeBase[2]]
+        },
+        {
+          id: 'm4-3',
+          role: 'user',
+          content: '跨字段校验比如密码确认怎么实现？',
+          timestamp: new Date(Date.now() - 36000000 + 120000)
+        },
+        {
+          id: 'm4-4',
+          role: 'assistant',
+          content:
+            '可以在 confirmPassword 字段的 validator 中通过 getFieldValue 获取 password 字段的值进行比对。或者使用 NForm 的 validate 回调中手动处理跨字段逻辑。',
+          timestamp: new Date(Date.now() - 36000000 + 150000),
+          sources: [mockKnowledgeBase[2]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 36000000)
+    },
+    {
+      id: 'mock-5',
+      title: 'TypeScript 高级类型体操',
+      messages: [
+        {
+          id: 'm5-1',
+          role: 'user',
+          content: 'TypeScript 中怎么实现一个 DeepReadonly 类型？',
+          timestamp: new Date(Date.now() - 7200000)
+        },
+        {
+          id: 'm5-2',
+          role: 'assistant',
+          content:
+            '可以用递归条件类型实现：type DeepReadonly<T> = { readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K] }。注意需要处理数组和函数等特殊情况。',
+          timestamp: new Date(Date.now() - 7200000 + 20000),
+          sources: [mockKnowledgeBase[1]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 7200000)
+    },
+    {
+      id: 'mock-6',
+      title: '知识库文档分块策略探讨',
+      messages: [
+        {
+          id: 'm6-1',
+          role: 'user',
+          content: '处理长文档时，chunk_size 和 chunk_overlap 怎么设置比较合理？',
+          timestamp: new Date(Date.now() - 1800000)
+        },
+        {
+          id: 'm6-2',
+          role: 'assistant',
+          content:
+            '一般建议 chunk_size 512-1024 tokens，overlap 50-100 tokens。中文文档可以适当调大 chunk_size 到 800-1500。关键是要保证每个 chunk 的语义完整性，避免在句子中间截断。',
+          timestamp: new Date(Date.now() - 1800000 + 25000),
+          sources: [mockKnowledgeBase[3], mockKnowledgeBase[4]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 1800000)
+    },
+    {
+      id: 'mock-7',
+      title: '前端性能优化实战经验',
+      messages: [
+        {
+          id: 'm7-1',
+          role: 'user',
+          content: '页面加载很慢，有哪些前端性能优化手段？',
+          timestamp: new Date(Date.now() - 600000)
+        },
+        {
+          id: 'm7-2',
+          role: 'assistant',
+          content:
+            '可以从几个方面优化：1. 代码分割和懒加载 2. 图片压缩和 WebP 格式 3. CDN 加速静态资源 4. 虚拟列表处理长列表 5. 防抖节流优化高频事件 6. 使用 Web Worker 处理密集计算。具体需要根据你的项目情况选择合适方案。',
+          timestamp: new Date(Date.now() - 600000 + 30000)
+        },
+        {
+          id: 'm7-3',
+          role: 'user',
+          content: '虚拟列表在 Vue3 中怎么实现？',
+          timestamp: new Date(Date.now() - 600000 + 90000)
+        },
+        {
+          id: 'm7-4',
+          role: 'assistant',
+          content:
+            '可以使用 vue-virtual-scroller 或者基于 NaiveUI 的虚拟滚动组件。核心原理是只渲染可视区域内的 DOM 节点，通过计算 scrollTop 动态更新渲染范围。',
+          timestamp: new Date(Date.now() - 600000 + 120000),
+          sources: [mockKnowledgeBase[0], mockKnowledgeBase[2]]
+        }
+      ],
+      createdAt: new Date(Date.now() - 600000)
+    }
+  ];
+
+  conversations.value = mockData;
+  activeConversationId.value = mockData[0].id;
+}
+
 onMounted(() => {
-  // 初始化时创建一个对话
-  createNewConversation();
+  createMockConversations();
 });
 </script>
 
@@ -266,10 +507,13 @@ onMounted(() => {
           </template>
           新对话
         </NButton>
+        <div class="mt-3">
+          <NInput v-model:value="searchQuery" size="small" placeholder="搜索会话..." clearable />
+        </div>
       </div>
       <div class="flex-1 overflow-y-auto p-2">
         <div
-          v-for="conv in conversations"
+          v-for="conv in filteredConversations"
           :key="conv.id"
           class="mb-2 cursor-pointer rounded-lg p-3 transition-colors"
           :class="activeConversationId === conv.id ? 'bg-blue-100 text-blue-700' : 'bg-white hover:bg-gray-100'"
@@ -284,6 +528,9 @@ onMounted(() => {
             </NButton>
           </div>
           <div class="mt-1 text-xs text-gray-500">{{ conv.messages.length }} 条消息</div>
+        </div>
+        <div v-if="filteredConversations.length === 0" class="py-8 text-center text-xs text-gray-400">
+          未找到匹配的会话
         </div>
       </div>
     </div>
@@ -345,7 +592,135 @@ onMounted(() => {
 
       <!-- 输入区域 -->
       <div class="border-t border-gray-200 bg-white p-4">
+        <!-- 设置面板 -->
+        <div
+          v-if="showSettings"
+          class="mb-3 rounded-lg bg-gray-50 p-3"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px"
+        >
+          <!-- RAG 召回设置 -->
+          <div>
+            <div class="mb-2 text-xs text-gray-500 font-bold">RAG 召回设置</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">Top-K</span>
+                <NInputNumber v-model:value="ragSettings.topK" :min="1" :max="20" size="tiny" style="width: 100px" />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">相似度阈值</span>
+                <NInputNumber
+                  v-model:value="ragSettings.similarityThreshold"
+                  :min="0"
+                  :max="1"
+                  :step="0.05"
+                  size="tiny"
+                  style="width: 100px"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">重排序</span>
+                <NSwitch v-model:value="ragSettings.enableRerank" size="small" />
+              </div>
+              <div>
+                <div class="mb-1 text-xs text-gray-500">检索知识库</div>
+                <div class="flex flex-wrap gap-1">
+                  <NTag
+                    v-for="ds in availableDatasets"
+                    :key="ds"
+                    size="small"
+                    :type="ragSettings.selectedDatasets.includes(ds) ? 'primary' : 'default'"
+                    :bordered="false"
+                    :checkable="false"
+                    class="cursor-pointer"
+                    @click="toggleDataset(ds)"
+                  >
+                    {{ ds }}
+                  </NTag>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- LLM 采样参数 -->
+          <div>
+            <div class="mb-2 text-xs text-gray-500 font-bold">LLM 采样参数</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">模型</span>
+                <NSelect
+                  v-model:value="llmSettings.model"
+                  :options="availableModels.map(m => ({ label: m, value: m }))"
+                  size="tiny"
+                  style="width: 140px"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">Temperature</span>
+                <NInputNumber
+                  v-model:value="llmSettings.temperature"
+                  :min="0"
+                  :max="2"
+                  :step="0.05"
+                  size="tiny"
+                  style="width: 100px"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">Top P</span>
+                <NInputNumber
+                  v-model:value="llmSettings.topP"
+                  :min="0"
+                  :max="1"
+                  :step="0.05"
+                  size="tiny"
+                  style="width: 100px"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">Max Tokens</span>
+                <NInputNumber
+                  v-model:value="llmSettings.maxTokens"
+                  :min="1"
+                  :max="32768"
+                  :step="256"
+                  size="tiny"
+                  style="width: 100px"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">频率惩罚</span>
+                <NInputNumber
+                  v-model:value="llmSettings.frequencyPenalty"
+                  :min="-2"
+                  :max="2"
+                  :step="0.1"
+                  size="tiny"
+                  style="width: 100px"
+                />
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-500">存在惩罚</span>
+                <NInputNumber
+                  v-model:value="llmSettings.presencePenalty"
+                  :min="-2"
+                  :max="2"
+                  :step="0.1"
+                  size="tiny"
+                  style="width: 100px"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="flex items-end space-x-2">
+          <NButton
+            size="small"
+            :type="showSettings ? 'primary' : 'default'"
+            quaternary
+            @click="showSettings = !showSettings"
+          >
+            <span class="text-14px" :class="showSettings ? 'i-mdi:cog' : 'i-mdi:cog-outline'" />
+          </NButton>
           <NInput
             v-model:value="inputMessage"
             type="textarea"

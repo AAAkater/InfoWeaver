@@ -1,7 +1,7 @@
 import type { Router } from "vue-router"
-import type { LastLevelRouteKey, RouteKey, RouteMap } from "@elegant-router/types"
+import type { RouteFileKey, RouteKey, RoutePathMap } from "@/typings/router"
 import { $t } from "@/locales"
-import { getRoutePath } from "@/router/elegant/transform"
+import { getRoutePath } from "@/router/helpers"
 
 /**
  * Get all tabs
@@ -72,8 +72,8 @@ export function getTabByRoute(route: App.Global.TabRoute) {
   const tab: App.Global.Tab = {
     id: getTabIdByRoute(route),
     label,
-    routeKey: name as LastLevelRouteKey,
-    routePath: path as RouteMap[LastLevelRouteKey],
+    routeKey: name as RouteFileKey,
+    routePath: path as RoutePathMap[RouteFileKey],
     fullPath,
     fixedIndex: fixedIndexInTab,
     icon,
@@ -92,7 +92,7 @@ export function getTabByRoute(route: App.Global.TabRoute) {
  */
 export function getRouteIcons(route: App.Global.TabRoute) {
   // Set default value for icon at the beginning
-  let icon: string = route?.meta?.icon || import.meta.env.VITE_MENU_ICON
+  let icon: string = route?.meta?.icon || "mdi:menu"
   let localIcon: string | undefined = route?.meta?.localIcon
 
   // Route.matched only appears when there are multiple matches,so check if route.matched exists
@@ -113,25 +113,26 @@ export function getRouteIcons(route: App.Global.TabRoute) {
  * @param router
  * @param homeRouteName routeHome in useRouteStore
  */
-export function getDefaultHomeTab(router: Router, homeRouteName: LastLevelRouteKey) {
-  const homeRoutePath = getRoutePath(homeRouteName)
-  const i18nLabel = $t(`route.${homeRouteName}`)
+export function getDefaultHomeTab(router: Router, homeRouteName: RouteFileKey) {
+  const homeRoutePath = getRoutePath(homeRouteName) || "/home"
 
-  let homeTab: App.Global.Tab = {
-    id: getRoutePath(homeRouteName),
-    label: i18nLabel || homeRouteName,
+  let i18nLabel: string = homeRouteName
+  const routes = router.getRoutes()
+  const homeRoute = routes.find((route) => route.name === homeRouteName)
+
+  if (homeRoute) {
+    const i18nKey = (homeRoute.meta?.i18nKey as string) || ""
+    i18nLabel = $t(i18nKey) || (homeRoute.meta?.title as string) || homeRouteName
+  }
+
+  return {
+    id: homeRoutePath,
+    label: i18nLabel,
     routeKey: homeRouteName,
     routePath: homeRoutePath,
     fullPath: homeRoutePath,
+    ...(homeRoute ? getTabByRoute(homeRoute) : {}),
   }
-
-  const routes = router.getRoutes()
-  const homeRoute = routes.find((route) => route.name === homeRouteName)
-  if (homeRoute) {
-    homeTab = getTabByRoute(homeRoute)
-  }
-
-  return homeTab
 }
 
 /**

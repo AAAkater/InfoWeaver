@@ -84,7 +84,7 @@ async function fetchDatasets() {
 
 function handleViewChunks(datasetId: number) {
   router.push({
-    name: "dataset-info",
+    name: "DatasetInfoId",
     params: {
       id: datasetId,
     },

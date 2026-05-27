@@ -35,3 +35,6 @@ yarn.lock
 .VSCodeCounter
 
 .env
+docs/
+
+.temp

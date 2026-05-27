@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RouteKey } from "@elegant-router/types"
+import type { RouteKey } from "@/typings/router"
 import { GLOBAL_HEADER_MENU_ID, GLOBAL_SIDER_MENU_ID } from "@/constants/app"
 import { useAppStore } from "@/store/modules/app"
 import { useThemeStore } from "@/store/modules/theme"

@@ -58,7 +58,7 @@ declare module "vue-router" {
      * @example
      *   the route is "user_detail", if it is set to "user_list", the menu "user_list" will be activated
      */
-    activeMenu?: import("@elegant-router/types").RouteKey | null
+    activeMenu?: import("@/typings/router").RouteKey | null
     /**
      * By default, the same route path will use one tab, even with different query, if set true, the route with
      * different query will use different tabs

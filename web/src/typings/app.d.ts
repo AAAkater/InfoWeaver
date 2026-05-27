@@ -187,10 +187,10 @@ declare namespace App {
   namespace Global {
     type VNode = import("vue").VNode
     type RouteLocationNormalizedLoaded = import("vue-router").RouteLocationNormalizedLoaded
-    type RouteKey = import("@elegant-router/types").RouteKey
-    type RouteMap = import("@elegant-router/types").RouteMap
-    type RoutePath = import("@elegant-router/types").RoutePath
-    type LastLevelRouteKey = import("@elegant-router/types").LastLevelRouteKey
+    type RouteKey = import("@/typings/router").RouteKey
+    type RouteFileKey = import("@/typings/router").RouteFileKey
+    type RoutePath = import("@/typings/router").RoutePath
+    type RoutePathMap = import("@/typings/router").RoutePathMap
 
     /** The router push options */
     type RouterPushOptions = {
@@ -257,9 +257,9 @@ declare namespace App {
        */
       oldLabel?: string
       /** The tab route key */
-      routeKey: LastLevelRouteKey
+      routeKey: RouteFileKey
       /** The tab route path */
-      routePath: RouteMap[LastLevelRouteKey]
+      routePath: RoutePathMap[RouteFileKey]
       /** The tab route full path */
       fullPath: string
       /** The tab fixed index */
@@ -300,7 +300,7 @@ declare namespace App {
    * Locales type
    */
   namespace I18n {
-    type RouteKey = import("@elegant-router/types").RouteKey
+    type RouteKey = import("@/typings/router").RouteKey
 
     type LangType = "en-US" | "zh-CN"
 
@@ -599,20 +599,6 @@ declare namespace App {
             repeatedError: string
             repeatedErrorMsg1: string
             repeatedErrorMsg2: string
-          }
-        }
-        alova: {
-          scenes: {
-            captchaSend: string
-            autoRequest: string
-            visibilityRequestTips: string
-            pollingRequestTips: string
-            networkRequestTips: string
-            refreshTime: string
-            startRequest: string
-            stopRequest: string
-            requestCrossComponent: string
-            triggerAllRequest: string
           }
         }
         proNaive: {

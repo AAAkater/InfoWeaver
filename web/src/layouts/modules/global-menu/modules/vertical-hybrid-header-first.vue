@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { useRoute } from "vue-router"
-import type { RouteKey } from "@elegant-router/types"
+import type { RouteKey } from "@/typings/router"
 import { SimpleScrollbar } from "@sa/materials"
 import { useBoolean } from "@sa/hooks"
 import { GLOBAL_HEADER_MENU_ID, GLOBAL_SIDER_MENU_ID } from "@/constants/app"

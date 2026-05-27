@@ -1,10 +1,5 @@
-import type { RouteLocationNormalizedLoaded, RouteRecordRaw, _RouteRecordBase } from "vue-router"
-import type {
-  ElegantConstRoute,
-  LastLevelRouteKey,
-  RouteKey,
-  RouteMap,
-} from "@elegant-router/types"
+import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from "vue-router"
+import type { RouteFileKey, RouteKey } from "@/typings/router"
 import { useSvgIcon } from "@/hooks/common/icon"
 import { $t } from "@/locales"
 
@@ -14,7 +9,7 @@ import { $t } from "@/locales"
  * @param routes Auth routes
  * @param roles Roles
  */
-export function filterAuthRoutesByRoles(routes: ElegantConstRoute[], roles: string[]) {
+export function filterAuthRoutesByRoles(routes: RouteRecordRaw[], roles: string[]) {
   return routes.flatMap((route) => filterAuthRouteByRoles(route, roles))
 }
 
@@ -24,8 +19,9 @@ export function filterAuthRoutesByRoles(routes: ElegantConstRoute[], roles: stri
  * @param route Auth route
  * @param roles Roles
  */
-function filterAuthRouteByRoles(route: ElegantConstRoute, roles: string[]): ElegantConstRoute[] {
-  const routeRoles = (route.meta && route.meta.roles) || []
+function filterAuthRouteByRoles(route: RouteRecordRaw, roles: string[]): RouteRecordRaw[] {
+  const meta = (route.meta ?? {}) as Record<string, unknown>
+  const routeRoles = (meta.roles as string[]) || []
 
   // if the route's "roles" is empty, then it is allowed to access
   const isEmptyRoles = !routeRoles.length
@@ -54,10 +50,12 @@ function filterAuthRouteByRoles(route: ElegantConstRoute, roles: string[]): Eleg
  *
  * @param route route
  */
-function sortRouteByOrder(route: ElegantConstRoute) {
+function sortRouteByOrder(route: RouteRecordRaw) {
   if (route.children?.length) {
     route.children.sort(
-      (next, prev) => (Number(next.meta?.order) || 0) - (Number(prev.meta?.order) || 0),
+      (next, prev) =>
+        (Number((next.meta as Record<string, unknown>)?.order) || 0) -
+        (Number((prev.meta as Record<string, unknown>)?.order) || 0),
     )
     route.children.forEach(sortRouteByOrder)
   }
@@ -70,8 +68,12 @@ function sortRouteByOrder(route: ElegantConstRoute) {
  *
  * @param routes routes
  */
-export function sortRoutesByOrder(routes: ElegantConstRoute[]) {
-  routes.sort((next, prev) => (Number(next.meta?.order) || 0) - (Number(prev.meta?.order) || 0))
+export function sortRoutesByOrder(routes: RouteRecordRaw[]) {
+  routes.sort(
+    (next, prev) =>
+      (Number((next.meta as Record<string, unknown>)?.order) || 0) -
+      (Number((prev.meta as Record<string, unknown>)?.order) || 0),
+  )
   routes.forEach(sortRouteByOrder)
 
   return routes
@@ -82,7 +84,7 @@ export function sortRoutesByOrder(routes: ElegantConstRoute[]) {
  *
  * @param routes Auth routes
  */
-export function getGlobalMenusByAuthRoutes(routes: ElegantConstRoute[]) {
+export function getGlobalMenusByAuthRoutes(routes: RouteRecordRaw[]) {
   const menus: App.Global.Menu[] = []
 
   routes.forEach((route) => {
@@ -133,17 +135,12 @@ export function updateLocaleOfGlobalMenus(menus: App.Global.Menu[]) {
  *
  * @param route
  */
-function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | ElegantConstRoute) {
+function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | RouteRecordRaw) {
   const { SvgIconVNode } = useSvgIcon()
 
   const { name, path } = route
-  const {
-    title,
-    i18nKey,
-    icon = import.meta.env.VITE_MENU_ICON,
-    localIcon,
-    iconFontSize,
-  } = route.meta ?? {}
+  const meta = (route.meta ?? {}) as Record<string, unknown>
+  const { title, i18nKey, icon = "mdi:menu", localIcon, iconFontSize } = meta
 
   const label = i18nKey ? $t(i18nKey) : title!
 
@@ -152,7 +149,7 @@ function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | Elegant
     label,
     i18nKey,
     routeKey: name as RouteKey,
-    routePath: path as RouteMap[RouteKey],
+    routePath: path as string,
     icon: SvgIconVNode({ icon, localIcon, fontSize: iconFontSize || 20 }),
   }
 
@@ -165,13 +162,13 @@ function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | Elegant
  * @param routes Vue routes (two levels)
  */
 export function getCacheRouteNames(routes: RouteRecordRaw[]) {
-  const cacheNames: LastLevelRouteKey[] = []
+  const cacheNames: RouteFileKey[] = []
 
   routes.forEach((route) => {
     // only get last two level route, which has component
     route.children?.forEach((child) => {
       if (child.component && child.meta?.keepAlive) {
-        cacheNames.push(child.name as LastLevelRouteKey)
+        cacheNames.push(child.name as RouteFileKey)
       }
     })
   })
@@ -185,7 +182,7 @@ export function getCacheRouteNames(routes: RouteRecordRaw[]) {
  * @param routeName
  * @param routes
  */
-export function isRouteExistByRouteName(routeName: RouteKey, routes: ElegantConstRoute[]) {
+export function isRouteExistByRouteName(routeName: RouteKey, routes: RouteRecordRaw[]) {
   return routes.some((route) => recursiveGetIsRouteExistByRouteName(route, routeName))
 }
 
@@ -195,7 +192,7 @@ export function isRouteExistByRouteName(routeName: RouteKey, routes: ElegantCons
  * @param route
  * @param routeName
  */
-function recursiveGetIsRouteExistByRouteName(route: ElegantConstRoute, routeName: RouteKey) {
+function recursiveGetIsRouteExistByRouteName(route: RouteRecordRaw, routeName: RouteKey) {
   let isExist = route.name === routeName
 
   if (isExist) {

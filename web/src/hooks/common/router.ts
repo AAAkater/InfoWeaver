@@ -1,6 +1,6 @@
 import { useRouter } from "vue-router"
 import type { RouteLocationRaw } from "vue-router"
-import type { RouteKey } from "@elegant-router/types"
+import type { RouteKey } from "@/typings/router"
 import { router as globalRouter } from "@/router"
 
 /**
@@ -50,7 +50,7 @@ export function useRouterPush(inSetup = true) {
   }
 
   async function toHome() {
-    return routerPushByKey("root")
+    return routerPushByKey("Home")
   }
 
   /**
@@ -62,19 +62,16 @@ export function useRouterPush(inSetup = true) {
   async function toLogin(loginModule?: UnionKey.LoginModule, redirectUrl?: string) {
     const module = loginModule || "pwd-login"
 
+    const redirect = redirectUrl || route.value.fullPath
+
     const options: App.Global.RouterPushOptions = {
-      params: {
+      query: {
         module,
+        redirect,
       },
     }
 
-    const redirect = redirectUrl || route.value.fullPath
-
-    options.query = {
-      redirect,
-    }
-
-    return routerPushByKey("login", options)
+    return routerPushByKey("systemLogin", options)
   }
 
   /**
@@ -85,7 +82,7 @@ export function useRouterPush(inSetup = true) {
   async function toggleLoginModule(module: UnionKey.LoginModule) {
     const query = route.value.query as Record<string, string>
 
-    return routerPushByKey("login", { query, params: { module } })
+    return routerPushByKey("systemLogin", { query: { ...query, module } })
   }
 
   /**

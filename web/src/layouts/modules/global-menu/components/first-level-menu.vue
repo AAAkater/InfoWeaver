@@ -3,7 +3,7 @@ import { computed } from "vue"
 import { createReusableTemplate } from "@vueuse/core"
 import { SimpleScrollbar } from "@sa/materials"
 import { transformColorWithOpacity } from "@sa/color"
-import type { RouteKey } from "@elegant-router/types"
+import type { RouteKey } from "@/typings/router"
 
 defineOptions({
   name: "FirstLevelMenu",

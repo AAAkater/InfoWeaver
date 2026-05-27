@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import type { Component } from "vue"
+import { useRoute } from "vue-router"
 import { getPaletteColorByNumber, mixColor } from "@sa/color"
 import { loginModuleRecord } from "@/constants/app"
 import { useAppStore } from "@/store/modules/app"
@@ -10,12 +11,7 @@ import PwdLogin from "./modules/pwd-login.vue"
 import Register from "./modules/register.vue"
 import ResetPwd from "./modules/reset-pwd.vue"
 
-interface Props {
-  /** The login module */
-  module?: UnionKey.LoginModule
-}
-
-const props = defineProps<Props>()
+const route = useRoute()
 
 const appStore = useAppStore()
 const themeStore = useThemeStore()
@@ -31,7 +27,9 @@ const moduleMap: Record<UnionKey.LoginModule, LoginModule> = {
   "reset-pwd": { label: loginModuleRecord["reset-pwd"], component: ResetPwd },
 }
 
-const activeModule = computed(() => moduleMap[props.module || "pwd-login"])
+const activeModule = computed(
+  () => moduleMap[(route.query.module as UnionKey.LoginModule) || "pwd-login"],
+)
 
 const bgThemeColor = computed(() =>
   themeStore.darkMode ? getPaletteColorByNumber(themeStore.themeColor, 600) : themeStore.themeColor,

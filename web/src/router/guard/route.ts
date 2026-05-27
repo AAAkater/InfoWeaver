@@ -5,11 +5,11 @@ import type {
   RouteLocationRaw,
   Router,
 } from "vue-router"
-import type { RouteKey, RoutePath } from "@elegant-router/types"
+import type { RouteKey, RoutePath } from "@/typings/router"
 import { useAuthStore } from "@/store/modules/auth"
 import { useRouteStore } from "@/store/modules/route"
 import { localStg } from "@/utils/storage"
-import { getRouteName } from "@/router/elegant/transform"
+import { getRouteName } from "@/router/helpers"
 
 /**
  * create route guard
@@ -27,9 +27,9 @@ export function createRouteGuard(router: Router) {
 
     const authStore = useAuthStore()
 
-    const rootRoute: RouteKey = "root"
-    const loginRoute: RouteKey = "login"
-    const noAuthorizationRoute: RouteKey = "403"
+    const rootRoute: RouteKey = "Root"
+    const loginRoute: RouteKey = "systemLogin"
+    const noAuthorizationRoute: RouteKey = "system403"
 
     const isLogin = Boolean(localStg.get("token"))
     const needLogin = !to.meta.constant
@@ -75,7 +75,7 @@ export function createRouteGuard(router: Router) {
 async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw | null> {
   const routeStore = useRouteStore()
 
-  const notFoundRoute: RouteKey = "not-found"
+  const notFoundRoute: RouteKey = "NotFound"
   const isNotFoundRoute = to.name === notFoundRoute
 
   // if the constant route is not initialized, then initialize the constant route
@@ -106,7 +106,7 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
     }
 
     // if the user is not logged in, then switch to the login page
-    const loginRoute: RouteKey = "login"
+    const loginRoute: RouteKey = "systemLogin"
     const query = getRouteQueryOfLoginRoute(to, routeStore.routeHome)
 
     const location: RouteLocationRaw = {
@@ -124,7 +124,7 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
     // the route is captured by the "not-found" route because the auth route is not initialized
     // after the auth route is initialized, redirect to the original route
     if (isNotFoundRoute) {
-      const rootRoute: RouteKey = "root"
+      const rootRoute: RouteKey = "Root"
       const path = to.redirectedFrom?.name === rootRoute ? "/" : to.fullPath
 
       const location: RouteLocationRaw = {
@@ -148,7 +148,7 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
 
   // it is captured by the "not-found" route, then check whether the route exists
   const exist = await routeStore.getIsAuthRouteExist(to.path as RoutePath)
-  const noPermissionRoute: RouteKey = "403"
+  const noPermissionRoute: RouteKey = "system403"
 
   if (exist) {
     const location: RouteLocationRaw = {

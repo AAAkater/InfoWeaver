@@ -8,6 +8,7 @@ import {
   getProviderModels,
   setProviderModelEnable,
   updateProvider,
+  updateProviderKey,
 } from "@/service/api/provider"
 import ProviderAddModelModal from "./modules/provider-add-model-modal.vue"
 import ProviderFormModal from "./modules/provider-form-modal.vue"
@@ -24,6 +25,7 @@ const loading = ref(false)
 
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const showKeyModal = ref(false)
 const showModelsModal = ref(false)
 const showAddModelModal = ref(false)
 
@@ -42,10 +44,14 @@ const createModel = reactive<Api.Provider.ProviderCreateReq>({
 
 const editModel = reactive<Api.Provider.ProviderUpdateReq>({
   id: 0,
-  api_key: "",
   base_url: "",
   mode: "openai",
   name: "",
+})
+
+const keyForm = reactive<Api.Provider.ProviderUpdateAPIKeyReq>({
+  id: 0,
+  api_key: "",
 })
 
 function resetCreateModel() {
@@ -113,6 +119,20 @@ async function handleUpdate(payload: Api.Provider.ProviderUpdateReq) {
   }
 }
 
+async function handleUpdateKey() {
+  if (!keyForm.api_key.trim()) {
+    message.warning("请输入 API Key")
+    return
+  }
+  const { response: res } = await updateProviderKey({ id: keyForm.id, api_key: keyForm.api_key })
+  if (res.data.code === 0) {
+    message.success("API Key 更新成功")
+    showKeyModal.value = false
+  } else {
+    message.error(res.data.msg || "更新失败")
+  }
+}
+
 async function handleDelete(id: number) {
   const { response: res } = await deleteProvider(id)
   if (res.data.code === 0) {
@@ -166,7 +186,7 @@ async function handleSetModelEnable(modelId: string, enabled: boolean) {
   if (!currentProvider.value) return
 
   const { response: res } = await setProviderModelEnable({
-    id: currentProvider.value.id,
+    provider_id: currentProvider.value.id,
     model_id: modelId,
     enabled,
   })
@@ -185,7 +205,7 @@ async function handleAddModel(modelName: string) {
   }
 
   const { response: res } = await setProviderModelEnable({
-    id: currentProvider.value.id,
+    provider_id: currentProvider.value.id,
     model_id: modelName,
     enabled: true,
   })
@@ -198,7 +218,10 @@ async function handleAddModel(modelName: string) {
   }
 }
 
-function handleSelect(key: "edit" | "models" | "delete", provider: Api.Provider.ProviderInfo) {
+function handleSelect(
+  key: "edit" | "key" | "models" | "delete",
+  provider: Api.Provider.ProviderInfo,
+) {
   currentProvider.value = provider
 
   switch (key) {
@@ -207,8 +230,12 @@ function handleSelect(key: "edit" | "models" | "delete", provider: Api.Provider.
       editModel.name = provider.name
       editModel.base_url = provider.base_url
       editModel.mode = provider.mode as Api.Provider.ProviderMode
-      editModel.api_key = ""
       showEditModal.value = true
+      break
+    case "key":
+      keyForm.id = provider.id
+      keyForm.api_key = ""
+      showKeyModal.value = true
       break
     case "models":
       modelFilter.value = "all"
@@ -271,6 +298,31 @@ onMounted(() => {
       :is-edit="true"
       @submit="handleUpdate"
     />
+
+    <!-- API Key update modal -->
+    <NModal
+      v-model:show="showKeyModal"
+      :mask-closable="false"
+      preset="dialog"
+      :show-icon="false"
+      :style="{ width: '420px' }"
+      positive-text="确认"
+      negative-text="取消"
+      title="更新 API Key"
+      @positive-click="handleUpdateKey"
+    >
+      <div class="flex items-center gap-4">
+        <span class="w-70px shrink-0 text-14px text-gray-600">API Key</span>
+        <NInput
+          v-model:value="keyForm.api_key"
+          type="password"
+          size="small"
+          class="flex-1"
+          placeholder="请输入新的 API Key"
+          show-password-on="click"
+        />
+      </div>
+    </NModal>
 
     <ProviderModelsModal
       v-model:show="showModelsModal"

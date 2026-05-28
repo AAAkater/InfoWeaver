@@ -41,10 +41,19 @@ export function getProviderModels(providerId: number) {
   })
 }
 
-/** Update an existing provider */
+/** Update an existing provider (name, base_url, mode) */
 export function updateProvider(data: Api.Provider.ProviderUpdateReq) {
   return request<Api.Provider.Response>({
     url: "/provider/update",
+    method: "post",
+    data,
+  })
+}
+
+/** Update only the API key of an existing provider */
+export function updateProviderKey(data: Api.Provider.ProviderUpdateAPIKeyReq) {
+  return request<Api.Provider.Response>({
+    url: "/provider/update-key",
     method: "post",
     data,
   })

@@ -7,6 +7,7 @@ import dayjs from "dayjs"
 import {
   Delete16Regular as DeleteIcon,
   Edit24Regular as EditIcon,
+  Key20Regular as KeyIcon,
   Server24Regular,
 } from "@vicons/fluent"
 
@@ -15,7 +16,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "select", key: "edit" | "models" | "delete", provider: Api.Provider.ProviderInfo): void
+  (
+    event: "select",
+    key: "edit" | "key" | "models" | "delete",
+    provider: Api.Provider.ProviderInfo,
+  ): void
 }>()
 
 function renderIcon(icon: Component) {
@@ -63,7 +68,7 @@ const columns: DataTableColumns<Api.Provider.ProviderInfo> = [
   {
     title: "操作",
     key: "actions",
-    width: 220,
+    width: 280,
     render(row) {
       return h(
         "div",
@@ -81,6 +86,18 @@ const columns: DataTableColumns<Api.Provider.ProviderInfo> = [
             {
               default: () => "编辑",
               icon: renderIcon(EditIcon),
+            },
+          ),
+          h(
+            NButton,
+            {
+              size: "small",
+              secondary: true,
+              onClick: () => emit("select", "key", row),
+            },
+            {
+              default: () => "Key",
+              icon: renderIcon(KeyIcon),
             },
           ),
           h(

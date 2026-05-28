@@ -16,13 +16,18 @@ declare namespace Api {
       name: string
     }
 
-    /** Provider update request */
+    /** Provider update request (name, base_url, mode) */
     interface ProviderUpdateReq {
       id: number
-      api_key: string
       base_url: string
       mode: ProviderMode
       name: string
+    }
+
+    /** Provider update API key request */
+    interface ProviderUpdateAPIKeyReq {
+      id: number
+      api_key: string
     }
 
     /** Provider info */
@@ -61,7 +66,7 @@ declare namespace Api {
 
     /** Provider set model enable request */
     interface ProviderSetModelEnableReq {
-      id: number
+      provider_id: number
       model_id: string
       enabled: boolean
     }

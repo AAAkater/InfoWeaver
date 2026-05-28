@@ -71,7 +71,7 @@ export const routes: RouteRecordRaw[] = [
   {
     name: "UserCenter",
     path: "/user-center",
-    component: () => import("@/views/user-center/index.vue"),
+    component: () => import("@/views/user/user-center/index.vue"),
     meta: { layout: "base", title: "UserCenter", i18nKey: "route.user-center", hideInMenu: true },
   },
 
@@ -121,7 +121,7 @@ export const routes: RouteRecordRaw[] = [
   {
     name: "systemLogin",
     path: "/system/login",
-    component: () => import("@/views/system/login/index.vue"),
+    component: () => import("@/views/user/login/index.vue"),
     meta: {
       layout: "blank",
       title: "systemLogin",

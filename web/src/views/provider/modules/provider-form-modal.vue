@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue"
+import { computed, reactive, watch } from "vue"
 
 type ProviderFormModel = {
   id?: number
-  api_key: string
+  api_key?: string
   base_url: string
   mode: Api.Provider.ProviderMode
   name: string
@@ -45,8 +45,6 @@ const form = reactive<ProviderFormModel>({
   name: "",
 })
 
-const apiKeyDisplay = ref("")
-
 function resetForm() {
   Object.assign(form, {
     id: undefined,
@@ -55,18 +53,16 @@ function resetForm() {
     mode: "openai",
     name: "",
   })
-  apiKeyDisplay.value = ""
 }
 
 function syncForm() {
   Object.assign(form, {
     id: props.model.id,
+    api_key: "",
     base_url: props.model.base_url || "",
     mode: props.model.mode || "openai",
     name: props.model.name || "",
   })
-  apiKeyDisplay.value = props.isEdit ? "********" : ""
-  form.api_key = props.isEdit ? "" : props.model.api_key || ""
 }
 
 watch(
@@ -91,14 +87,7 @@ watch(
 )
 
 function handlePositiveClick() {
-  emit("submit", {
-    ...form,
-    api_key: props.isEdit
-      ? apiKeyDisplay.value === "********"
-        ? ""
-        : apiKeyDisplay.value
-      : apiKeyDisplay.value,
-  })
+  emit("submit", { ...form })
 }
 </script>
 
@@ -114,24 +103,47 @@ function handlePositiveClick() {
     :title="props.isEdit ? '编辑 Provider' : '创建 Provider'"
     @positive-click="handlePositiveClick"
   >
-    <NSpace :size="16" vertical>
-      <NFormItem label="名称" required>
-        <NInput v-model:value="form.name" placeholder="请输入 Provider 名称" />
-      </NFormItem>
-      <NFormItem label="Base URL" required>
-        <NInput v-model:value="form.base_url" placeholder="请输入 API Base URL" />
-      </NFormItem>
-      <NFormItem label="API Key" required>
+    <div class="flex flex-col gap-4">
+      <!-- 名称 -->
+      <div class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">名称</span>
         <NInput
-          v-model:value="apiKeyDisplay"
+          v-model:value="form.name"
+          size="small"
+          class="flex-1"
+          placeholder="请输入 Provider 名称"
+        />
+      </div>
+
+      <!-- Base URL -->
+      <div class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">Base URL</span>
+        <NInput
+          v-model:value="form.base_url"
+          size="small"
+          class="flex-1"
+          placeholder="请输入 API Base URL"
+        />
+      </div>
+
+      <!-- API Key（仅创建时显示） -->
+      <div v-if="!props.isEdit" class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">API Key</span>
+        <NInput
+          v-model:value="form.api_key"
           type="password"
-          :placeholder="props.isEdit ? '默认已隐藏，修改时直接输入新值' : '请输入 API Key'"
+          size="small"
+          class="flex-1"
+          placeholder="请输入 API Key"
           show-password-on="click"
         />
-      </NFormItem>
-      <NFormItem label="模式" required>
-        <NSelect v-model:value="form.mode" :options="modeOptions" />
-      </NFormItem>
-    </NSpace>
+      </div>
+
+      <!-- 模式 -->
+      <div class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">模式</span>
+        <NSelect v-model:value="form.mode" :options="modeOptions" size="small" class="flex-1" />
+      </div>
+    </div>
   </NModal>
 </template>

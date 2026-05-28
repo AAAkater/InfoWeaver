@@ -25,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const bodyStyle = {
-  width: "600px",
+  width: "560px",
 }
 
 const visible = computed({
@@ -41,11 +41,6 @@ const columns: DataTableColumns<Api.Provider.ModelInfo> = [
     ellipsis: {
       tooltip: true,
     },
-  },
-  {
-    title: "类型",
-    key: "object",
-    width: 140,
   },
   {
     title: "所属",

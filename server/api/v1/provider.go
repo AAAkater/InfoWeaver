@@ -21,6 +21,7 @@ func SetProviderRouter(e *echo.Echo) {
 	providerRouterGroup.GET("/models/:provider_id", providerHandler.listModels)
 	providerRouterGroup.POST("/models/enable", providerHandler.setModelEnable)
 	providerRouterGroup.POST("/update", providerHandler.updateProviderInfo)
+	providerRouterGroup.POST("/update-key", providerHandler.updateProviderAPIKey)
 	providerRouterGroup.POST("/delete/:provider_id", providerHandler.deleteProvider)
 }
 
@@ -165,7 +166,6 @@ func (this *providerApi) updateProviderInfo(ctx *echo.Context) error {
 		currentUser.ID,
 		args.Name,
 		args.BaseURL,
-		args.APIKey,
 		args.Mode); {
 	case err == nil:
 		return response.Ok(ctx)
@@ -173,6 +173,46 @@ func (this *providerApi) updateProviderInfo(ctx *echo.Context) error {
 		return response.ErrProviderNotFound()
 	case errors.Is(err, service.ErrDuplicatedKey):
 		return response.ErrProviderNameAlreadyExists()
+	default:
+		Logger.Error(err)
+		return response.ErrUnknownError()
+	}
+}
+
+// updateProviderAPIKey godoc
+//
+//	@Summary		Update Provider API Key
+//	@Description	Update only the API key of an existing provider
+//	@Tags			Provider
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		models.ProviderUpdateAPIKeyReq	true	"Update Provider API Key Request Body"
+//	@Success		200		{object}	response.ResponseBase[any]		"Provider API key updated successfully"
+//	@Failure		400		{object}	response.ResponseBase[any]		"Invalid request parameters"
+//	@Failure		401		{object}	response.ResponseBase[any]		"Invalid or expired token"
+//	@Failure		404		{object}	response.ResponseBase[any]		"Provider not found"
+//	@Failure		500		{object}	response.ResponseBase[any]		"Internal server error"
+//	@Router			/provider/update-key [post]
+func (this *providerApi) updateProviderAPIKey(ctx *echo.Context) error {
+	currentUser, err := utils.GetCurrentUser(ctx)
+	if err != nil {
+		return response.ErrInvalidToken()
+	}
+
+	args, err := utils.BindAndValidate[models.ProviderUpdateAPIKeyReq](ctx)
+	if err != nil {
+		return response.BadRequestWithMsg(err.Error())
+	}
+
+	switch err := providerService.UpdateProviderAPIKey(
+		ctx.Request().Context(),
+		args.ID,
+		currentUser.ID,
+		args.APIKey); {
+	case err == nil:
+		return response.Ok(ctx)
+	case errors.Is(err, service.ErrNotFound):
+		return response.ErrProviderNotFound()
 	default:
 		Logger.Error(err)
 		return response.ErrUnknownError()

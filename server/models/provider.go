@@ -66,13 +66,18 @@ type ProviderCreateReq struct {
 	Mode    string `json:"mode" validate:"required,oneof=openai openai_response gemini anthropic ollama"`
 }
 
-// ProviderUpdateReq represents a request to update a provider
+// ProviderUpdateReq represents a request to update a provider's general info (excluding API key)
 type ProviderUpdateReq struct {
 	ID      uint   `json:"id" validate:"required"`
 	Name    string `json:"name" validate:"required,min=1,max=50"`
 	BaseURL string `json:"base_url" validate:"required,url"`
-	APIKey  string `json:"api_key" validate:"required,min=1"`
 	Mode    string `json:"mode" validate:"required,oneof=openai openai_response gemini anthropic ollama"`
+}
+
+// ProviderUpdateAPIKeyReq represents a request to update only the API key of a provider
+type ProviderUpdateAPIKeyReq struct {
+	ID     uint   `json:"id" validate:"required"`
+	APIKey string `json:"api_key" validate:"required,min=1"`
 }
 
 // ProviderModelsReq represents a request to list models from a provider

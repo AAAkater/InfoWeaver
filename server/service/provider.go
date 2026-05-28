@@ -42,22 +42,32 @@ func (this *ProviderService) CreateProvider(ctx context.Context, ownerID uint, n
 	return gorm.G[models.Provider](db.PgSqlDB).Create(ctx, dbProvider)
 }
 
-func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint, ownerID uint, name string, baseURL string, apiKey string, mode string) error {
-	// Encrypt API key using AES instead of bcrypt hash
-	encryptedKey, err := utils.EncryptAPIKey(apiKey)
-	if err != nil {
-		return fmt.Errorf("failed to encrypt API key: %w", err)
-	}
-
+func (this *ProviderService) UpdateProvider(ctx context.Context, providerID uint, ownerID uint, name string, baseURL string, mode string) error {
 	newProvider := models.Provider{
 		Name:    name,
 		BaseURL: baseURL,
-		APIKey:  encryptedKey,
 		Mode:    mode,
 	}
 	rows, err := gorm.G[models.Provider](db.PgSqlDB).
 		Where("id = ? AND owner_id = ?", providerID, ownerID).
 		Updates(ctx, newProvider)
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return err
+}
+
+// UpdateProviderAPIKey updates only the API key for a provider
+func (this *ProviderService) UpdateProviderAPIKey(ctx context.Context, providerID uint, ownerID uint, apiKey string) error {
+	// Encrypt API key using AES
+	encryptedKey, err := utils.EncryptAPIKey(apiKey)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt API key: %w", err)
+	}
+
+	rows, err := gorm.G[models.Provider](db.PgSqlDB).
+		Where("id = ? AND owner_id = ?", providerID, ownerID).
+		Update(ctx, "api_key", encryptedKey)
 	if rows == 0 {
 		return ErrNotFound
 	}

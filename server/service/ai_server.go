@@ -39,7 +39,7 @@ func aiServerPostJSON(ctx context.Context, path string, reqBody, result any) err
 	if err != nil {
 		return fmt.Errorf("failed to call AI server: %w", err)
 	}
-	if resp.StatusCode() != 200 {
+	if resp.StatusCode() != 200 && resp.StatusCode() != 202 {
 		return fmt.Errorf("AI server returned status %d", resp.StatusCode())
 	}
 	return nil
@@ -108,7 +108,7 @@ func callAIServerSplit(ctx context.Context, fileID, datasetID uint, minioPath st
 }
 
 // callAIServerEmbed sends an embedding request with a doc-level timeout.
-func callAIServerEmbed(ctx context.Context, req models.EmbeddingReq) (*models.EmbeddingResp, error) {
+func callAIServerEmbed(ctx context.Context, chunkIDs []uint, embeddingCfg models.EmbeddingConfig) (*models.EmbeddingResp, error) {
 	ctx, cancel := withDocCtx(ctx)
 	defer cancel()
 
@@ -117,7 +117,10 @@ func callAIServerEmbed(ctx context.Context, req models.EmbeddingReq) (*models.Em
 		Msg  string               `json:"msg"`
 		Data models.EmbeddingResp `json:"data"`
 	}
-	if err := aiServerPostJSON(ctx, aiPathDocEmbed, req, &result); err != nil {
+	if err := aiServerPostJSON(ctx, aiPathDocEmbed, map[string]any{
+		"chunk_ids":        chunkIDs,
+		"embedding_config": embeddingCfg,
+	}, &result); err != nil {
 		return nil, err
 	}
 	if result.Code != 0 {

@@ -344,19 +344,11 @@ func (this *fileApi) embedChunks(ctx *echo.Context) error {
 	}
 
 	chunkIDs := uniqueUintSlice(args.ChunkIDs)
-	owned, err := fileService.CheckChunkOwnershipByChunkIDs(ctx.Request().Context(), chunkIDs, currentUser.ID)
-	if err != nil {
-		Logger.Errorf("Failed to verify chunk ownership for user %d: %v", currentUser.ID, err)
-		return response.ErrUnknownError()
-	}
-	if !owned {
-		return response.ErrChunkNotFound()
-	}
 
 	result, err := aiDocService.EmbedDocument(
 		ctx.Request().Context(),
 		chunkIDs,
-		args.EmbeddingConfig,
+		currentUser.ID,
 	)
 	if err != nil {
 		Logger.Errorf("Document embedding failed: %v", err)

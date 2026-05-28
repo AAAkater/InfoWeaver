@@ -30,8 +30,11 @@ type ListFilesReq struct {
 }
 
 type SimpleFileInfo struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"`
+	Size      int64     `json:"size"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type SimpleFileInfoListResp struct {
@@ -99,10 +102,11 @@ type EmbeddingConfig struct {
 	EmbedType    string `json:"embed_type" validate:"required"`
 }
 
-// EmbeddingReq represents the request body for the document embedding API
+// EmbeddingReq represents the request body for the document embedding API.
+// Only chunk_ids are accepted; embedding config is resolved from the database
+// (Dataset + Provider) on the server side.
 type EmbeddingReq struct {
-	ChunkIDs        []uint          `json:"chunk_ids" validate:"required,min=1"`
-	EmbeddingConfig EmbeddingConfig `json:"embedding_config" validate:"required"`
+	ChunkIDs []uint `json:"chunk_ids" validate:"required,min=1"`
 }
 
 // EmbeddingResp represents the data returned by the document embedding API

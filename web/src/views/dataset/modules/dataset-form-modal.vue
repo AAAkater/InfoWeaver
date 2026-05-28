@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue"
+import { getProviderList, getProviderModels } from "@/service/api/provider"
 
 const props = defineProps<{
   isEdit?: boolean
@@ -8,7 +9,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "submit", model: Api.Dataset.FormModel, files: File[]): void
+  (event: "submit", model: Api.Dataset.FormModel): void
   (event: "update:show", value: boolean): void
 }>()
 
@@ -25,9 +26,11 @@ const searchTypeOptions = [
 const emojiList = ["😀", "😂", "😎", "🤖", "🐱", "🦊", "🐶", "🦄", "🐼", "🦉"]
 const hovered = ref<string | null>(null)
 
-// File upload
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const selectedFiles = ref<File[]>([])
+// Provider & models
+const providers = ref<Api.Provider.ProviderInfo[]>([])
+const providerModels = ref<Api.Provider.ModelInfo[]>([])
+const modelsLoading = ref(false)
+const providerLoading = ref(false)
 
 const visible = computed({
   get: () => props.show,
@@ -41,7 +44,7 @@ const form = reactive<Api.Dataset.FormModel>({
   name: "",
   search_type: "hybrid",
   embedding_model: "",
-  provider_id: 0,
+  provider_id: undefined,
 })
 
 function resetForm() {
@@ -52,12 +55,12 @@ function resetForm() {
     name: "",
     search_type: "hybrid",
     embedding_model: "",
-    provider_id: 0,
+    provider_id: undefined,
   })
-  selectedFiles.value = []
+  providerModels.value = []
 }
 
-function syncForm() {
+async function syncForm() {
   Object.assign(form, {
     id: props.model.id,
     icon: props.model.icon || "🤖",
@@ -65,8 +68,14 @@ function syncForm() {
     name: props.model.name || "",
     search_type: props.model.search_type || "hybrid",
     embedding_model: props.model.embedding_model || "",
-    provider_id: props.model.provider_id || 0,
+    provider_id: props.model.provider_id || undefined,
   })
+  // Fetch providers list
+  fetchProviders()
+  // If editing with an existing provider, fetch its models
+  if (props.model.provider_id) {
+    fetchModels(props.model.provider_id)
+  }
 }
 
 watch(
@@ -94,32 +103,43 @@ function selectEmoji(emoji: string) {
   form.icon = emoji
 }
 
-function triggerFileUpload() {
-  fileInputRef.value?.click()
-}
-
-function handleFilesChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const files = input.files
-
-  if (files && files.length > 0) {
-    selectedFiles.value = [...selectedFiles.value, ...Array.from(files)]
-  }
-  input.value = ""
-}
-
-function removeFile(index: number) {
-  selectedFiles.value.splice(index, 1)
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-}
-
 function handlePositiveClick() {
-  emit("submit", { ...form }, [...selectedFiles.value])
+  emit("submit", { ...form })
+}
+
+// Provider & models
+async function fetchProviders() {
+  providerLoading.value = true
+  try {
+    const { response: res } = await getProviderList()
+    if (res?.data?.code === 0) {
+      providers.value = res.data.data?.providers ?? []
+    }
+  } finally {
+    providerLoading.value = false
+  }
+}
+
+async function fetchModels(providerId: number) {
+  if (!providerId) {
+    providerModels.value = []
+    return
+  }
+  modelsLoading.value = true
+  try {
+    const { response: res } = await getProviderModels(providerId)
+    if (res?.data?.code === 0) {
+      providerModels.value = res.data.data?.models ?? []
+    }
+  } finally {
+    modelsLoading.value = false
+  }
+}
+
+function onProviderChange(providerId: number) {
+  form.provider_id = providerId
+  form.embedding_model = "" // reset model when provider changes
+  fetchModels(providerId)
 }
 </script>
 
@@ -135,119 +155,92 @@ function handlePositiveClick() {
     title="知识库设置"
     @positive-click="handlePositiveClick"
   >
-    <NSpace :size="10" vertical>
-      <NCard
-        title="知识库名称"
-        :bordered="false"
-        size="small"
-        content-style="display:flex;gap: 8px;"
-      >
-        <NPopover trigger="click" placement="bottom-start">
-          <template #trigger>
-            <NAvatar
-              :style="{
-                color: 'black',
-                backgroundColor: '#FFEAD5',
-                cursor: 'pointer',
-              }"
-            >
-              {{ form.icon }}
-            </NAvatar>
-          </template>
-          <div style="display: flex; gap: 8px; padding: 5px; flex-wrap: wrap">
-            <span
-              v-for="emoji in emojiList"
-              :key="emoji"
-              style="font-size: 20px; cursor: pointer; padding: 4px; border-radius: 4px"
-              :style="{
-                backgroundColor: hovered === emoji ? '#e0e0e0' : 'transparent',
-              }"
-              @click="selectEmoji(emoji)"
-              @mouseenter="hovered = emoji"
-              @mouseleave="hovered = null"
-            >
-              {{ emoji }}
-            </span>
-          </div>
-        </NPopover>
+    <div class="flex flex-col gap-4">
+      <!-- 知识库名称 -->
+      <div class="flex items-start gap-4">
+        <span class="w-80px shrink-0 pt-6px text-14px text-gray-600">知识库名称</span>
+        <div class="flex flex-1 items-center gap-2">
+          <NPopover trigger="click" placement="bottom-start">
+            <template #trigger>
+              <NAvatar
+                :style="{ color: 'black', backgroundColor: '#FFEAD5', cursor: 'pointer' }"
+                :size="36"
+              >
+                {{ form.icon }}
+              </NAvatar>
+            </template>
+            <div class="flex gap-2 p-2">
+              <span
+                v-for="emoji in emojiList"
+                :key="emoji"
+                class="cursor-pointer rounded p-1 text-20px transition-colors"
+                :class="hovered === emoji ? 'bg-gray-200' : ''"
+                @click="selectEmoji(emoji)"
+                @mouseenter="hovered = emoji"
+                @mouseleave="hovered = null"
+              >
+                {{ emoji }}
+              </span>
+            </div>
+          </NPopover>
+          <NInput
+            v-model:value="form.name"
+            class="flex-1"
+            size="small"
+            placeholder="请输入知识库名称"
+          />
+        </div>
+      </div>
 
-        <NInput
-          v-model:value="form.name"
-          type="text"
-          style="background-color: #f1f3f6"
-          size="tiny"
-          placeholder="请输入知识库名称"
-        />
-      </NCard>
-      <NCard title="描述" :bordered="false" size="small">
+      <!-- 描述 -->
+      <div class="flex items-start gap-4">
+        <span class="w-80px shrink-0 pt-6px text-14px text-gray-600">描述</span>
         <NInput
           v-model:value="form.description"
           type="textarea"
-          size="tiny"
-          style="background-color: #f1f3f6"
-          placeholder="描述该数据集的内容。详细描述可以让AI更快地访问数据集的内容。如果为空，将使用默认的命中策略。"
+          size="small"
+          class="flex-1 resize-y"
+          :autosize="{ minRows: 2, maxRows: 10 }"
+          placeholder="描述该数据集的内容。详细描述可以让AI更快地访问数据集的内容。"
         />
-      </NCard>
-      <NCard title="检索方式" :bordered="false" size="small">
+      </div>
+
+      <!-- 检索方式 -->
+      <div class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">检索方式</span>
         <NSelect
           v-model:value="form.search_type"
           :options="searchTypeOptions"
-          size="tiny"
-          style="background-color: #f1f3f6"
+          size="small"
+          class="flex-1"
         />
-      </NCard>
-      <NCard title="Embedding模型" :bordered="false" size="small">
-        <NInput
+      </div>
+
+      <!-- Provider & Embedding 模型 -->
+      <div class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">模型提供商</span>
+        <NSelect
+          v-model:value="form.provider_id"
+          :options="providers.map((p) => ({ label: p.name, value: p.id }))"
+          :loading="providerLoading"
+          size="small"
+          class="flex-1"
+          placeholder="选择模型提供商"
+          @update:value="onProviderChange"
+        />
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="w-80px shrink-0 text-14px text-gray-600">Embedding 模型</span>
+        <NSelect
           v-model:value="form.embedding_model"
-          type="text"
-          size="tiny"
-          style="background-color: #f1f3f6"
-          placeholder="请输入Embedding模型名称"
+          :options="providerModels.map((m) => ({ label: m.id, value: m.id }))"
+          :loading="modelsLoading"
+          size="small"
+          class="flex-1"
+          placeholder="选择 Embedding 模型"
+          filterable
         />
-      </NCard>
-
-      <!-- 文件上传（仅创建时显示） -->
-      <NCard v-if="!props.isEdit" title="上传文件" :bordered="false" size="small">
-        <NSpace vertical :size="8">
-          <NButton size="small" secondary type="info" @click="triggerFileUpload">
-            <template #icon>
-              <span class="i-mdi:file-upload-outline text-16px" />
-            </template>
-            选择文件
-          </NButton>
-          <input
-            ref="fileInputRef"
-            type="file"
-            multiple
-            class="hidden"
-            @change="handleFilesChange"
-          />
-
-          <!-- Selected files list -->
-          <div v-if="selectedFiles.length > 0">
-            <div class="mb-4px text-12px text-gray-500">
-              已选择 {{ selectedFiles.length }} 个文件
-            </div>
-            <div
-              v-for="(file, idx) in selectedFiles"
-              :key="idx"
-              class="mb-4px flex items-center justify-between rounded-4px bg-gray-50 px-8px py-4px"
-            >
-              <span class="max-w-360px truncate text-13px">{{ file.name }}</span>
-              <NSpace :size="8" align="center">
-                <span class="text-12px text-gray-400">{{ formatFileSize(file.size) }}</span>
-                <NButton size="tiny" text type="error" @click="removeFile(idx)">
-                  <span class="i-mdi:close text-14px" />
-                </NButton>
-              </NSpace>
-            </div>
-          </div>
-          <div v-else class="text-12px text-gray-400">
-            支持上传 PDF、Word、TXT 等文档文件，创建后可进行分块处理
-          </div>
-        </NSpace>
-      </NCard>
-    </NSpace>
-    <NSpace />
+      </div>
+    </div>
   </NModal>
 </template>

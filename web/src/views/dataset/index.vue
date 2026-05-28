@@ -2,15 +2,9 @@
 import { onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 import { useDialog, useMessage } from "naive-ui"
-import {
-  createDataset,
-  deleteDataset,
-  getDatasets,
-  updateDataset,
-  uploadFiles,
-} from "@/service/api/dataset"
+import { Add12Filled } from "@vicons/fluent"
+import { createDataset, deleteDataset, getDatasets, updateDataset } from "@/service/api/dataset"
 import DatasetCard from "./modules/dataset-card.vue"
-import DatasetCreateCard from "./modules/dataset-create-card.vue"
 import DatasetFormModal from "./modules/dataset-form-modal.vue"
 import DatasetSearch from "./modules/dataset-search.vue"
 
@@ -31,7 +25,7 @@ const model: Api.Dataset.FormModel = reactive({
   name: "",
   search_type: "hybrid",
   embedding_model: "",
-  provider_id: 0,
+  provider_id: undefined,
 })
 
 function resetModel() {
@@ -42,7 +36,7 @@ function resetModel() {
     name: "",
     search_type: "hybrid",
     embedding_model: "",
-    provider_id: 0,
+    provider_id: undefined,
   })
 }
 
@@ -54,7 +48,7 @@ function fillModel(dataset: Api.Dataset.DatasetItem) {
     description: dataset.description,
     search_type: dataset.search_type || "hybrid",
     embedding_model: dataset.embedding_model || "",
-    provider_id: dataset.provider_id || 0,
+    provider_id: dataset.provider_id || undefined,
   })
 }
 
@@ -91,29 +85,11 @@ function handleViewChunks(datasetId: number) {
   })
 }
 
-async function handleCreateDataset(md: Api.Dataset.FormModel, files: File[] = []) {
+async function handleCreateDataset(md: Api.Dataset.FormModel) {
   const { response: res } = await createDataset(md)
 
   if (res.data.code === 0) {
-    const createdId = res.data.data?.id
-
-    // Upload files if any
-    if (files.length > 0 && createdId !== undefined) {
-      try {
-        const { data: uploadData, error: uploadError } = await uploadFiles(createdId, files)
-
-        if (!uploadError && uploadData?.code === 0) {
-          message.success(`创建成功，已上传 ${files.length} 个文件`)
-        } else {
-          message.success("知识库创建成功，但文件上传失败")
-        }
-      } catch {
-        message.success("知识库创建成功，但文件上传失败")
-      }
-    } else {
-      message.success("创建成功")
-    }
-
+    message.success("创建成功")
     showModal.value = false
     await fetchDatasets()
   } else {
@@ -167,11 +143,11 @@ function handleSelect(key: string, dataset: Api.Dataset.DatasetItem) {
   }
 }
 
-function handleSubmit(form: Api.Dataset.FormModel, files: File[] = []) {
+function handleSubmit(form: Api.Dataset.FormModel) {
   if (isEdit.value && form.id !== undefined) {
     handleEditDataset(form)
   } else {
-    handleCreateDataset(form, files)
+    handleCreateDataset(form)
   }
 }
 
@@ -182,14 +158,18 @@ onMounted(() => {
 
 <template>
   <NSpace vertical :size="16">
-    <DatasetSearch v-model="searchKey" :loading="loading" @search="fetchDatasets" />
+    <div class="flex items-center justify-between">
+      <DatasetSearch v-model="searchKey" :loading="loading" @search="fetchDatasets" />
+      <NButton type="primary" @click="openCreateModal">
+        <template #icon>
+          <NIcon :component="Add12Filled" />
+        </template>
+        创建知识库
+      </NButton>
+    </div>
 
     <NSpin :show="loading">
       <NGrid cols="3" x-gap="16" y-gap="17" responsive="screen" item-responsive>
-        <NGridItem class="grid-item-equal-height">
-          <DatasetCreateCard @create="openCreateModal" />
-        </NGridItem>
-
         <NGridItem v-for="dataset in datasets" :key="dataset.id" class="grid-item-equal-height">
           <DatasetCard :dataset="dataset" @select="handleSelect" />
         </NGridItem>

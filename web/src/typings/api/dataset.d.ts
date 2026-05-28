@@ -142,7 +142,6 @@ declare namespace Api {
     /** Embedding request */
     interface EmbeddingReq {
       chunk_ids: number[]
-      embedding_config: EmbeddingConfig
     }
 
     /** Embedding response */
@@ -155,9 +154,9 @@ declare namespace Api {
     interface SimpleFileInfo {
       id: number
       name: string
-      type?: string
-      size?: number
-      createdAt?: string
+      type: string
+      size: number
+      created_at: string
     }
 
     /** File list response */

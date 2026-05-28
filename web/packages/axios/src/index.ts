@@ -1,179 +1,152 @@
-import axios, { AxiosError } from 'axios';
-import type { AxiosResponse, CreateAxiosDefaults, InternalAxiosRequestConfig } from 'axios';
-import axiosRetry from 'axios-retry';
-import { nanoid } from '@sa/utils';
-import { createAxiosConfig, createDefaultOptions, createRetryOptions } from './options';
-import { transformResponse } from './shared';
-import { BACKEND_ERROR_CODE, REQUEST_ID_KEY } from './constant';
+import axios, { AxiosError } from "axios"
+import type {
+  AxiosInstance,
+  AxiosResponse,
+  CreateAxiosDefaults,
+  InternalAxiosRequestConfig,
+} from "axios"
+import axiosRetry from "axios-retry"
+import { stringify } from "qs"
+import { nanoid } from "@sa/utils"
+import { isHttpSuccess, transformResponse } from "./shared"
+import { BACKEND_ERROR_CODE, REQUEST_ID_KEY } from "./constant"
 import type {
   CustomAxiosRequestConfig,
   FlatRequestInstance,
   MappedType,
-  RequestInstance,
   RequestOption,
-  ResponseType
-} from './type';
+  ResponseType,
+} from "./type"
 
-function createCommonRequest<
+export class CommonRequest<
   ResponseData,
   ApiData = ResponseData,
-  State extends Record<string, unknown> = Record<string, unknown>
->(axiosConfig?: CreateAxiosDefaults, options?: Partial<RequestOption<ResponseData, ApiData, State>>) {
-  const opts = createDefaultOptions<ResponseData, ApiData, State>(options);
+  State extends Record<string, unknown> = Record<string, unknown>,
+> {
+  private abortControllerMap = new Map<string, AbortController>()
 
-  const axiosConf = createAxiosConfig(axiosConfig);
-  const instance = axios.create(axiosConf);
+  constructor(
+    axiosConfig?: CreateAxiosDefaults,
+    options?: Partial<RequestOption<ResponseData, ApiData, State>>,
+  ) {
+    const opts: RequestOption<ResponseData, ApiData, State> = Object.assign(
+      {
+        defaultState: {} as State,
+        transform: async (response) => response.data as unknown as ApiData,
+        onRequest: async (config) => config,
+        isBackendSuccess: () => true,
+        onBackendFail: async () => {},
+        onError: async () => {},
+      },
+      options,
+    )
+    const instance = this.#createAxiosInstance(axiosConfig)
 
-  const abortControllerMap = new Map<string, AbortController>();
+    this.#setupRequestInterceptor(instance, opts)
+    this.#setupResponseInterceptor(instance, opts)
 
-  // config axios retry
-  const retryOptions = createRetryOptions(axiosConf);
-  axiosRetry(instance, retryOptions);
+    const flatRequest = this.#createCallable(instance, opts)
+    flatRequest.cancelAllRequest = this.#cancelAllRequest
+    flatRequest.state = { ...opts.defaultState } as State
 
-  instance.interceptors.request.use(conf => {
-    const config: InternalAxiosRequestConfig = { ...conf };
-
-    // set request id
-    const requestId = nanoid();
-    config.headers.set(REQUEST_ID_KEY, requestId);
-
-    // config abort controller
-    if (!config.signal) {
-      const abortController = new AbortController();
-      config.signal = abortController.signal;
-      abortControllerMap.set(requestId, abortController);
-    }
-
-    // handle config by hook
-    const handledConfig = opts.onRequest?.(config) || config;
-
-    return handledConfig;
-  });
-
-  instance.interceptors.response.use(
-    async response => {
-      const responseType: ResponseType = (response.config?.responseType as ResponseType) || 'json';
-
-      await transformResponse(response);
-
-      if (responseType !== 'json' || opts.isBackendSuccess(response)) {
-        return Promise.resolve(response);
-      }
-
-      const fail = await opts.onBackendFail(response, instance);
-      if (fail) {
-        return fail;
-      }
-
-      const backendError = new AxiosError<ResponseData>(
-        'the backend request error',
-        BACKEND_ERROR_CODE,
-        response.config,
-        response.request,
-        response
-      );
-
-      await opts.onError(backendError);
-
-      return Promise.reject(backendError);
-    },
-    async (error: AxiosError<ResponseData>) => {
-      await opts.onError(error);
-
-      return Promise.reject(error);
-    }
-  );
-
-  function cancelAllRequest() {
-    abortControllerMap.forEach(abortController => {
-      abortController.abort();
-    });
-    abortControllerMap.clear();
+    return flatRequest as FlatRequestInstance<ResponseData, ApiData, State> & this
   }
 
-  return {
-    instance,
-    opts,
-    cancelAllRequest
-  };
-}
-
-/**
- * create a request instance
- *
- * @param axiosConfig axios config
- * @param options request options
- */
-export function createRequest<ResponseData, ApiData, State extends Record<string, unknown>>(
-  axiosConfig?: CreateAxiosDefaults,
-  options?: Partial<RequestOption<ResponseData, ApiData, State>>
-) {
-  const { instance, opts, cancelAllRequest } = createCommonRequest<ResponseData, ApiData, State>(axiosConfig, options);
-
-  const request: RequestInstance<ApiData, State> = async function request<
-    T extends ApiData = ApiData,
-    R extends ResponseType = 'json'
-  >(config: CustomAxiosRequestConfig) {
-    const response: AxiosResponse<ResponseData> = await instance(config);
-
-    const responseType = response.config?.responseType || 'json';
-
-    if (responseType === 'json') {
-      return opts.transform(response);
+  #createAxiosInstance(axiosConfig?: CreateAxiosDefaults) {
+    const TEN_SECONDS = 10 * 1000
+    const defaultConfig: CreateAxiosDefaults = {
+      timeout: TEN_SECONDS,
+      headers: { "Content-Type": "application/json" },
+      validateStatus: isHttpSuccess,
+      paramsSerializer: (params: any) => stringify(params),
     }
+    Object.assign(defaultConfig, axiosConfig)
 
-    return response.data as MappedType<R, T>;
-  } as RequestInstance<ApiData, State>;
+    const instance = axios.create(defaultConfig)
+    axiosRetry(instance, Object.assign({ retries: 0 }, defaultConfig))
+    return instance
+  }
 
-  request.cancelAllRequest = cancelAllRequest;
-  request.state = {} as State;
+  #setupRequestInterceptor(
+    instance: AxiosInstance,
+    opts: RequestOption<ResponseData, ApiData, State>,
+  ) {
+    instance.interceptors.request.use((conf) => {
+      const config: InternalAxiosRequestConfig = { ...conf }
 
-  return request;
-}
+      const requestId = nanoid()
+      config.headers.set(REQUEST_ID_KEY, requestId)
 
-/**
- * create a flat request instance
- *
- * The response data is a flat object: { data: any, error: AxiosError }
- *
- * @param axiosConfig axios config
- * @param options request options
- */
-export function createFlatRequest<ResponseData, ApiData, State extends Record<string, unknown>>(
-  axiosConfig?: CreateAxiosDefaults,
-  options?: Partial<RequestOption<ResponseData, ApiData, State>>
-) {
-  const { instance, opts, cancelAllRequest } = createCommonRequest<ResponseData, ApiData, State>(axiosConfig, options);
-
-  const flatRequest: FlatRequestInstance<ResponseData, ApiData, State> = async function flatRequest<
-    T extends ApiData = ApiData,
-    R extends ResponseType = 'json'
-  >(config: CustomAxiosRequestConfig) {
-    try {
-      const response: AxiosResponse<ResponseData> = await instance(config);
-
-      const responseType = response.config?.responseType || 'json';
-
-      if (responseType === 'json') {
-        const data = await opts.transform(response);
-
-        return { data, error: null, response };
+      if (!config.signal) {
+        const ac = new AbortController()
+        config.signal = ac.signal
+        this.abortControllerMap.set(requestId, ac)
       }
 
-      return { data: response.data as MappedType<R, T>, error: null, response };
-    } catch (error) {
-      return { data: null, error, response: (error as AxiosError<ResponseData>).response };
-    }
-  } as FlatRequestInstance<ResponseData, ApiData, State>;
+      return opts.onRequest?.(config) || config
+    })
+  }
 
-  flatRequest.cancelAllRequest = cancelAllRequest;
-  flatRequest.state = {
-    ...opts.defaultState
-  } as State;
+  #setupResponseInterceptor(
+    instance: AxiosInstance,
+    opts: RequestOption<ResponseData, ApiData, State>,
+  ) {
+    instance.interceptors.response.use(
+      async (response) => {
+        const responseType: ResponseType = (response.config?.responseType as ResponseType) || "json"
 
-  return flatRequest;
+        await transformResponse(response)
+
+        if (responseType !== "json" || opts.isBackendSuccess(response)) {
+          return response
+        }
+
+        const fail = await opts.onBackendFail(response, instance)
+        if (fail) return fail
+
+        const backendError = new AxiosError<ResponseData>(
+          "the backend request error",
+          BACKEND_ERROR_CODE,
+          response.config,
+          response.request,
+          response,
+        )
+        await opts.onError(backendError)
+        return Promise.reject(backendError)
+      },
+      async (error: AxiosError<ResponseData>) => {
+        await opts.onError(error)
+        return Promise.reject(error)
+      },
+    )
+  }
+
+  #createCallable(
+    instance: AxiosInstance,
+    opts: RequestOption<ResponseData, ApiData, State>,
+  ): FlatRequestInstance<ResponseData, ApiData, State> {
+    return (async <T extends ApiData = ApiData, R extends ResponseType = "json">(
+      config: CustomAxiosRequestConfig,
+    ) => {
+      try {
+        const response: AxiosResponse<ResponseData> = await instance(config)
+
+        if ((response.config?.responseType || "json") === "json") {
+          return { data: await opts.transform(response), error: null, response }
+        }
+        return { data: response.data as MappedType<R, T>, error: null, response }
+      } catch (error) {
+        return { data: null, error, response: (error as AxiosError<ResponseData>).response }
+      }
+    }) as FlatRequestInstance<ResponseData, ApiData, State>
+  }
+
+  #cancelAllRequest = () => {
+    this.abortControllerMap.forEach((ac) => ac.abort())
+    this.abortControllerMap.clear()
+  }
 }
 
-export { BACKEND_ERROR_CODE, REQUEST_ID_KEY };
-export type * from './type';
-export type { CreateAxiosDefaults, AxiosError };
+export { BACKEND_ERROR_CODE, REQUEST_ID_KEY }
+export type * from "./type"
+export type { CreateAxiosDefaults, AxiosError }

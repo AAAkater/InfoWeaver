@@ -1,15 +1,12 @@
 import type { AxiosResponse } from "axios"
-import { BACKEND_ERROR_CODE, createFlatRequest, createRequest } from "@sa/axios"
+import { BACKEND_ERROR_CODE, CommonRequest } from "@sa/axios"
 import { useAuthStore } from "@/store/modules/auth"
 import { getAuthorization, showErrorMsg } from "./shared"
 import type { RequestInstanceState } from "./type"
 
-export const request = createFlatRequest(
+export const request = new CommonRequest(
   {
     baseURL: "/api/v1",
-    headers: {
-      apifoxToken: "XL299LiMEDZ0H5h3A29PxwQXdMJqWyY2",
-    },
   },
   {
     defaultState: {

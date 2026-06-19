@@ -1,39 +1,41 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { themeSchemaRecord } from '@/constants/app';
-import { useThemeStore } from '@/store/modules/theme';
-import { $t } from '@/locales';
-import SettingItem from '../../../components/setting-item.vue';
+import { computed } from "vue"
+import { themeSchemaRecord } from "@/constants/app"
+import { useThemeStore } from "@/store/modules/theme"
+import { $t } from "@/locales"
+import SettingItem from "../../../components/setting-item.vue"
 
 defineOptions({
-  name: 'ThemeSchema'
-});
+  name: "ThemeSchema",
+})
 
-const themeStore = useThemeStore();
+const themeStore = useThemeStore()
 
 const icons: Record<UnionKey.ThemeScheme, string> = {
-  light: 'material-symbols:sunny',
-  dark: 'material-symbols:nightlight-rounded',
-  auto: 'material-symbols:hdr-auto'
-};
+  light: "material-symbols:sunny",
+  dark: "material-symbols:nightlight-rounded",
+  auto: "material-symbols:hdr-auto",
+}
 
 function handleSegmentChange(value: string | number) {
-  themeStore.setThemeScheme(value as UnionKey.ThemeScheme);
+  themeStore.setThemeScheme(value as UnionKey.ThemeScheme)
 }
 
 function handleGrayscaleChange(value: boolean) {
-  themeStore.setGrayscale(value);
+  themeStore.setGrayscale(value)
 }
 
 function handleColourWeaknessChange(value: boolean) {
-  themeStore.setColourWeakness(value);
+  themeStore.setColourWeakness(value)
 }
 
-const showSiderInverted = computed(() => !themeStore.darkMode && themeStore.layout.mode.includes('vertical'));
+const showSiderInverted = computed(
+  () => !themeStore.darkMode && themeStore.layout.mode.includes("vertical"),
+)
 </script>
 
 <template>
-  <NDivider>{{ $t('theme.appearance.themeSchema.title') }}</NDivider>
+  <NDivider>{{ $t("theme.appearance.themeSchema.title") }}</NDivider>
   <div class="flex-col-stretch gap-16px">
     <div class="i-flex-center">
       <NTabs

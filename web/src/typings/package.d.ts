@@ -6,7 +6,7 @@ declare namespace BMap {
   class Point extends BMapGL.Point {}
 }
 
-declare const TMap: any;
+declare const TMap: any
 
 interface Window {
   /**
@@ -16,5 +16,5 @@ interface Window {
    * - 1: https
    * - 2: https
    */
-  HOST_TYPE: '0' | '1' | '2';
+  HOST_TYPE: "0" | "1" | "2"
 }

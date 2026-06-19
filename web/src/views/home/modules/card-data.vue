@@ -1,82 +1,69 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { createReusableTemplate } from '@vueuse/core';
-import { useThemeStore } from '@/store/modules/theme';
-import { $t } from '@/locales';
+import { ref } from "vue"
+import { createReusableTemplate } from "@vueuse/core"
+import { useThemeStore } from "@/store/modules/theme"
 
 defineOptions({
-  name: 'CardData'
-});
+  name: "CardData",
+})
 
-interface CardData {
-  key: string;
-  title: string;
-  value: number;
-  unit: string;
+interface StatCard {
+  key: string
+  title: string
+  value: string
+  subtitle: string
   color: {
-    start: string;
-    end: string;
-  };
-  icon: string;
+    start: string
+    end: string
+  }
+  icon: string
 }
 
-const cardData = computed<CardData[]>(() => [
+const statCards = ref<StatCard[]>([
   {
-    key: 'visitCount',
-    title: $t('page.home.visitCount'),
-    value: 9725,
-    unit: '',
-    color: {
-      start: '#ec4786',
-      end: '#b955a4'
-    },
-    icon: 'ant-design:bar-chart-outlined'
+    key: "todayTokens",
+    title: "今日 Token",
+    value: "12,580",
+    subtitle: "较昨日 +18%",
+    color: { start: "#5da8ff", end: "#8e9dff" },
+    icon: "mdi:lightning-bolt",
   },
   {
-    key: 'turnover',
-    title: $t('page.home.turnover'),
-    value: 1026,
-    unit: '$',
-    color: {
-      start: '#865ec0',
-      end: '#5144b4'
-    },
-    icon: 'ant-design:money-collect-outlined'
+    key: "apiCalls",
+    title: "API 调用",
+    value: "347",
+    subtitle: "今日调用次数",
+    color: { start: "#26deca", end: "#56cdf3" },
+    icon: "mdi:api",
   },
   {
-    key: 'downloadCount',
-    title: $t('page.home.downloadCount'),
-    value: 970925,
-    unit: '',
-    color: {
-      start: '#56cdf3',
-      end: '#719de3'
-    },
-    icon: 'carbon:document-download'
+    key: "activeModels",
+    title: "活跃模型",
+    value: "5",
+    subtitle: "共 8 个模型",
+    color: { start: "#fcbc25", end: "#f68057" },
+    icon: "mdi:brain-circuit",
   },
   {
-    key: 'dealCount',
-    title: $t('page.home.dealCount'),
-    value: 9527,
-    unit: '',
-    color: {
-      start: '#fcbc25',
-      end: '#f68057'
-    },
-    icon: 'ant-design:trademark-circle-outlined'
-  }
-]);
+    key: "totalDocs",
+    title: "文档数",
+    value: "128",
+    subtitle: "已索引文档",
+    color: { start: "#865ec0", end: "#b955a4" },
+    icon: "mdi:file-document-multiple",
+  },
+])
 
 interface GradientBgProps {
-  gradientColor: string;
+  gradientColor: string
 }
 
-const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>();
+const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>()
 
-const themeStore = useThemeStore();
+const themeStore = useThemeStore()
 
-function getGradientColor(color: CardData['color']) {
-  return `linear-gradient(to bottom right, ${color.start}, ${color.end})`;
+function getGradientColor(color: StatCard["color"]) {
+  return `linear-gradient(to bottom right, ${color.start}, ${color.end})`
 }
 </script>
 
@@ -94,17 +81,15 @@ function getGradientColor(color: CardData['color']) {
     <!-- define component end: GradientBg -->
 
     <NGrid cols="s:1 m:2 l:4" responsive="screen" :x-gap="16" :y-gap="16">
-      <NGi v-for="item in cardData" :key="item.key">
+      <NGi v-for="item in statCards" :key="item.key">
         <GradientBg :gradient-color="getGradientColor(item.color)" class="flex-1">
-          <h3 class="text-16px">{{ item.title }}</h3>
-          <div class="flex justify-between pt-12px">
-            <SvgIcon :icon="item.icon" class="text-32px" />
-            <CountTo
-              :prefix="item.unit"
-              :start-value="1"
-              :end-value="item.value"
-              class="text-30px text-white dark:text-dark"
-            />
+          <h3 class="text-14px opacity-85">{{ item.title }}</h3>
+          <div class="flex items-end justify-between pt-12px">
+            <div>
+              <div class="text-28px font-700">{{ item.value }}</div>
+              <div class="mt-2px text-12px opacity-80">{{ item.subtitle }}</div>
+            </div>
+            <SvgIcon :icon="item.icon" class="text-36px opacity-30" />
           </div>
         </GradientBg>
       </NGi>

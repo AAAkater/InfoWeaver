@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useVChart } from '@/hooks/common/vchart';
+import { useVChart } from "@/hooks/common/vchart"
 import {
   barMarkPointSpec,
   circularProgressTickSpec,
@@ -7,16 +7,16 @@ import {
   liquidChartSmartInvertSpec,
   rankingBarSpec,
   shapeWordCloudSpec,
-  stackedDashAreaSpec
-} from './data';
+  stackedDashAreaSpec,
+} from "./data"
 
-const { domRef: stackedDashAreaRef } = useVChart(() => stackedDashAreaSpec);
-const { domRef: barMarkPointRef } = useVChart(() => barMarkPointSpec);
-const { domRef: histogramDifferentBinRef } = useVChart(() => histogramDifferentBinSpec);
-const { domRef: rankingBarRef } = useVChart(() => rankingBarSpec);
-const { domRef: shapeWordCloudRef } = useVChart(() => shapeWordCloudSpec);
-const { domRef: circularProgressTickRef } = useVChart(() => circularProgressTickSpec);
-const { domRef: liquidChartSmartInvertRef } = useVChart(() => liquidChartSmartInvertSpec);
+const { domRef: stackedDashAreaRef } = useVChart(() => stackedDashAreaSpec)
+const { domRef: barMarkPointRef } = useVChart(() => barMarkPointSpec)
+const { domRef: histogramDifferentBinRef } = useVChart(() => histogramDifferentBinSpec)
+const { domRef: rankingBarRef } = useVChart(() => rankingBarSpec)
+const { domRef: shapeWordCloudRef } = useVChart(() => shapeWordCloudSpec)
+const { domRef: circularProgressTickRef } = useVChart(() => circularProgressTickSpec)
+const { domRef: liquidChartSmartInvertRef } = useVChart(() => liquidChartSmartInvertSpec)
 </script>
 
 <template>

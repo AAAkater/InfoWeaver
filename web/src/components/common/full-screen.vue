@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { $t } from '@/locales';
+import { $t } from "@/locales"
 
 defineOptions({
-  name: 'FullScreen'
-});
+  name: "FullScreen",
+})
 
 interface Props {
-  full?: boolean;
+  full?: boolean
 }
 
-defineProps<Props>();
+defineProps<Props>()
 </script>
 
 <template>
-  <ButtonIcon :key="String(full)" :tooltip-content="full ? $t('icon.fullscreenExit') : $t('icon.fullscreen')">
+  <ButtonIcon
+    :key="String(full)"
+    :tooltip-content="full ? $t('icon.fullscreenExit') : $t('icon.fullscreen')"
+  >
     <icon-gridicons-fullscreen-exit v-if="full" />
     <icon-gridicons-fullscreen v-else />
   </ButtonIcon>

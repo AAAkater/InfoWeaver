@@ -1,41 +1,41 @@
 // @unocss-include
-import { getColorPalette, getRgb } from '@sa/color';
-import { DARK_CLASS } from '@/constants/app';
-import { localStg } from '@/utils/storage';
-import { toggleHtmlClass } from '@/utils/common';
-import { $t } from '@/locales';
+import { getColorPalette, getRgb } from "@sa/color"
+import { DARK_CLASS } from "@/constants/app"
+import { localStg } from "@/utils/storage"
+import { toggleHtmlClass } from "@/utils/common"
+import { $t } from "@/locales"
 
 export function setupLoading() {
-  const themeColor = localStg.get('themeColor') || '#646cff';
-  const darkMode = localStg.get('darkMode') || false;
-  const palette = getColorPalette(themeColor);
+  const themeColor = localStg.get("themeColor") || "#646cff"
+  const darkMode = localStg.get("darkMode") || false
+  const palette = getColorPalette(themeColor)
 
-  const { r, g, b } = getRgb(themeColor);
+  const { r, g, b } = getRgb(themeColor)
 
-  const primaryColor = `--primary-color: ${r} ${g} ${b}`;
+  const primaryColor = `--primary-color: ${r} ${g} ${b}`
 
   const svgCssVars = Array.from(palette.entries())
     .map(([key, value]) => `--logo-color-${key}: ${value}`)
-    .join(';');
+    .join(";")
 
-  const cssVars = `${primaryColor}; ${svgCssVars}`;
+  const cssVars = `${primaryColor}; ${svgCssVars}`
 
   if (darkMode) {
-    toggleHtmlClass(DARK_CLASS).add();
+    toggleHtmlClass(DARK_CLASS).add()
   }
 
   const loadingClasses = [
-    'left-0 top-0',
-    'left-0 bottom-0 animate-delay-500',
-    'right-0 top-0 animate-delay-1000',
-    'right-0 bottom-0 animate-delay-1500'
-  ];
+    "left-0 top-0",
+    "left-0 bottom-0 animate-delay-500",
+    "right-0 top-0 animate-delay-1000",
+    "right-0 bottom-0 animate-delay-1500",
+  ]
 
   const dot = loadingClasses
-    .map(item => {
-      return `<div class="absolute w-16px h-16px bg-primary rounded-8px animate-pulse ${item}"></div>`;
+    .map((item) => {
+      return `<div class="absolute w-16px h-16px bg-primary rounded-8px animate-pulse ${item}"></div>`
     })
-    .join('\n');
+    .join("\n")
 
   const loading = `
 <div class="fixed-center flex-col bg-layout" style="${cssVars}">
@@ -47,13 +47,13 @@ export function setupLoading() {
       ${dot}
     </div>
   </div>
-  <h2 class="text-28px font-500 text-primary">${$t('system.title')}</h2>
-</div>`;
+  <h2 class="text-28px font-500 text-primary">${$t("system.title")}</h2>
+</div>`
 
-  const app = document.getElementById('app');
+  const app = document.getElementById("app")
 
   if (app) {
-    app.innerHTML = loading;
+    app.innerHTML = loading
   }
 }
 
@@ -204,7 +204,7 @@ function getLogoSvg() {
           </linearGradient>
         </defs>
       </svg>
-  `;
+  `
 
-  return logoSvg;
+  return logoSvg
 }

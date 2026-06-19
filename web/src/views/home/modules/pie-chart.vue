@@ -1,109 +1,63 @@
 <script setup lang="ts">
-import { watch } from 'vue';
-import { useAppStore } from '@/store/modules/app';
-import { useEcharts } from '@/hooks/common/echarts';
-import { $t } from '@/locales';
+import { useEcharts } from "@/hooks/common/echarts"
 
 defineOptions({
-  name: 'PieChart'
-});
-
-const appStore = useAppStore();
+  name: "PieChart",
+})
 
 const { domRef, updateOptions } = useEcharts(() => ({
+  title: {
+    text: "模型调用分布",
+    textStyle: { fontSize: 14, fontWeight: 600 },
+    left: "0",
+  },
   tooltip: {
-    trigger: 'item'
+    trigger: "item",
+    formatter: "{b}: {c} 次 ({d}%)",
   },
   legend: {
-    bottom: '1%',
-    left: 'center',
-    itemStyle: {
-      borderWidth: 0
-    }
+    bottom: "0",
+    left: "center",
+    itemStyle: { borderWidth: 0 },
+    textStyle: { fontSize: 11 },
   },
   series: [
     {
-      color: ['#5da8ff', '#8e9dff', '#fedc69', '#26deca'],
-      name: $t('page.home.schedule'),
-      type: 'pie',
-      radius: ['45%', '75%'],
+      color: ["#5da8ff", "#26deca", "#8e9dff", "#fedc69", "#ec4786", "#fcbc25"],
+      name: "模型调用分布",
+      type: "pie",
+      radius: ["50%", "75%"],
+      center: ["50%", "45%"],
       avoidLabelOverlap: false,
       itemStyle: {
-        borderRadius: 10,
-        borderColor: '#fff',
-        borderWidth: 1
+        borderRadius: 6,
+        borderColor: "#fff",
+        borderWidth: 2,
       },
-      label: {
-        show: false,
-        position: 'center'
-      },
+      label: { show: false },
       emphasis: {
-        label: {
-          show: true,
-          fontSize: '12'
-        }
+        label: { show: true, fontSize: 12, fontWeight: "bold" },
       },
-      labelLine: {
-        show: false
-      },
-      data: [] as { name: string; value: number }[]
-    }
-  ]
-}));
+      data: [] as { name: string; value: number }[],
+    },
+  ],
+}))
 
-async function mockData() {
-  await new Promise(resolve => {
-    setTimeout(resolve, 1000);
-  });
-
-  updateOptions(opts => {
+setTimeout(() => {
+  updateOptions((opts) => {
     opts.series[0].data = [
-      { name: $t('page.home.study'), value: 20 },
-      { name: $t('page.home.entertainment'), value: 10 },
-      { name: $t('page.home.work'), value: 40 },
-      { name: $t('page.home.rest'), value: 30 }
-    ];
-
-    return opts;
-  });
-}
-
-function updateLocale() {
-  updateOptions((opts, factory) => {
-    const originOpts = factory();
-
-    opts.series[0].name = originOpts.series[0].name;
-
-    opts.series[0].data = [
-      { name: $t('page.home.study'), value: 20 },
-      { name: $t('page.home.entertainment'), value: 10 },
-      { name: $t('page.home.work'), value: 40 },
-      { name: $t('page.home.rest'), value: 30 }
-    ];
-
-    return opts;
-  });
-}
-
-async function init() {
-  mockData();
-}
-
-watch(
-  () => appStore.locale,
-  () => {
-    updateLocale();
-  }
-);
-
-// init
-init();
+      { name: "text-embedding-3-small", value: 1256 },
+      { name: "gpt-4o-mini", value: 987 },
+      { name: "claude-3-haiku", value: 654 },
+      { name: "text-embedding-3-large", value: 543 },
+      { name: "gpt-4o", value: 321 },
+      { name: "claude-3-sonnet", value: 198 },
+    ]
+    return opts
+  })
+}, 600)
 </script>
 
 <template>
-  <NCard :bordered="false" class="card-wrapper">
-    <div ref="domRef" class="h-360px overflow-hidden"></div>
-  </NCard>
+  <div ref="domRef" class="h-300px" />
 </template>
-
-<style scoped></style>

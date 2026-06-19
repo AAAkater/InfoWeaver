@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import type { RouteKey } from '@elegant-router/types';
-import { GLOBAL_HEADER_MENU_ID, GLOBAL_SIDER_MENU_ID } from '@/constants/app';
-import { useAppStore } from '@/store/modules/app';
-import { useThemeStore } from '@/store/modules/theme';
-import { useRouterPush } from '@/hooks/common/router';
-import FirstLevelMenu from '../components/first-level-menu.vue';
-import { useMenu, useMixMenuContext } from '../context';
+import type { RouteKey } from "@/typings/router"
+import { GLOBAL_HEADER_MENU_ID, GLOBAL_SIDER_MENU_ID } from "@/constants/app"
+import { useAppStore } from "@/store/modules/app"
+import { useThemeStore } from "@/store/modules/theme"
+import { useRouterPush } from "@/hooks/common/router"
+import FirstLevelMenu from "../components/first-level-menu.vue"
+import { useMenu, useMixMenuContext } from "../context"
 
 defineOptions({
-  name: 'TopHybridSidebarFirst'
-});
+  name: "TopHybridSidebarFirst",
+})
 
-const appStore = useAppStore();
-const themeStore = useThemeStore();
-const { routerPushByKeyWithMetaQuery } = useRouterPush();
+const appStore = useAppStore()
+const themeStore = useThemeStore()
+const { routerPushByKeyWithMetaQuery } = useRouterPush()
 const {
   firstLevelMenus,
   secondLevelMenus,
   activeFirstLevelMenuKey,
   handleSelectFirstLevelMenu,
-  activeDeepestLevelMenuKey
-} = useMixMenuContext('TopHybridSidebarFirst');
-const { selectedKey } = useMenu();
+  activeDeepestLevelMenuKey,
+} = useMixMenuContext("TopHybridSidebarFirst")
+const { selectedKey } = useMenu()
 
 /**
  * Handle first level menu select
  * @param key RouteKey
  */
 function handleSelectMenu(key: RouteKey) {
-  handleSelectFirstLevelMenu(key);
+  handleSelectFirstLevelMenu(key)
 
   // if there are second level menus, select the deepest one by default
-  activeDeepestLevelMenuKey();
+  activeDeepestLevelMenuKey()
 }
 </script>
 

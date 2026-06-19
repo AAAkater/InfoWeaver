@@ -1,46 +1,46 @@
 <script setup lang="tsx">
-import { onMounted, shallowRef } from 'vue';
-import { gantt } from 'dhtmlx-gantt';
-import type { GanttConfigOptions, ZoomLevel } from 'dhtmlx-gantt';
-import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-import { ganttTasks } from './data';
+import { onMounted, shallowRef } from "vue"
+import { gantt } from "dhtmlx-gantt"
+import type { GanttConfigOptions, ZoomLevel } from "dhtmlx-gantt"
+import "dhtmlx-gantt/codebase/dhtmlxgantt.css"
+import { ganttTasks } from "./data"
 
-const ganttRef = shallowRef<HTMLElement>();
+const ganttRef = shallowRef<HTMLElement>()
 
-type TimeType = 'day' | 'week' | 'month' | 'quarter' | 'year';
+type TimeType = "day" | "week" | "month" | "quarter" | "year"
 
-const timeType = shallowRef<TimeType>('quarter');
+const timeType = shallowRef<TimeType>("quarter")
 
 interface TimeData {
-  name: string;
-  code: TimeType;
+  name: string
+  code: TimeType
 }
 
 const data: TimeData[] = [
   {
-    name: '天',
-    code: 'day'
+    name: "天",
+    code: "day",
   },
   {
-    name: '周',
-    code: 'week'
+    name: "周",
+    code: "week",
   },
   {
-    name: '月',
-    code: 'month'
+    name: "月",
+    code: "month",
   },
   {
-    name: '季',
-    code: 'quarter'
+    name: "季",
+    code: "quarter",
   },
   {
-    name: '年',
-    code: 'year'
-  }
-];
+    name: "年",
+    code: "year",
+  },
+]
 
 function initGantt() {
-  if (!ganttRef.value) return;
+  if (!ganttRef.value) return
 
   const config: Partial<GanttConfigOptions> = {
     grid_width: 350,
@@ -49,131 +49,131 @@ function initGantt() {
     row_height: 60,
     bar_height: 34,
     auto_types: true,
-    xml_date: '%Y-%m-%d',
+    xml_date: "%Y-%m-%d",
     columns: [
       {
-        name: 'text',
-        label: '项目名称',
+        name: "text",
+        label: "项目名称",
         tree: true,
-        width: '*'
+        width: "*",
       },
       {
-        name: 'start_date',
-        label: '开始时间',
-        align: 'center',
-        width: 150
-      }
-    ]
-  };
+        name: "start_date",
+        label: "开始时间",
+        align: "center",
+        width: 150,
+      },
+    ],
+  }
 
-  Object.assign(gantt.config, config);
+  Object.assign(gantt.config, config)
 
-  gantt.i18n.setLocale('cn');
-  gantt.init(ganttRef.value);
-  gantt.parse({ data: ganttTasks });
+  gantt.i18n.setLocale("cn")
+  gantt.init(ganttRef.value)
+  gantt.parse({ data: ganttTasks })
 
   const zoomLevels: ZoomLevel[] = [
     {
-      name: 'day',
+      name: "day",
       scale_height: 60,
-      scales: [{ unit: 'day', step: 1, format: '%d %M' }]
+      scales: [{ unit: "day", step: 1, format: "%d %M" }],
     },
     {
-      name: 'week',
+      name: "week",
       scale_height: 60,
       scales: [
         {
-          unit: 'week',
+          unit: "week",
           step: 1,
           format(date: Date) {
-            const dateToStr = gantt.date.date_to_str('%m-%d');
-            const endDate = gantt.date.add(date, -6, 'day'); // 第几周
-            return `${dateToStr(endDate)} 至 ${dateToStr(date)}`;
-          }
+            const dateToStr = gantt.date.date_to_str("%m-%d")
+            const endDate = gantt.date.add(date, -6, "day") // 第几周
+            return `${dateToStr(endDate)} 至 ${dateToStr(date)}`
+          },
         },
         {
-          unit: 'day',
+          unit: "day",
           step: 1,
-          format: '%d',
+          format: "%d",
           css(date: Date) {
             if (date.getDay() === 0 || date.getDay() === 6) {
-              return 'day-item weekend weekend-border-bottom';
+              return "day-item weekend weekend-border-bottom"
             }
-            return 'day-item';
-          }
-        }
-      ]
+            return "day-item"
+          },
+        },
+      ],
     },
     {
-      name: 'month',
+      name: "month",
       scale_height: 60,
       min_column_width: 18,
       scales: [
-        { unit: 'month', format: '%Y-%m' },
+        { unit: "month", format: "%Y-%m" },
         {
-          unit: 'day',
+          unit: "day",
           step: 1,
-          format: '%d',
+          format: "%d",
           css(date: Date) {
             if (date.getDay() === 0 || date.getDay() === 6) {
-              return 'day-item weekend weekend-border-bottom';
+              return "day-item weekend weekend-border-bottom"
             }
-            return 'day-item';
-          }
-        }
-      ]
+            return "day-item"
+          },
+        },
+      ],
     },
     {
-      name: 'quarter',
+      name: "quarter",
       height: 60,
       min_column_width: 110,
       scales: [
         {
-          unit: 'quarter',
+          unit: "quarter",
           step: 1,
           format(date: Date) {
-            const yearStr = `${new Date(date).getFullYear()}年`;
-            const dateToStr = gantt.date.date_to_str('%M');
-            const endDate = gantt.date.add(gantt.date.add(date, 3, 'month'), -1, 'day');
-            return `${yearStr + dateToStr(date)} - ${dateToStr(endDate)}`;
-          }
+            const yearStr = `${new Date(date).getFullYear()}年`
+            const dateToStr = gantt.date.date_to_str("%M")
+            const endDate = gantt.date.add(gantt.date.add(date, 3, "month"), -1, "day")
+            return `${yearStr + dateToStr(date)} - ${dateToStr(endDate)}`
+          },
         },
         {
-          unit: 'week',
+          unit: "week",
           step: 1,
           format(date: Date) {
-            const dateToStr = gantt.date.date_to_str('%m-%d');
-            const endDate = gantt.date.add(date, 6, 'day');
-            return `${dateToStr(date)} 至 ${dateToStr(endDate)}`;
-          }
-        }
-      ]
+            const dateToStr = gantt.date.date_to_str("%m-%d")
+            const endDate = gantt.date.add(date, 6, "day")
+            return `${dateToStr(date)} 至 ${dateToStr(endDate)}`
+          },
+        },
+      ],
     },
     {
-      name: 'year',
+      name: "year",
       scale_height: 50,
       min_column_width: 150,
       scales: [
-        { unit: 'year', step: 1, format: '%Y年' },
-        { unit: 'month', format: '%Y-%m' }
-      ]
-    }
-  ];
+        { unit: "year", step: 1, format: "%Y年" },
+        { unit: "month", format: "%Y-%m" },
+      ],
+    },
+  ]
 
   gantt.ext.zoom.init({
-    levels: zoomLevels
-  });
-  gantt.ext.zoom.setLevel(timeType.value);
+    levels: zoomLevels,
+  })
+  gantt.ext.zoom.setLevel(timeType.value)
 }
 
 function changeTime(value: TimeType) {
-  timeType.value = value;
-  gantt.ext.zoom.setLevel(value);
+  timeType.value = value
+  gantt.ext.zoom.setLevel(value)
 }
 
 onMounted(() => {
-  initGantt();
-});
+  initGantt()
+})
 </script>
 
 <template>

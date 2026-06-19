@@ -1,5 +1,7 @@
 """Pydantic models for search API."""
 
+from dataclasses import dataclass, field
+
 from pydantic import BaseModel, Field
 
 
@@ -26,3 +28,20 @@ class SearchResponse(BaseModel):
 
     results: list[SearchResult]
     total: int
+
+
+@dataclass
+class RetrievalResult:
+    """Wrapper returned by retrieve_documents tool.
+
+    __str__ returns LLM-friendly formatted text so the agent can read it,
+    while ``sources`` carries structured chunk metadata for the frontend:
+
+        {"id": <chunk_id>, "content": "<preview>", "score": <similarity>}
+    """
+
+    text: str
+    sources: list[dict] = field(default_factory=list)
+
+    def __str__(self) -> str:
+        return self.text

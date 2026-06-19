@@ -1,5 +1,6 @@
 """Agentic RAG chat API routes."""
 
+import json
 from typing import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -52,9 +53,9 @@ async def agentic_rag_chat_stream(
         )
 
         async def generate_stream() -> AsyncGenerator[bytes, None]:
-            """Generate streaming response from agent."""
-            async for chunk in agentic_rag.stream(req.query):
-                yield chunk.encode("utf-8")
+            async for chunk_type, chunk_text in agentic_rag.stream(req.query):
+                payload = json.dumps({"type": chunk_type, "content": chunk_text}, ensure_ascii=False)
+                yield f"{payload}\n".encode("utf-8")
     except Exception as e:
         logger.error(f"Agentic RAG chat stream failed: {e}")
         raise HTTPException(
@@ -65,5 +66,5 @@ async def agentic_rag_chat_stream(
 
     return StreamingResponse(
         generate_stream(),
-        media_type="text/plain",
+        media_type="text/event-stream",
     )

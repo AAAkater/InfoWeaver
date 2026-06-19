@@ -7,6 +7,7 @@ from llama_index.core.tools import FunctionTool, ToolMetadata
 from core.rag.embedding import OAICompatibleEmbedding, OllamaDenseEmbeddingModel, SparseEmbeddingModel
 from core.rag.retrieval.search import hybrid_search
 from models.document import EmbeddingModelConfig
+from models.search import RetrievalResult
 from utils import logger
 
 
@@ -65,7 +66,7 @@ def create_retrieval_tool(
         FunctionTool for document retrieval
     """
 
-    async def retrieve_documents(query: str = "", **kwargs: Any) -> str:
+    async def retrieve_documents(query: str = "", **kwargs: Any) -> RetrievalResult:
         """
         Retrieve relevant documents from the knowledge base.
 
@@ -74,14 +75,15 @@ def create_retrieval_tool(
             **kwargs: Catch-all for LLMs that send 'input' instead of 'query'.
 
         Returns:
-            Concatenated content of retrieved documents
+            RetrievalResult with formatted text for the LLM (.text) and
+            structured chunk metadata for the frontend (.sources).
         """
         # Support both 'query' and 'input' parameter names
         try:
             actual_query = _extract_query({"query": query, **kwargs})
         except ValueError as e:
             logger.error(f"Failed to extract query from tool call: {e}")
-            return f"[Error] Invalid tool call parameters: {e}"
+            return RetrievalResult(text=f"[Error] Invalid tool call parameters: {e}")
 
         logger.info(f"Agent retrieving documents for query: {actual_query}")
 
@@ -113,13 +115,24 @@ def create_retrieval_tool(
                 limit=top_k,
             )
 
-            # Format results for agent
+            # Build sources for frontend (chunk IDs, scores, previews)
+            sources: list[dict] = []
+            for r in search_results:
+                preview = r.content[:200] + "..." if len(r.content) > 200 else r.content
+                sources.append(
+                    {
+                        "id": r.id,
+                        "content": preview,
+                        "score": round(r.distance, 4),
+                    }
+                )
+
             if not search_results:
                 logger.debug(f"No relevant documents found for query: {actual_query}")
-                return "No relevant documents found."
+                return RetrievalResult(text="No relevant documents found.")
 
             logger.debug(f"Retrieved {len(search_results)} documents for query: {actual_query}")
-            formatted_results = []
+            formatted_results: list[str] = []
             for i, result in enumerate(search_results, 1):
                 content_preview = result.content[:200] + "..." if len(result.content) > 200 else result.content
                 logger.debug(
@@ -127,11 +140,14 @@ def create_retrieval_tool(
                 )
                 formatted_results.append(f"[Document {i}]\n{result.content}\n")
 
-            return "\n".join(formatted_results)
+            return RetrievalResult(
+                text="\n".join(formatted_results),
+                sources=sources,
+            )
 
         except Exception as e:
             logger.exception(f"Hybrid search failed for query '{actual_query}': {e}")
-            return f"[Error] Search failed: {e}"
+            return RetrievalResult(text=f"[Error] Search failed: {e}")
 
     return FunctionTool(
         async_fn=retrieve_documents,

@@ -1,21 +1,21 @@
 """Agentic RAG module using llama-index FunctionAgent."""
 
+import json
 from typing import AsyncGenerator
 
 from llama_index.core.agent import FunctionAgent
 from llama_index.core.agent.workflow import (
-    AgentInput,
     AgentOutput,
     AgentStream,
-    ToolCall,
     ToolCallResult,
 )
 from llama_index.llms.openai_like import OpenAILike
-from workflows.events import StopEvent
+from workflows.events import StopEvent, WorkflowFailedEvent
 
 from core.tools import create_retrieval_tool
 from models.chat import ModelConfig, RetrievalConfig, SamplingParams
 from models.document import EmbeddingModelConfig
+from models.search import RetrievalResult
 from utils import logger
 
 
@@ -95,74 +95,64 @@ When answering questions, you should:
             verbose=True,
         )
 
-    async def stream(self, query: str) -> AsyncGenerator[str, None]:
+    async def stream(self, query: str) -> AsyncGenerator[tuple[str, str], None]:
         """Stream agent response delta-by-delta.
 
         Yields token-level deltas as they are generated, including thinking
         content for models that support extended thinking (e.g. DeepSeek-R1,
-        Qwen3).
+        Qwen3).  Also emits ``("source", json_array)`` when the agent
+        completes a retrieval call, carrying chunk IDs and scores for the
+        frontend.
 
         Args:
             query: User query string.
 
         Yields:
-            Text chunks (deltas, thinking_deltas, or final response text).
+            ("thinking", text) - model internal reasoning
+            ("text", text)    - final response content
+            ("source", json)  - retrieved chunk metadata (JSON array)
+            ("error", text)   - stream-level error
         """
-        logger.info(f"Streaming agent response for query: {query}")
-
         try:
             handler = self.workflow.run(user_msg=query)
             async for event in handler.stream_events():
                 match event:
-                    case AgentInput():
-                        logger.debug(f"Agent input | agent={event.current_agent_name} | input={event.input}")
                     case AgentStream():
-                        if event.delta:
-                            yield event.delta
                         if event.thinking_delta:
-                            yield event.thinking_delta
+                            yield ("thinking", event.thinking_delta)
+                        if event.delta:
+                            yield ("text", event.delta)
                     case AgentOutput():
-                        logger.debug(
-                            f"Agent output | response={event.response} "
-                            f"| tool_calls={event.tool_calls} | raw={event.raw}"
-                        )
-                    case ToolCall():
-                        logger.debug(f"Tool call | tool_name={event.tool_name} | tool_kwargs={event.tool_kwargs}")
-                    case ToolCallResult():
-                        logger.debug(
-                            f"Tool call result | tool_name={event.tool_name} | tool_kwargs={event.tool_kwargs} | tool_output={event.tool_output}"
-                        )
+                        # Some reasoning models (DeepSeek-R1, Qwen3) put the
+                        # final response in a ThinkingBlock rather than .content.
+                        # Collect text from .content and all blocks.
+                        text_parts: list[str] = []
+                        if event.response and event.response.content:
+                            text_parts.append(str(event.response.content))
+                        for block in getattr(event.response, "blocks", []) or []:
+                            block_text = getattr(block, "text", "") or getattr(block, "content", "") or ""
+                            if isinstance(block_text, str) and block_text.strip():
+                                text_parts.append(block_text)
+                        if text_parts:
+                            yield ("text", "".join(text_parts))
+                        else:
+                            logger.warning("AgentOutput has no text — nothing yielded to frontend")
+                    case ToolCallResult(tool_name="retrieve_documents"):
+                        # Extract chunk metadata from the retrieval tool's
+                        # return value and forward it to the frontend.
+                        raw = event.tool_output.raw_output
+                        if isinstance(raw, RetrievalResult) and raw.sources:
+                            yield ("source", json.dumps(raw.sources, ensure_ascii=False))
                     case StopEvent():
-                        # Graceful termination — nothing more to stream.
-                        logger.debug("Streaming completed successfully.")
-                        logger.debug(f"Final agent output: {event.result}")
                         return
-                    case _:
-                        logger.debug(f"Unknown event type: {type(event).__name__}")
+                    case WorkflowFailedEvent():
+                        logger.error(
+                            f"Workflow failed | step={event.step_name} | "
+                            f"exception={type(event.exception).__name__}: {event.exception}"
+                        )
+                        yield ("error", f"LLM call failed in step '{event.step_name}': {event.exception}")
+                        return
 
         except Exception as e:
             logger.error(f"Streaming generation failed: {e}")
-            yield f"\n[Error: {e}]"
-
-
-def _extract_agent_text(output: AgentOutput) -> str:
-    """Extract human-readable text from an AgentOutput.
-
-    Handles ChatMessage objects that may contain TextBlock and/or
-    ThinkingBlock content blocks.
-    """
-    response = output.response
-    text_parts: list[str] = []
-
-    if hasattr(response, "blocks") and response.blocks:
-        for block in response.blocks:
-            if hasattr(block, "text") and block.text:
-                text_parts.append(block.text)
-            elif hasattr(block, "content") and block.content:
-                text_parts.append(block.content)
-    elif hasattr(response, "content") and response.content:
-        text_parts.append(response.content)
-    else:
-        text_parts.append(str(response))
-
-    return "\n".join(text_parts)
+            yield ("error", str(e))

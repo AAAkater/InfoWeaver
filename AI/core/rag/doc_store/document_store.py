@@ -1,98 +1,138 @@
 from pydantic import BaseModel
 
-from db.milvus_db import VectorEntity, milvus_db
-from utils.logger import logger
+from configs.app_config import settings as app_settings
+from core.rag.embedding import OAICompatibleEmbedding, OllamaDenseEmbeddingModel
+from core.rag.embedding.sparse_embedding_model import SparseEmbeddingModel
+from db.milvus_db import VectorEntity, client
+from models.document import EmbeddingModelConfig
+from utils import logger
 
 
 class DocumentChunk(BaseModel):
     """Model representing a document chunk with its embedding."""
 
     content: str
-    vector: list[float]
     dataset_id: int
 
 
-async def add_chunks(chunks: list[DocumentChunk]) -> int:
-    """
-    Add document chunks to the store.
+async def add_document_chunks(chunks: list[DocumentChunk], embedding_config: EmbeddingModelConfig) -> list[int]:
+    """Add document chunks to the Milvus database with configurable embedding type.
 
-    Args:
-        chunks: List of DocumentChunk objects to add.
+    Supports three embed_type values:
+    - "dense": Generate dense embeddings only (sparse set to empty dict)
+    - "sparse": Generate sparse embeddings only (dense set to zero vector)
+    - "hybrid": Generate both dense and sparse embeddings (default)
 
     Returns:
-        int: Number of chunks added.
+        List of auto-generated Milvus entity IDs, one per chunk (same order as input).
     """
     if not chunks:
-        logger.warning("No chunks to add")
-        return 0
+        logger.warning("No document chunks to add")
+        return []
 
-    entities = [
-        VectorEntity(
-            vector=chunk.vector,
-            content=chunk.content,
-            dataset_id=chunk.dataset_id,
+    embed_type = embedding_config.embed_type
+    logger.info(f"Adding {len(chunks)} document chunks with embed_type='{embed_type}'")
+
+    contents = [chunk.content for chunk in chunks]
+    dense_embeddings: list[list[float]] = []
+    sparse_embeddings: list[dict[int, float]] = []
+
+    # Generate dense embeddings if needed
+    if embed_type in ("dense", "hybrid"):
+        if embedding_config.provider_type == "ollama":
+            dense_model = OllamaDenseEmbeddingModel(
+                model_name=embedding_config.model_name,
+                base_url=embedding_config.base_url,
+            )
+        else:
+            dense_model = OAICompatibleEmbedding(
+                model_name=embedding_config.model_name,
+                base_url=embedding_config.base_url,
+                api_key=embedding_config.api_key or "",
+            )
+        dense_embeddings = await dense_model.get_embeddings(contents)
+
+    # Generate sparse embeddings if needed
+    if embed_type in ("sparse", "hybrid"):
+        sparse_model = SparseEmbeddingModel()
+        sparse_embeddings = await sparse_model.get_embeddings(contents)
+
+    # Build entities with appropriate vectors
+    zero_dense = [0.0] * app_settings.MILVUS_DIM
+    new_entities = []
+    for i, chunk in enumerate(chunks):
+        dense_vec = dense_embeddings[i] if i < len(dense_embeddings) else zero_dense
+        sparse_vec = sparse_embeddings[i] if i < len(sparse_embeddings) else {}
+        new_entities.append(
+            VectorEntity(
+                dense_vector=dense_vec,
+                sparse_vector=sparse_vec,
+                content=chunk.content,
+                dataset_id=chunk.dataset_id,
+            )
         )
-        for chunk in chunks
-    ]
 
-    milvus_db.insert_entities(entities)
-    logger.info(f"Added {len(chunks)} chunks to collection '{milvus_db.collection_name}'")
-    return len(chunks)
+    entity_ids = client.insert_entities(new_entities)
+    logger.success(f"Inserted {len(entity_ids)} chunks into Milvus (embed_type='{embed_type}'), IDs: {entity_ids}")
+    return entity_ids
 
 
-def search_chunks(
-    query_vector: list[float],
-    dataset_id: int,
-    top_k: int = 10,
-) -> list[dict]:
-    """
-    Search for similar documents.
+def delete_document_chunks_by_ids(entity_ids: list[int]) -> None:
+    """Delete document chunks from the Milvus database by their IDs."""
+    if not entity_ids:
+        logger.warning("No entity IDs provided for deletion")
+        return
 
-    Args:
-        query_vector: Query embedding vector.
-        top_k: Number of results to return.
-        dataset_id: Optional dataset ID to filter results.
-
-    Returns:
-        list[dict]: List of search results with content and distance.
-    """
-
-    results = milvus_db.search_entities_filter(
-        query_vector=query_vector,
-        dataset_id=dataset_id,
-        top_k=top_k,
-    )
-
-    if results and len(results) > 0:
-        return [
-            {
-                "id": hit["id"],
-                "content": hit["entity"]["content"],
-                "dataset_id": hit["entity"]["dataset_id"],
-                "distance": hit["distance"],
-            }
-            for hit in results[0]
-        ]
-    return []
+    client.delete_entities_by_ids(entity_ids)
 
 
-def delete_chunks_by_dataset_id(dataset_id: int) -> None:
-    """
-    Delete all chunks associated with a dataset.
+async def update_document_chunks(
+    chunks: list[DocumentChunk], entity_ids: list[int], embedding_config: EmbeddingModelConfig
+) -> None:
+    """Update document chunks in the Milvus database by their IDs with configurable embedding type."""
+    if not chunks or not entity_ids or len(chunks) != len(entity_ids):
+        logger.warning("Chunks and entity IDs must be provided and have the same length for update")
+        return
 
-    Args:
-        dataset_id: The dataset ID to delete chunks for.
-    """
-    milvus_db.delete_entities_by_filter(expr=f"dataset_id == {dataset_id}")
-    logger.info(f"Deleted chunks for dataset_id {dataset_id}")
+    embed_type = embedding_config.embed_type
+    logger.info(f"Updating {len(chunks)} document chunks with embed_type='{embed_type}'")
 
+    contents = [chunk.content for chunk in chunks]
+    dense_embeddings: list[list[float]] = []
+    sparse_embeddings: list[dict[int, float]] = []
 
-def delete_chunks_by_ids(ids: list[int]) -> None:
-    """
-    Delete chunks by their IDs.
+    # Generate dense embeddings if needed
+    if embed_type in ("dense", "hybrid"):
+        if embedding_config.provider_type == "ollama":
+            dense_model = OllamaDenseEmbeddingModel(
+                model_name=embedding_config.model_name,
+                base_url=embedding_config.base_url,
+            )
+        else:
+            dense_model = OAICompatibleEmbedding(
+                model_name=embedding_config.model_name,
+                base_url=embedding_config.base_url,
+                api_key=embedding_config.api_key or "",
+            )
+        dense_embeddings = await dense_model.get_embeddings(contents)
 
-    Args:
-        ids: List of chunk IDs to delete.
-    """
-    milvus_db.delete_entities_by_id(entity_ids=ids)
-    logger.info(f"Deleted chunks with IDs: {ids}")
+    # Generate sparse embeddings if needed
+    if embed_type in ("sparse", "hybrid"):
+        sparse_model = SparseEmbeddingModel()
+        sparse_embeddings = await sparse_model.get_embeddings(contents)
+
+    zero_dense = [0.0] * app_settings.MILVUS_DIM
+    updated_entities = []
+    for i, chunk in enumerate(chunks):
+        dense_vec = dense_embeddings[i] if i < len(dense_embeddings) else zero_dense
+        sparse_vec = sparse_embeddings[i] if i < len(sparse_embeddings) else {}
+        updated_entities.append(
+            VectorEntity(
+                dense_vector=dense_vec,
+                sparse_vector=sparse_vec,
+                content=chunk.content,
+                dataset_id=chunk.dataset_id,
+            )
+        )
+
+    client.update_entities_by_ids(entity_ids, updated_entities)

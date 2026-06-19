@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,6 +12,11 @@ class Settings(BaseSettings):
         case_sensitive=True,
     )
     PYTHONPATH: str | None = None
+
+    # SERVER
+    SERVER_HOST: str = "0.0.0.0"
+    SERVER_PORT: int = 8000
+    SERVER_LOG_LEVEL: Literal["INFO", "DEBUG", "WARNING", "ERROR"] = "INFO"
 
     # POSTGRESQL
     POSTGRES_HOST: str = "localhost"
@@ -73,23 +80,9 @@ class Settings(BaseSettings):
     def MINIO_ENDPOINT(self) -> str:
         return f"{self.MINIO_HOST}:{self.MINIO_PORT}"
 
-    # RABBITMQ
-    RABBITMQ_HOST: str = "localhost"
-    RABBITMQ_PORT: int = 5672
-    RABBITMQ_USER: str = "guest"
-    RABBITMQ_PASSWORD: str = "guest"
-    RABBITMQ_VHOST: str = "/"
-    RABBITMQ_QUEUE: str = "info-weaver-file-queue"
-
-    @computed_field
-    @property
-    def RABBITMQ_URL(self) -> str:
-        return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}{self.RABBITMQ_VHOST}"
-
     # OLLAMA
     OLLAMA_HOST: str = "localhost"
     OLLAMA_PORT: int = 11434
-    OLLAMA_EMBEDDING_MODEL: str = "qwen3-embedding:0.6b"
 
     @computed_field
     @property

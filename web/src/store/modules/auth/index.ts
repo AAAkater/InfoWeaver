@@ -129,6 +129,9 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
           // If the tab needs to be cleared,it means we don't need to redirect.
           needRedirect = false
         }
+        // Ensure auth routes are registered before redirecting
+        await routeStore.initAuthRoute()
+
         await redirectFromLogin(needRedirect)
 
         window.$notification?.success({
